@@ -4271,32 +4271,33 @@ if(siteNav){
   window.addEventListener("scroll", queueNavScrolledUpdate, {passive:true});
 }
 
-/* לחיצה על מוצר = ניווט אמיתי בדפדפן (רענון עמוד מלא, כולל חיווי
-   הטעינה של הדפדפן עצמו בכרטיסייה), בדיוק כמו באתרים "רגילים".
-   ה-HTML הגולמי כבר מסמן מראש (ראו התסריט המוקדם ב-<head>) איזו
-   תצוגה צריכה להיות פעילה על סמך ה-URL, כך שאין הבזק של עמוד הבית
-   לפני שהיעד הנכון מוצג. */
+/* לחיצה על מוצר = ניווט מיידי בתוך האפליקציה (בלי רענון עמוד מלא).
+   ה-URL בסרגל הכתובות עדיין מתעדכן באמת (showView עושה pushState),
+   כך שקישור ישיר, "פתח בלשונית חדשה", וכפתורי קדימה/אחורה בדפדפן
+   ממשיכים לעבוד בדיוק כמו קודם - רק בלי להמתין לרענון עמוד מלא בכל
+   קליק. (בעבר זה עשה window.location.href, מה שגרם לדפדפן להוריד
+   ולהריץ מחדש את כל הדף - כולל שתי קריאות רשת - בכל ניווט; זה מה
+   שגרם לעיכוב של כמה שניות בכל לחיצה.) */
 function goToProduct(id){
-  window.location.href = productPath(id);
+  showView("product", true, id);
 }
 
 document.querySelectorAll("[data-nav]").forEach(el=>{
   el.addEventListener("click", (e)=>{
-    // קישורים אמיתיים (<a href>) - משאירים את התנהגות הדפדפן המקורית,
-    // כלומר ניווט אמיתי (רענון עמוד, כולל חיווי הטעינה של הדפדפן
-    // בכרטיסייה), בדיוק כמו באתרים "רגילים".
-    if(el.tagName === "A" && el.getAttribute("href")){ return; }
+    // קישורים אמיתיים (<a href>): קליק "רגיל" (עכבר שמאלי, בלי מקש
+    // מאפנן) מנווט מיידית בתוך האפליקציה. קליק עם Ctrl/Cmd/Shift/Alt
+    // או קליק אמצעי (פתיחה בלשונית/חלון חדשים) ממשיך להתנהג באופן
+    // טבעי של הדפדפן, כי אז אין טעם (ואי אפשר) לדלג על רענון עמוד.
+    if(el.tagName === "A" && el.getAttribute("href")){
+      if(e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    }
     e.preventDefault();
-    window.location.href = pathForView(el.dataset.nav);
+    showView(el.dataset.nav);
   });
   el.addEventListener("keydown", (e)=>{
     if(e.key !== "Enter" && e.key !== " ") return;
-    if(el.tagName === "A" && el.getAttribute("href")){
-      if(e.key === " "){ e.preventDefault(); window.location.href = el.getAttribute("href"); }
-      return; // Enter already navigates natively for a real <a href>
-    }
     e.preventDefault();
-    window.location.href = pathForView(el.dataset.nav);
+    showView(el.dataset.nav);
   });
 });
 
