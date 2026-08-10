@@ -1102,6 +1102,13 @@ if("serviceWorker" in navigator){
   .view.active{display:block;}
   @keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 
+  /* Once the visitor has clicked anything in the app (see showView() in the
+     main script), every further page swap is instant with no fade/slide -
+     the screen just stays still during the loading wait, then snaps
+     straight to the new page. Only applies from the second navigation
+     onward, so the very first page still gets its gentle entrance. */
+  html.nav-instant .view{animation:none !important;}
+
   /* ===== PAGE TRANSITION (top loading bar + centered brand loader) =====
      A deliberate, branded loading beat between pages - like the pause
      you get on high-end retail sites - rather than an instant snap.
@@ -1122,45 +1129,10 @@ if("serviceWorker" in navigator){
     transition:transform .18s ease, opacity .35s ease .1s;
     opacity:0;
   }
-  .view-fade-out{animation:none !important;opacity:0;transform:translateY(6px);transition:opacity .2s ease, transform .2s ease;}
 
-  #page-loader{
-    position:fixed;inset:0;z-index:99998;
-    display:flex;align-items:center;justify-content:center;
-    background:#FBF7EE;
-    opacity:0;visibility:hidden;pointer-events:none;
-    transition:opacity .3s ease;
-  }
-  #page-loader.active{opacity:1;visibility:visible;pointer-events:all;}
-  #page-loader .pl-mark{
-    display:flex;flex-direction:column;align-items:center;gap:14px;
-    opacity:0;transform:scale(0.94);
-    transition:opacity .4s ease .05s, transform .4s ease .05s;
-  }
-  #page-loader.active .pl-mark{opacity:1;transform:scale(1);}
-  #page-loader .pl-spinner{position:relative;width:52px;height:52px;}
-  #page-loader .pl-ring{
-    position:absolute;inset:0;border-radius:50%;
-    border:2.5px solid var(--gold-pale);
-    border-top-color:var(--gold-dark);
-    animation:pl-spin 0.9s linear infinite;
-  }
-  #page-loader .pl-logo{
-    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-    width:22px;height:22px;object-fit:contain;opacity:0.9;
-  }
-  @keyframes pl-spin{to{transform:rotate(360deg);}}
-  #page-loader .pl-word{
-    font-family:'Rubik','Almoni Neue',sans-serif;
-    font-size:12px;letter-spacing:0.24em;color:var(--taupe);
-    font-weight:500;
-  }
   @media (prefers-reduced-motion: reduce){
     #page-transition-bar{transition:none;}
-    .view-fade-out{transition:none;}
     .view{animation:none;}
-    #page-loader, #page-loader .pl-mark{transition:none;}
-    #page-loader .pl-ring{animation:none;border-top-color:var(--gold-pale);}
     header.site-nav, .nav-inner, .nav-brand img{transition:none;}
   }
 
@@ -2529,15 +2501,6 @@ if("serviceWorker" in navigator){
 <body>
 
 <div id="page-transition-bar" aria-hidden="true"></div>
-<div id="page-loader" aria-hidden="true">
-  <div class="pl-mark">
-    <div class="pl-spinner">
-      <div class="pl-ring"></div>
-      <img class="pl-logo" src="/images/site/rs-mark.png" alt="">
-    </div>
-    <div class="pl-word">טוען</div>
-  </div>
-</div>
 <div id="image-lightbox" class="image-lightbox" role="dialog" aria-modal="true" aria-hidden="true">
   <button type="button" class="lightbox-close" aria-label="סגירה">&times;</button>
   <img id="lightbox-img" src="" alt="">
@@ -4007,7 +3970,7 @@ let _hasRenderedFirstView = false;
    retail sites, rather than an instant snap. This one constant controls
    it everywhere; the old content fades out, the centered R·S loader
    holds for this long, then the new page fades in underneath it. */
-const PAGE_TRANSITION_MS = 450;
+const PAGE_TRANSITION_MS = 900;
 
 function showView(name, updateHistory, productId){
   /* First paint on load: render instantly, no transition delay */
@@ -4018,16 +3981,19 @@ function showView(name, updateHistory, productId){
   }
 
   const bar = document.getElementById("page-transition-bar");
-  const loader = document.getElementById("page-loader");
-  const activeView = document.querySelector(".view.active");
+
+  /* The screen stays completely still during the wait - like a browser tab
+     "loading" state - no fade/slide on the outgoing page. Only the thin
+     gold progress bar at the top moves. When the timer below fires, the
+     new page is swapped in directly (also with no fade/slide - see the
+     "nav-instant" class on <html>, added once below). */
+  document.documentElement.classList.add("nav-instant");
 
   if(bar){
     bar.classList.remove("finishing");
     void bar.offsetWidth; /* restart transition */
     bar.classList.add("loading");
   }
-  if(activeView){ activeView.classList.add("view-fade-out"); }
-  if(loader){ loader.classList.add("active"); }
 
   clearTimeout(_pageTransitionTimer);
   _pageTransitionTimer = setTimeout(()=>{
@@ -4036,7 +4002,6 @@ function showView(name, updateHistory, productId){
       bar.classList.remove("loading");
       bar.classList.add("finishing");
     }
-    if(loader){ loader.classList.remove("active"); }
   }, PAGE_TRANSITION_MS);
 }
 
@@ -4271,32 +4236,33 @@ if(siteNav){
   window.addEventListener("scroll", queueNavScrolledUpdate, {passive:true});
 }
 
-/* לחיצה על מוצר = ניווט אמיתי בדפדפן (רענון עמוד מלא, כולל חיווי
-   הטעינה של הדפדפן עצמו בכרטיסייה), בדיוק כמו באתרים "רגילים".
-   ה-HTML הגולמי כבר מסמן מראש (ראו התסריט המוקדם ב-<head>) איזו
-   תצוגה צריכה להיות פעילה על סמך ה-URL, כך שאין הבזק של עמוד הבית
-   לפני שהיעד הנכון מוצג. */
+/* לחיצה על מוצר = ניווט מיידי בתוך האפליקציה (בלי רענון עמוד מלא).
+   ה-URL בסרגל הכתובות עדיין מתעדכן באמת (showView עושה pushState),
+   כך שקישור ישיר, "פתח בלשונית חדשה", וכפתורי קדימה/אחורה בדפדפן
+   ממשיכים לעבוד בדיוק כמו קודם - רק בלי להמתין לרענון עמוד מלא בכל
+   קליק. (בעבר זה עשה window.location.href, מה שגרם לדפדפן להוריד
+   ולהריץ מחדש את כל הדף - כולל שתי קריאות רשת - בכל ניווט; זה מה
+   שגרם לעיכוב של כמה שניות בכל לחיצה.) */
 function goToProduct(id){
-  window.location.href = productPath(id);
+  showView("product", true, id);
 }
 
 document.querySelectorAll("[data-nav]").forEach(el=>{
   el.addEventListener("click", (e)=>{
-    // קישורים אמיתיים (<a href>) - משאירים את התנהגות הדפדפן המקורית,
-    // כלומר ניווט אמיתי (רענון עמוד, כולל חיווי הטעינה של הדפדפן
-    // בכרטיסייה), בדיוק כמו באתרים "רגילים".
-    if(el.tagName === "A" && el.getAttribute("href")){ return; }
+    // קישורים אמיתיים (<a href>): קליק "רגיל" (עכבר שמאלי, בלי מקש
+    // מאפנן) מנווט מיידית בתוך האפליקציה. קליק עם Ctrl/Cmd/Shift/Alt
+    // או קליק אמצעי (פתיחה בלשונית/חלון חדשים) ממשיך להתנהג באופן
+    // טבעי של הדפדפן, כי אז אין טעם (ואי אפשר) לדלג על רענון עמוד.
+    if(el.tagName === "A" && el.getAttribute("href")){
+      if(e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    }
     e.preventDefault();
-    window.location.href = pathForView(el.dataset.nav);
+    showView(el.dataset.nav);
   });
   el.addEventListener("keydown", (e)=>{
     if(e.key !== "Enter" && e.key !== " ") return;
-    if(el.tagName === "A" && el.getAttribute("href")){
-      if(e.key === " "){ e.preventDefault(); window.location.href = el.getAttribute("href"); }
-      return; // Enter already navigates natively for a real <a href>
-    }
     e.preventDefault();
-    window.location.href = pathForView(el.dataset.nav);
+    showView(el.dataset.nav);
   });
 });
 
