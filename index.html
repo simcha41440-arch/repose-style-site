@@ -1109,12 +1109,9 @@ if("serviceWorker" in navigator){
      onward, so the very first page still gets its gentle entrance. */
   html.nav-instant .view{animation:none !important;}
 
-  /* ===== PAGE TRANSITION (top loading bar + centered brand loader) =====
-     A deliberate, branded loading beat between pages - like the pause
-     you get on high-end retail sites - rather than an instant snap.
-     Total duration lives in one place: PAGE_TRANSITION_MS in the main
-     script below; everything here just needs to be >= that so nothing
-     gets cut off mid-animation. */
+  /* ===== (unused) top progress bar - kept in the DOM/CSS but nothing
+     triggers it anymore now that navigation is instant. Harmless to
+     leave; safe to delete if this file gets a bigger cleanup later. */
   #page-transition-bar{
     position:fixed;top:0;inset-inline:0;height:3px;
     background:linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-light));
@@ -3962,47 +3959,16 @@ function viewForPath(path){
 /* ============================================================
    NAVIGATION
    ============================================================ */
-let _pageTransitionTimer = null;
 let _hasRenderedFirstView = false;
 
-/* Deliberate branded pause between pages (collection <-> collection,
-   opening a product, etc.) - like the loading beat you get on premium
-   retail sites, rather than an instant snap. This one constant controls
-   it everywhere; the old content fades out, the centered R·S loader
-   holds for this long, then the new page fades in underneath it. */
-const PAGE_TRANSITION_MS = 900;
-
 function showView(name, updateHistory, productId){
-  /* First paint on load: render instantly, no transition delay */
-  if(!_hasRenderedFirstView){
-    _hasRenderedFirstView = true;
-    renderViewNow(name, updateHistory, productId);
-    return;
-  }
-
-  const bar = document.getElementById("page-transition-bar");
-
-  /* The screen stays completely still during the wait - like a browser tab
-     "loading" state - no fade/slide on the outgoing page. Only the thin
-     gold progress bar at the top moves. When the timer below fires, the
-     new page is swapped in directly (also with no fade/slide - see the
-     "nav-instant" class on <html>, added once below). */
+  /* Navigation is instant - no artificial wait, no loading bar, no fade.
+     The page swap happens the moment you click, exactly like the very
+     first paint on load (see the "nav-instant" class below, which keeps
+     the .fadeIn entrance animation from playing on any page after the
+     first one). */
   document.documentElement.classList.add("nav-instant");
-
-  if(bar){
-    bar.classList.remove("finishing");
-    void bar.offsetWidth; /* restart transition */
-    bar.classList.add("loading");
-  }
-
-  clearTimeout(_pageTransitionTimer);
-  _pageTransitionTimer = setTimeout(()=>{
-    renderViewNow(name, updateHistory, productId);
-    if(bar){
-      bar.classList.remove("loading");
-      bar.classList.add("finishing");
-    }
-  }, PAGE_TRANSITION_MS);
+  renderViewNow(name, updateHistory, productId);
 }
 
 function renderViewNow(name, updateHistory, productId){
