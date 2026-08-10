@@ -1,0 +1,311 @@
+// All admin-only, non-resource endpoints live in this ONE file, routed by
+// ?action=. This isn't a stylistic choice - Vercel's Hobby plan caps a
+// project at 12 serverless functions total, and every file under /api
+// (other than _lib helpers) counts as one. Splitting login/logout/
+// session/audit-log/image-upload into five separate files (as they used
+// to be) pushed the project over that limit and broke deployment
+// ("No more than 12 Serverless Functions..."). Merging them here, plus
+// the resource-style endpoints (orders.js, products.js, coupons.js, etc.)
+// staying as-is, keeps the project comfortably under the cap with room
+// to add a couple more features later without hitting this again.
+//
+// Routes (all under /api/admin):
+//   GET  /api/admin?action=session       - am I logged in?
+//   POST /api/admin?action=login         - { username, password }
+//   POST /api/admin?action=logout
+//   GET  /api/admin?action=audit-log     - admin action log + failed logins
+//   POST /api/admin?action=upload-image  - { filename, dataUrl } -> { url }
+
+const crypto = require('crypto');
+const { getSupabase, withFriendlyError } = require('./_lib/supabase');
+const {
+  createSessionCookie,
+  clearSessionCookie,
+  readSession,
+  requireAdmin,
+  MAX_AGE_SECONDS,
+} = require('./_lib/session');
+const { parseJsonBody } = require('./_lib/parseJson');
+const {
+  getClientIp,
+  checkLoginLockout,
+  recordLoginAttempt,
+  logAdminAction,
+} = require('./_lib/security');
+
+function timingSafeEqualStr(a, b) {
+  const aBuf = Buffer.from(String(a ?? ''));
+  const bBuf = Buffer.from(String(b ?? ''));
+  if (aBuf.length !== bBuf.length) {
+    crypto.timingSafeEqual(aBuf, aBuf); // still run a comparison so failure timing doesn't leak length info
+    return false;
+  }
+  return crypto.timingSafeEqual(aBuf, bBuf);
+}
+
+async function handleSession(req, res) {
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', 'GET');
+    return res.status(405).json({ error: 'Method not allowed.' });
+  }
+  const session = readSession(req);
+  if (session && session.admin) {
+    return res.status(200).json({ authenticated: true, user: session.user });
+  }
+  return res.status(200).json({ authenticated: false });
+}
+
+async function handleLogin(req, res) {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return res.status(405).json({ error: 'Method not allowed.' });
+  }
+
+  let body;
+  try {
+    body = await parseJsonBody(req);
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+
+  const { username, password } = body || {};
+  const expectedUser = process.env.ADMIN_USERNAME;
+  const expectedPass = process.env.ADMIN_PASSWORD;
+
+  if (!expectedUser || !expectedPass) {
+    return res.status(500).json({ error: 'Admin credentials are not configured on the server.' });
+  }
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password are required.' });
+  }
+
+  const ip = getClientIp(req);
+
+  let supabase = null;
+  try {
+    supabase = getSupabase();
+  } catch (err) {
+    supabase = null;
+  }
+
+  if (supabase) {
+    const lockout = await checkLoginLockout(supabase, ip);
+    if (lockout.locked) {
+      const minutes = Math.ceil(lockout.retryAfterSeconds / 60);
+      res.setHeader('Retry-After', String(lockout.retryAfterSeconds));
+      return res.status(429).json({
+        error: `יותר מדי ניסיונות התחברות כושלים. נסו שוב בעוד כ-${minutes} דקות.`,
+      });
+    }
+  }
+
+  const userOk = timingSafeEqualStr(username, expectedUser);
+  const passOk = timingSafeEqualStr(password, expectedPass);
+  const success = userOk && passOk;
+
+  if (supabase) {
+    await recordLoginAttempt(supabase, ip, username, success);
+  }
+
+  if (!success) {
+    return res.status(401).json({ error: 'Invalid username or password.' });
+  }
+
+  if (supabase) {
+    await logAdminAction(supabase, username, 'login', null, null, ip);
+  }
+
+  const cookie = createSessionCookie({
+    admin: true,
+    user: username,
+    exp: Date.now() + MAX_AGE_SECONDS * 1000,
+  });
+
+  res.setHeader('Set-Cookie', cookie);
+  return res.status(200).json({ ok: true });
+}
+
+async function handleLogout(req, res) {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return res.status(405).json({ error: 'Method not allowed.' });
+  }
+
+  try {
+    const session = readSession(req);
+    if (session && session.admin) {
+      const supabase = getSupabase();
+      await logAdminAction(supabase, session.user, 'logout', null, null, getClientIp(req));
+    }
+  } catch (err) {
+    // ignore - logging out must always succeed regardless of DB state
+  }
+
+  res.setHeader('Set-Cookie', clearSessionCookie());
+  return res.status(200).json({ ok: true });
+}
+
+async function handleAuditLog(req, res) {
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', 'GET');
+    return res.status(405).json({ error: 'Method not allowed.' });
+  }
+  const session = requireAdmin(req, res);
+  if (!session) return;
+
+  let supabase;
+  try {
+    supabase = getSupabase();
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+
+  const [logResult, failedLoginsResult] = await Promise.all([
+    withFriendlyError(
+      supabase.from('admin_audit_log').select('*').order('created_at', { ascending: false }).limit(200)
+    ),
+    withFriendlyError(
+      supabase.from('login_attempts').select('*').eq('success', false).order('created_at', { ascending: false }).limit(100)
+    ),
+  ]);
+
+  if (logResult.error) {
+    return res.status(500).json({ error: logResult.error.message });
+  }
+  return res.status(200).json({
+    log: logResult.data,
+    failed_logins: failedLoginsResult.error ? [] : failedLoginsResult.data,
+  });
+}
+
+const UPLOAD_BUCKET = 'site-images';
+// Vercel's serverless functions hard-cap the incoming request body at
+// ~4.5MB *before* this code even runs, and that platform limit can't be
+// raised from here - so this needs to sit safely below it. The admin.html
+// upload flow now resizes/compresses images in the browser first (see
+// prepareImageForUpload there) so normal photos land well under this, but
+// keep this check as a clear, friendly backstop for anything that slips
+// through (e.g. animated GIFs, which are sent uncompressed).
+const UPLOAD_MAX_BYTES = 4 * 1024 * 1024;
+const UPLOAD_ALLOWED_TYPES = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+};
+
+function readRawBody(req) {
+  return new Promise((resolve, reject) => {
+    if (typeof req.body === 'string' && req.body.length) {
+      resolve(req.body);
+      return;
+    }
+    if (req.body && typeof req.body === 'object') {
+      resolve(JSON.stringify(req.body));
+      return;
+    }
+    let data = '';
+    let bytes = 0;
+    req.on('data', (chunk) => {
+      bytes += chunk.length;
+      if (bytes > UPLOAD_MAX_BYTES) {
+        req.destroy();
+        reject(new Error('התמונה גדולה מדי (מקסימום כ-4 מ״ב).'));
+        return;
+      }
+      data += chunk;
+    });
+    req.on('end', () => resolve(data));
+    req.on('error', reject);
+  });
+}
+
+async function handleUploadImage(req, res) {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return res.status(405).json({ error: 'Method not allowed.' });
+  }
+  const session = requireAdmin(req, res);
+  if (!session) return;
+
+  let supabase;
+  try {
+    supabase = getSupabase();
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+
+  let raw;
+  try {
+    raw = await readRawBody(req);
+  } catch (err) {
+    return res.status(413).json({ error: err.message });
+  }
+
+  let body;
+  try {
+    body = JSON.parse(raw || '{}');
+  } catch (err) {
+    return res.status(400).json({ error: 'Invalid JSON body.' });
+  }
+
+  const { filename, dataUrl } = body || {};
+  const match = typeof dataUrl === 'string' && dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) {
+    return res.status(400).json({ error: 'קובץ תמונה לא תקין.' });
+  }
+  const mimeType = match[1];
+  const ext = UPLOAD_ALLOWED_TYPES[mimeType];
+  if (!ext) {
+    return res.status(400).json({ error: 'סוג קובץ לא נתמך - יש להעלות JPG, PNG, WEBP או GIF בלבד.' });
+  }
+
+  const buffer = Buffer.from(match[2], 'base64');
+  if (buffer.length > UPLOAD_MAX_BYTES) {
+    return res.status(413).json({ error: 'התמונה גדולה מדי (מקסימום כ-4 מ״ב).' });
+  }
+
+  const safeName = String(filename || 'image')
+    .toLowerCase()
+    .replace(/[^a-z0-9.\-]+/g, '-')
+    .replace(/\.[a-z0-9]+$/, '');
+  const path = `${Date.now()}-${safeName || 'image'}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(UPLOAD_BUCKET)
+    .upload(path, buffer, { contentType: mimeType, upsert: true });
+
+  if (uploadError) {
+    const hint = /bucket not found/i.test(uploadError.message || '')
+      ? ' (ודאו שהרצתם את ALL-SQL-SETUP.sql ב-Supabase - הוא יוצר את ה-bucket הנדרש)'
+      : '';
+    return res.status(500).json({ error: 'שגיאה בהעלאת התמונה: ' + uploadError.message + hint });
+  }
+
+  const { data: publicData } = supabase.storage.from(UPLOAD_BUCKET).getPublicUrl(path);
+  const url = publicData && publicData.publicUrl;
+  if (!url) {
+    return res.status(500).json({ error: 'ההעלאה הצליחה אך לא התקבלה כתובת ציבורית לתמונה.' });
+  }
+
+  await logAdminAction(supabase, session.user, 'image_upload', path, { mimeType, bytes: buffer.length }, getClientIp(req));
+  return res.status(200).json({ url });
+}
+
+module.exports = async (req, res) => {
+  const action = req.query && req.query.action;
+  switch (action) {
+    case 'session':
+      return handleSession(req, res);
+    case 'login':
+      return handleLogin(req, res);
+    case 'logout':
+      return handleLogout(req, res);
+    case 'audit-log':
+      return handleAuditLog(req, res);
+    case 'upload-image':
+      return handleUploadImage(req, res);
+    default:
+      return res.status(400).json({ error: 'Unknown or missing action.' });
+  }
+};

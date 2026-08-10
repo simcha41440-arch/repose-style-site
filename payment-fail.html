@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<title>התשלום לא אושר | רפאוז סטייל</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#F8F4EC;font-family:'Assistant','Almoni Neue',sans-serif;}
+  .wrap{display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:14px;color:#5B4E3C;text-align:center;padding:0 20px;}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <p>התשלום לא אושר על ידי חברת האשראי. אנא חזרו לחלון החנות ונסו שוב.</p>
+  </div>
+  <script>
+    /*
+      "fail_url_address" target: Tranzila redirects the payment
+      iframe here when a charge is declined or cancelled. We
+      forward that to the parent (store) window via postMessage so
+      it can show a friendly retry message - see TRANZILA-SETUP.md.
+    */
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+          source: "rstyle-tranzila-callback",
+          status: "fail",
+          raw: window.location.search.replace(/^\?/, "")
+        }, window.location.origin);
+      }
+    } catch (err) {
+      // no-op - the visible message above already covers this case
+    }
+  </script>
+</body>
+</html>

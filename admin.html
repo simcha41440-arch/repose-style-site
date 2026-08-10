@@ -1,0 +1,1655 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
+<title>ניהול האתר | רפאוז סטייל</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#E7C77E; --ivory:#F1DFA0; --ink:#2B2420; --ink-deep:#1C1712;
+    --gold:#B08A3E; --gold-dark:#8A6C2E; --gold-light:#E3C378; --gold-pale:#EEDCA6;
+    --line:#D8B96C; --danger:#B65B4A; --green-wa:#3FA772; --text-gold:#6B4E14;
+    --taupe:#8A6C2E; --shadow:0 20px 50px -20px rgba(43,36,32,0.25); --radius:14px;
+    --bg:#FBF6E9;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:'Rubik','Almoni Neue',sans-serif;
+    background:var(--bg); color:var(--ink); direction:rtl;
+    min-height:100vh;
+  }
+  .serif{font-family:'Assistant','Almoni Neue',sans-serif;}
+  ::selection{background:var(--gold-light);}
+
+  /* ---------- Gate (login) ---------- */
+  .gate-wrap{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .gate-card{
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:40px 34px; max-width:380px; width:100%;
+  }
+  .gate-card h1{font-size:22px; color:var(--text-gold); margin-bottom:6px;}
+  .gate-card p.sub{font-size:13px; color:var(--taupe); margin-bottom:26px; line-height:1.6;}
+  .field{margin-bottom:16px;}
+  .field label{display:block; font-size:12.5px; color:var(--taupe); margin-bottom:6px;}
+  .field input{
+    width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:8px;
+    font-size:14px; font-family:inherit; background:#FFFDF7;
+  }
+  .field input:focus{outline:none; border-color:var(--gold);}
+  .btn{
+    width:100%; padding:13px; border:none; border-radius:999px; background:var(--gold-dark);
+    color:#fff; font-size:14.5px; font-weight:600; cursor:pointer; transition:background .2s ease;
+  }
+  .btn:hover{background:var(--text-gold);}
+  .btn:disabled{opacity:.6; cursor:not-allowed;}
+  .btn.outline{background:transparent; border:1px solid var(--line); color:var(--text-gold); width:auto;}
+  .btn.small{width:auto; padding:8px 18px; font-size:13px;}
+  .btn.danger{background:var(--danger);}
+  .err-msg{color:var(--danger); font-size:12.5px; margin-top:-8px; margin-bottom:14px; min-height:16px;}
+  .ok-msg{color:var(--green-wa); font-size:12.5px; margin-top:-8px; margin-bottom:14px; min-height:16px;}
+
+  /* ---------- Dashboard layout ---------- */
+  .app{display:none; min-height:100vh; grid-template-columns:230px 1fr;}
+  .app.active{display:grid;}
+  .sidebar{
+    background:var(--ink-deep); color:#F1DFA0; padding:28px 20px;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .sidebar h2{font-size:17px; color:#fff; margin-bottom:22px;}
+  .sidebar button{
+    background:transparent; border:none; color:#E7C77E; text-align:right;
+    padding:11px 12px; border-radius:8px; font-size:14px; cursor:pointer; font-family:inherit;
+  }
+  .sidebar button:hover, .sidebar button.active{background:rgba(255,255,255,0.08); color:#fff;}
+  .sidebar .logout{margin-top:auto; color:#E39B8E;}
+
+  .main{padding:32px; overflow-x:auto;}
+  .main h1{font-size:22px; color:var(--text-gold); margin-bottom:4px;}
+  .main p.sub{font-size:13px; color:var(--taupe); margin-bottom:24px;}
+
+  .panel{background:#fff; border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:24px; margin-bottom:24px;}
+  .panel h3{font-size:15px; color:var(--text-gold); margin-bottom:14px;}
+
+  .grid-form{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; align-items:end;}
+  .grid-form .field{margin-bottom:0;}
+  .chk-field{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--taupe);}
+
+  table{width:100%; border-collapse:collapse; font-size:13.5px; min-width:640px;}
+  thead th{text-align:right; padding:10px 8px; color:var(--taupe); font-weight:600; border-bottom:2px solid var(--line);}
+  tbody td{padding:10px 8px; border-bottom:1px solid #EFE4C4; vertical-align:top;}
+  tbody tr:hover{background:#FBF6E9;}
+  .tag{display:inline-block; padding:3px 10px; border-radius:999px; font-size:11.5px; font-weight:600;}
+  .tag.active{background:#E1F3E9; color:var(--green-wa);}
+  .tag.inactive{background:#F4E4E0; color:var(--danger);}
+  select.status-select{
+    padding:6px 8px; border:1px solid var(--line); border-radius:6px; font-family:inherit; font-size:12.5px; background:#FFFDF7;
+  }
+  .empty{color:var(--taupe); font-size:13px; padding:18px 0;}
+  .items-cell{max-width:260px; white-space:pre-wrap; font-size:12px; color:var(--taupe);}
+  .top-row{display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; gap:12px; flex-wrap:wrap;}
+  .refresh{font-size:12.5px; color:var(--taupe);}
+
+  /* ---------- Order details (expand) ---------- */
+  .detail-row td{background:#FFFDF7; padding:16px 18px; border-bottom:1px solid #EFE4C4;}
+  .detail-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px 20px;}
+  .detail-grid dt{font-size:11px; color:var(--taupe); margin-bottom:2px;}
+  .detail-grid dd{font-size:13px; color:var(--ink); margin:0 0 10px 0; word-break:break-word;}
+  .detail-items{grid-column:1 / -1;}
+  .detail-items table{min-width:0; font-size:12.5px;}
+  .detail-items thead th{padding:6px 8px; border-bottom:1px solid var(--line);}
+  .detail-items tbody td{padding:6px 8px; border-bottom:1px solid #EFE4C4;}
+  .detail-notes{grid-column:1 / -1; white-space:pre-wrap;}
+
+  /* ---------- Overview / dashboard ---------- */
+  .stat-cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:16px; margin-bottom:24px;}
+  .stat-card{background:#fff; border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:18px 20px;}
+  .stat-label{font-size:12px; color:var(--taupe); margin-bottom:8px;}
+  .stat-value{font-size:24px; font-weight:700; color:var(--text-gold);}
+  .mini-table{width:100%; border-collapse:collapse; font-size:13px;}
+  .mini-table th{text-align:right; padding:6px 8px; color:var(--taupe); font-weight:600; border-bottom:1px solid var(--line);}
+  .mini-table td{padding:6px 8px; border-bottom:1px solid #EFE4C4;}
+  .search-field{padding:9px 12px; border:1px solid var(--line); border-radius:8px; font-family:inherit; font-size:13px; background:#FFFDF7; min-width:220px;}
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN GATE ================= -->
+<div class="gate-wrap" id="gateWrap">
+  <div class="gate-card">
+    <h1 class="serif">ניהול האתר</h1>
+    <p class="sub">רפאוז סטייל &mdash; אזור מנהל מוגן. יש להתחבר עם שם משתמש וסיסמה.</p>
+    <form id="loginForm">
+      <div class="field">
+        <label for="username">שם משתמש</label>
+        <input type="text" id="username" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="password">סיסמה</label>
+        <input type="password" id="password" autocomplete="current-password" required>
+      </div>
+      <div class="err-msg" id="loginErr"></div>
+      <button type="submit" class="btn" id="loginBtn">התחברות</button>
+    </form>
+  </div>
+</div>
+
+<!-- ================= DASHBOARD ================= -->
+<div class="app" id="app">
+  <div class="sidebar">
+    <h2 class="serif">רפאוז סטייל</h2>
+    <button data-tab="overview" class="active">סקירה כללית</button>
+    <button data-tab="products">ניהול מוצרים</button>
+    <button data-tab="content">עריכת תוכן</button>
+    <button data-tab="orders">ניהול הזמנות</button>
+    <button data-tab="attempts">ניסיונות תשלום</button>
+    <button data-tab="coupons">קופונים</button>
+    <button data-tab="inquiries">פניות</button>
+    <button data-tab="visits">ביקורים באתר</button>
+    <button data-tab="activity">יומן פעילות</button>
+    <button class="logout" id="logoutBtn">התנתקות</button>
+  </div>
+
+  <div class="main">
+
+    <!-- Overview tab -->
+    <section id="tab-overview">
+      <h1 class="serif">סקירה כללית</h1>
+      <p class="sub">מבט מהיר על מצב החנות, מעודכן לפי ההזמנות והפניות שנטענו.</p>
+
+      <div class="stat-cards" id="overviewCards">
+        <div class="stat-card">
+          <div class="stat-label">הכנסות (הזמנות שלא בוטלו)</div>
+          <div class="stat-value" id="statRevenue">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">סה"כ הזמנות</div>
+          <div class="stat-value" id="statOrdersCount">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">הזמנות היום</div>
+          <div class="stat-value" id="statOrdersToday">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">הזמנות שממתינות לטיפול</div>
+          <div class="stat-value" id="statOrdersPending">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">פניות חדשות שלא טופלו</div>
+          <div class="stat-value" id="statInquiriesNew">-</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>המוצרים הנמכרים ביותר</h3>
+        <div id="topProductsWrap"><div class="empty">טוען...</div></div>
+      </div>
+
+      <div class="panel">
+        <h3>5 ההזמנות האחרונות</h3>
+        <div id="recentOrdersWrap"><div class="empty">טוען...</div></div>
+      </div>
+    </section>
+
+    <!-- Products tab -->
+    <section id="tab-products" style="display:none;">
+      <h1 class="serif">ניהול מוצרים</h1>
+      <p class="sub">שינויים כאן נשמרים בשרת ומתעדכנים אצל כל הגולשים באתר.</p>
+
+      <div class="panel">
+        <h3>שינוי מחיר / שם למוצר קיים</h3>
+        <p class="sub" style="margin:-6px 0 14px;">כדי ליצור מבצע: מלאו את "מחיר חדש" (המחיר שהלקוח בפועל ישלם) ואת "מחיר לפני מבצע" (המחיר הגבוה יותר שיוצג מחוק בקו לצידו). כדי לבטל מבצע קיים בלי לשנות את המחיר, שמרו את "מחיר לפני מבצע" ריק.</p>
+        <form id="productForm" class="grid-form">
+          <div class="field">
+            <label for="pPicker">בחרו מוצר</label>
+            <select id="pPicker" required>
+              <option value="" disabled selected>— בחרו מוצר מהקטלוג —</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="pId">מזהה מוצר (id)</label>
+            <input type="text" id="pId" placeholder="נבחר אוטומטית מהרשימה למעלה" required readonly>
+          </div>
+          <div class="field">
+            <label for="pDefaultPrice">מחיר מקורי באתר</label>
+            <input type="text" id="pDefaultPrice" readonly placeholder="-">
+          </div>
+          <div class="field">
+            <label for="pName">שם חלופי (אופציונלי)</label>
+            <input type="text" id="pName" placeholder="השאירו ריק כדי לא לשנות את השם">
+          </div>
+          <div class="field">
+            <label for="pPrice">מחיר חדש (₪)</label>
+            <input type="number" id="pPrice" min="0" step="1" placeholder="לדוגמה: 790">
+          </div>
+          <div class="field">
+            <label for="pCompareAt">מחיר לפני מבצע (₪, אופציונלי)</label>
+            <input type="number" id="pCompareAt" min="0" step="1" placeholder="לדוגמה: 900">
+          </div>
+          <div class="chk-field">
+            <input type="checkbox" id="pActive" checked>
+            <label for="pActive">פעיל (מוצג באתר)</label>
+          </div>
+          <div class="chk-field">
+            <input type="checkbox" id="pOutOfStock">
+            <label for="pOutOfStock">אזל מהמלאי (מוצג באתר עם סימון, אי אפשר להזמין)</label>
+          </div>
+          <button type="submit" class="btn small" id="productSaveBtn">שמירה</button>
+        </form>
+        <div class="err-msg" id="productErr"></div>
+        <div class="ok-msg" id="productOk"></div>
+      </div>
+
+      <div class="panel">
+        <div class="top-row">
+          <h3 style="margin:0">מוצרים עם מחיר/שם ששונה מהמנהל</h3>
+          <span class="refresh" id="productsRefreshed"></span>
+        </div>
+        <p class="sub" style="margin:-6px 0 14px;">לחיצה על "איפוס למקור" מוחקת את השינוי ומחזירה את המוצר למחיר/שם המקוריים באתר.</p>
+        <div id="productsTableWrap"><div class="empty">טוען...</div></div>
+      </div>
+    </section>
+
+    <!-- Content editing tab -->
+    <section id="tab-content" style="display:none;">
+      <h1 class="serif">עריכת תוכן</h1>
+      <p class="sub">עריכת הטקסטים המרכזיים ותמונות בעמוד הבית ובעמוד "אודות", והחלפת תמונת מוצר - בלי לגעת בקוד. שינויים כאן מופיעים לכל הגולשים מיד.</p>
+
+      <div class="panel">
+        <h3>תמונת מוצר</h3>
+        <p class="sub" style="margin:-6px 0 14px;">מחליפים את התמונה שמוצגת למוצר נבחר בכל האתר.</p>
+        <div class="grid-form">
+          <div class="field">
+            <label for="ciPicker">בחרו מוצר</label>
+            <select id="ciPicker"><option value="" disabled selected>— בחרו מוצר —</option></select>
+          </div>
+          <div class="field">
+            <label for="ciFile">קובץ תמונה חדש (JPG / PNG / WEBP)</label>
+            <input type="file" id="ciFile" accept="image/jpeg,image/png,image/webp,image/gif">
+          </div>
+          <button type="button" class="btn small" id="ciUploadBtn">העלאה ושמירה</button>
+        </div>
+        <div class="err-msg" id="ciErr"></div>
+        <div class="ok-msg" id="ciOk"></div>
+      </div>
+
+      <div class="panel">
+        <h3>טקסטים בעמוד הבית</h3>
+        <div id="contentTextFieldsHome"></div>
+        <button type="button" class="btn small" id="contentSaveHomeBtn" style="margin-top:12px;">שמירת טקסטים</button>
+        <div class="err-msg" id="contentHomeErr"></div>
+        <div class="ok-msg" id="contentHomeOk"></div>
+      </div>
+
+      <div class="panel">
+        <h3>תמונות רקע בעמוד הבית</h3>
+        <div id="contentImageFieldsHome"></div>
+      </div>
+
+      <div class="panel">
+        <h3>טקסטים בעמוד "אודות"</h3>
+        <div id="contentTextFieldsAbout"></div>
+        <button type="button" class="btn small" id="contentSaveAboutBtn" style="margin-top:12px;">שמירת טקסטים</button>
+        <div class="err-msg" id="contentAboutErr"></div>
+        <div class="ok-msg" id="contentAboutOk"></div>
+      </div>
+
+      <div class="panel">
+        <h3>תמונת עמוד "אודות"</h3>
+        <div id="contentImageFieldsAbout"></div>
+      </div>
+    </section>
+
+    <!-- Orders tab -->
+    <section id="tab-orders" style="display:none;">
+      <h1 class="serif">ניהול הזמנות</h1>
+      <p class="sub">רשימת ההזמנות שהתקבלו מהאתר, בזמן אמת מהשרת.</p>
+
+      <div class="panel">
+        <div class="top-row">
+          <h3 style="margin:0">כל ההזמנות</h3>
+          <input type="text" class="search-field" id="ordersSearch" placeholder="חיפוש לפי שם, טלפון, אימייל או מס׳ הזמנה">
+          <span class="refresh" id="ordersRefreshed"></span>
+          <button class="btn outline small" id="ordersExportBtn" type="button">ייצוא ל-CSV</button>
+          <button class="btn outline small" id="ordersRefreshBtn" type="button">רענון</button>
+        </div>
+        <div id="ordersTableWrap"><div class="empty">טוען...</div></div>
+      </div>
+    </section>
+
+    <!-- Order attempts tab -->
+    <section id="tab-attempts" style="display:none;">
+      <h1 class="serif">ניסיונות תשלום</h1>
+      <p class="sub">כל לקוח שהגיע לשלב התשלום - כולל מי שביטל, נכשל לו התשלום, או פשוט לא סיים. לא רק הזמנות שהושלמו.</p>
+
+      <div class="panel">
+        <div class="top-row">
+          <h3 style="margin:0">כל הניסיונות</h3>
+          <span class="refresh" id="attemptsRefreshed"></span>
+          <button class="btn outline small" id="attemptsRefreshBtn" type="button">רענון</button>
+        </div>
+        <div id="attemptsTableWrap"><div class="empty">טוען...</div></div>
+      </div>
+    </section>
+
+    <!-- Coupons tab -->
+    <section id="tab-coupons" style="display:none;">
+      <h1 class="serif">קופונים</h1>
+      <p class="sub">קודי הנחה שיהיו זמינים בקופה באתר. שינויים כאן נשמרים בשרת ותקפים לכל הגולשים מיד. כל קוד הוא חד-פעמי: ברגע שהוזמנה עם הקוד שולמה בהצלחה, הקוד מסומן "נוצל" ולא ניתן להשתמש בו שוב - אלא אם תלחצו "אפשר שימוש חוזר".</p>
+
+      <div class="panel">
+        <h3>הוספה / עדכון קופון</h3>
+        <form id="couponForm" class="grid-form">
+          <div class="field">
+            <label for="cCode">קוד קופון</label>
+            <input type="text" id="cCode" placeholder="לדוגמה: SUMMER10" required>
+          </div>
+          <div class="field">
+            <label for="cPercent">אחוז הנחה</label>
+            <input type="number" id="cPercent" min="1" max="100" step="1" placeholder="%" required>
+          </div>
+          <div class="field">
+            <label for="cMinSubtotal">מינימום לקנייה (אופציונלי)</label>
+            <input type="number" id="cMinSubtotal" min="0" step="1" placeholder="₪">
+          </div>
+          <div class="chk-field">
+            <input type="checkbox" id="cActive" checked>
+            <label for="cActive">פעיל (זמין בקופה)</label>
+          </div>
+          <button type="submit" class="btn small" id="couponSaveBtn">שמירה</button>
+        </form>
+        <div class="err-msg" id="couponErr"></div>
+        <div class="ok-msg" id="couponOk"></div>
+      </div>
+
+      <div class="panel">
+        <div class="top-row">
+          <h3 style="margin:0">כל הקופונים</h3>
+          <span class="refresh" id="couponsRefreshed"></span>
+          <button class="btn outline small" id="couponsRefreshBtn" type="button">רענון</button>
+        </div>
+        <div id="couponsTableWrap"><div class="empty">טוען...</div></div>
+      </div>
+    </section>
+
+    <!-- Inquiries tab -->
+    <section id="tab-inquiries" style="display:none;">
+      <h1 class="serif">פניות</h1>
+      <p class="sub">פניות מטופס "צור קשר" ומטופס המיני-קשר בקופה, נשמרות ישירות בשרת - בלי תלות במייל.</p>
+
+      <div class="panel">
+        <div class="top-row">
+          <h3 style="margin:0">כל הפניות</h3>
+          <input type="text" class="search-field" id="inquiriesSearch" placeholder="חיפוש לפי שם, טלפון, אימייל או הודעה">
+          <span class="refresh" id="inquiriesRefreshed"></span>
+          <button class="btn outline small" id="inquiriesRefreshBtn" type="button">רענון</button>
+        </div>
+        <div id="inquiriesTableWrap"><div class="empty">טוען...</div></div>
+      </div>
+    </section>
+
+    <!-- Site visits tab -->
+    <section id="tab-visits" style="display:none;">
+      <h1 class="serif">ביקורים באתר</h1>
+      <p class="sub">כל טעינת דף אצל מבקר שאישר את הודעת העוגיות. 300 הביקורים האחרונים, מהחדש לישן.</p>
+
+      <div class="panel">
+        <div class="top-row">
+          <h3 style="margin:0">סה"כ ביקורים שנרשמו: <span id="visitsTotalCount">-</span></h3>
+          <span class="refresh" id="visitsRefreshed"></span>
+          <button class="btn outline small" id="visitsRefreshBtn" type="button">רענון</button>
+        </div>
+        <div id="visitsTableWrap"><div class="empty">טוען...</div></div>
+      </div>
+    </section>
+
+    <!-- Activity log tab -->
+    <section id="tab-activity" style="display:none;">
+      <h1 class="serif">יומן פעילות</h1>
+      <p class="sub">מי עשה מה ומתי בעמוד הניהול, וניסיונות התחברות כושלים שנחסמו.</p>
+
+      <div class="panel">
+        <div class="top-row">
+          <h3 style="margin:0">פעולות מנהל אחרונות</h3>
+          <span class="refresh" id="activityRefreshed"></span>
+          <button class="btn outline small" id="activityRefreshBtn" type="button">רענון</button>
+        </div>
+        <div id="activityTableWrap"><div class="empty">טוען...</div></div>
+      </div>
+
+      <div class="panel">
+        <h3>ניסיונות התחברות כושלים אחרונים</h3>
+        <div id="failedLoginsTableWrap"><div class="empty">טוען...</div></div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const gateWrap = document.getElementById('gateWrap');
+  const app = document.getElementById('app');
+
+  function showApp(){
+    gateWrap.style.display = 'none';
+    app.classList.add('active');
+    loadProducts();
+    loadContent();
+    loadOrders();
+    loadOrderAttempts();
+    loadCoupons();
+    loadInquiries();
+    loadVisits();
+  }
+
+  function showGate(){
+    app.classList.remove('active');
+    gateWrap.style.display = 'flex';
+  }
+
+  async function api(path, options){
+    options = options || {};
+    options.headers = Object.assign({'Content-Type':'application/json'}, options.headers || {});
+    options.credentials = 'same-origin';
+    const res = await fetch(path, options);
+    let body = null;
+    try { body = await res.json(); } catch(e) { /* no body */ }
+    if (!res.ok) {
+      const message = (body && body.error) ? body.error : ('שגיאה (' + res.status + ')');
+      const err = new Error(message);
+      err.status = res.status;
+      throw err;
+    }
+    return body;
+  }
+
+  /* ---------- Session check on load ---------- */
+  async function checkSession(){
+    try {
+      const data = await api('/api/admin?action=session');
+      if (data && data.authenticated) {
+        showApp();
+      } else {
+        showGate();
+      }
+    } catch (e) {
+      showGate();
+    }
+  }
+
+  /* ---------- Login ---------- */
+  const loginForm = document.getElementById('loginForm');
+  const loginErr = document.getElementById('loginErr');
+  const loginBtn = document.getElementById('loginBtn');
+
+  loginForm.addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    loginErr.textContent = '';
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'מתחבר...';
+    try {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      await api('/api/admin?action=login', {
+        method:'POST',
+        body: JSON.stringify({ username, password })
+      });
+      loginForm.reset();
+      showApp();
+    } catch (e) {
+      loginErr.textContent = e.message || 'שם משתמש או סיסמה שגויים.';
+    } finally {
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'התחברות';
+    }
+  });
+
+  /* ---------- Logout ---------- */
+  document.getElementById('logoutBtn').addEventListener('click', async function(){
+    try { await api('/api/admin?action=logout', { method:'POST' }); } catch(e) {}
+    showGate();
+  });
+
+  /* ---------- Tabs ---------- */
+  const tabButtons = document.querySelectorAll('.sidebar button[data-tab]');
+  tabButtons.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      tabButtons.forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      const tab = btn.getAttribute('data-tab');
+      document.getElementById('tab-overview').style.display = (tab === 'overview') ? 'block' : 'none';
+      document.getElementById('tab-products').style.display = (tab === 'products') ? 'block' : 'none';
+      document.getElementById('tab-content').style.display = (tab === 'content') ? 'block' : 'none';
+      document.getElementById('tab-orders').style.display = (tab === 'orders') ? 'block' : 'none';
+      document.getElementById('tab-attempts').style.display = (tab === 'attempts') ? 'block' : 'none';
+      document.getElementById('tab-coupons').style.display = (tab === 'coupons') ? 'block' : 'none';
+      document.getElementById('tab-inquiries').style.display = (tab === 'inquiries') ? 'block' : 'none';
+      document.getElementById('tab-visits').style.display = (tab === 'visits') ? 'block' : 'none';
+      document.getElementById('tab-activity').style.display = (tab === 'activity') ? 'block' : 'none';
+      if (tab === 'overview') renderOverview();
+      if (tab === 'orders') loadOrders();
+      if (tab === 'attempts') loadOrderAttempts();
+      if (tab === 'products') loadProducts();
+      if (tab === 'content') loadContent();
+      if (tab === 'coupons') loadCoupons();
+      if (tab === 'inquiries') loadInquiries();
+      if (tab === 'visits') loadVisits();
+      if (tab === 'activity') loadActivity();
+    });
+  });
+
+  /* ---------- Products ---------- */
+  const productForm = document.getElementById('productForm');
+  const productErr = document.getElementById('productErr');
+  const productOk = document.getElementById('productOk');
+  const productSaveBtn = document.getElementById('productSaveBtn');
+  const pPicker = document.getElementById('pPicker');
+  const pIdField = document.getElementById('pId');
+  const pDefaultPriceField = document.getElementById('pDefaultPrice');
+
+  function escapeHtml(str){
+    return String(str == null ? '' : str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* Mirrors the built-in catalog defined in index.html (id -> display name
+     + default price), so admins pick a product by its real name instead of
+     typing a raw internal id (some ids don't match their display name at
+     all - e.g. id "aviv" is actually the "סימפוניה פרימיום" product, while
+     the "אביב" product's real id is "prachim" - typing the wrong id would
+     silently change the price of the wrong item). Keep this list in sync
+     with the PRODUCTS array in index.html if products are ever added there. */
+  const CATALOG = [
+    { id:'prachim', name:'אביב', price:1080 },
+    { id:'simfonia', name:'סימפוניה', price:700 },
+    { id:'rakefet', name:'רקפת', price:890 },
+    { id:'yahalom', name:'יהלום', price:1490 },
+    { id:'london', name:'לונדון', price:690 },
+    { id:'royal', name:'רויאל', price:1190 },
+    { id:'star', name:'סטאר', price:680 },
+    { id:'okeanos', name:'אוקיינוס', price:590 },
+    { id:'classic', name:'קלאסיק', price:665 },
+    { id:'aviv', name:'סימפוניה פרימיום', price:1080 },
+    { id:'simfonia-premium', name:'פוקסיה', price:1000 },
+    { id:'elegantia', name:'מלודיה', price:700 },
+    { id:'towel-bath-classic', name:'מגבת אמבט לבנה קלאסית', price:79 },
+    { id:'towel-spa-set', name:'סט מגבות ספא לבנות', price:99 },
+    { id:'towel-hand-premium', name:'מגבת ידיים לבנה פרימיום', price:65 },
+    { id:'towel-body-boutique', name:'מגבת גוף מלון בוטיק', price:85 },
+    { id:'towel-folded-set', name:'מגבות רחצה מתקפלות לבנות', price:95 },
+    { id:'towel-full-set', name:'סט מגבות פנים, ידיים וגוף', price:100 }
+  ];
+  const CATALOG_BY_ID = {};
+  CATALOG.forEach(function(c){ CATALOG_BY_ID[c.id] = c; });
+
+  CATALOG.forEach(function(c){
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.name + ' (מחיר מקורי: ₪' + c.price + ')';
+    pPicker.appendChild(opt);
+  });
+
+  pPicker.addEventListener('change', function(){
+    const c = CATALOG_BY_ID[pPicker.value];
+    pIdField.value = c ? c.id : '';
+    pDefaultPriceField.value = c ? ('₪' + c.price) : '';
+  });
+
+  /* ---------- Content editing ---------- */
+  const ciPicker = document.getElementById('ciPicker');
+  CATALOG.forEach(function(c){
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.name;
+    ciPicker.appendChild(opt);
+  });
+
+  function fileToDataURL(file){
+    return new Promise(function(resolve, reject){
+      const reader = new FileReader();
+      reader.onload = function(){ resolve(reader.result); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function loadImageEl(src){
+    return new Promise(function(resolve, reject){
+      const img = new Image();
+      img.onload = function(){ resolve(img); };
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  /* Vercel's serverless functions hard-cap the request body at ~4.5MB,
+     *before* our own code ever runs - a limit we can't raise from here.
+     Modern phone photos are routinely 3-10MB, so uploading them as-is
+     (as base64, which is ~33% bigger again) blew straight through that
+     wall and came back as an opaque 413. To fix this for good we resize
+     large images down to a sane max dimension and re-encode them with
+     quality reduced just enough to land comfortably under the limit,
+     entirely in the browser, before they're ever sent to the server. */
+  const UPLOAD_TARGET_BYTES = 3 * 1024 * 1024; // decoded-image budget we aim to stay under
+  const UPLOAD_MAX_DIMENSION = 2000; // long edge, in px - plenty for web display
+
+  function estimateDecodedBytesFromDataUrl(dataUrl){
+    const commaIdx = dataUrl.indexOf(',');
+    const b64 = commaIdx >= 0 ? dataUrl.slice(commaIdx + 1) : dataUrl;
+    return Math.ceil(b64.length * 3 / 4);
+  }
+
+  function canvasHasTransparency(ctx, w, h){
+    // Sample a grid of pixels rather than every single one - plenty
+    // accurate for deciding "does this need an alpha channel" and much
+    // cheaper than scanning a multi-megapixel image pixel-by-pixel.
+    const stepX = Math.max(1, Math.floor(w / 100));
+    const stepY = Math.max(1, Math.floor(h / 100));
+    for (let y = 0; y < h; y += stepY) {
+      const row = ctx.getImageData(0, y, w, 1).data;
+      for (let x = 0; x < w; x += stepX) {
+        if (row[x * 4 + 3] < 255) return true;
+      }
+    }
+    return false;
+  }
+
+  /* Reads a file, downsizes it if it's larger than UPLOAD_MAX_DIMENSION,
+     and re-encodes it (stepping the JPEG/WebP quality down if needed)
+     until the result comfortably fits under the server's upload limit.
+     PNGs/GIFs that actually use transparency are kept lossless (only
+     resized) since re-encoding them as JPEG would fill transparent
+     areas with white. */
+  async function prepareImageForUpload(file){
+    const originalDataUrl = await fileToDataURL(file);
+    const isGif = file.type === 'image/gif';
+    if (isGif) {
+      // Animated GIFs can't be safely redrawn on a canvas (it would
+      // flatten them to a single frame), so leave those as-is; the
+      // server-side size check will still catch anything too big.
+      return originalDataUrl;
+    }
+
+    const img = await loadImageEl(originalDataUrl);
+    let { width, height } = img;
+    if (width > UPLOAD_MAX_DIMENSION || height > UPLOAD_MAX_DIMENSION) {
+      const scale = UPLOAD_MAX_DIMENSION / Math.max(width, height);
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, width, height);
+
+    const keepLossless = file.type === 'image/png' && canvasHasTransparency(ctx, width, height);
+    if (keepLossless) {
+      // Only the dimensions were reduced - that alone usually shrinks
+      // a large screenshot/logo export a lot, since it's a function of
+      // pixel count, not just compression quality.
+      return canvas.toDataURL('image/png');
+    }
+
+    const outputType = file.type === 'image/webp' ? 'image/webp' : 'image/jpeg';
+    let quality = 0.9;
+    let dataUrl = canvas.toDataURL(outputType, quality);
+    while (estimateDecodedBytesFromDataUrl(dataUrl) > UPLOAD_TARGET_BYTES && quality > 0.4) {
+      quality -= 0.1;
+      dataUrl = canvas.toDataURL(outputType, quality);
+    }
+    return dataUrl;
+  }
+
+  /* Shared by every image upload control on this tab (product photo, hero
+     slides, About photo): reads the file, downsizes/compresses it in the
+     browser so it fits under the server's upload limit, sends it to
+     /api/admin?action=upload-image (stored in Supabase Storage), and
+     returns the public URL to save wherever it's needed. */
+  async function uploadImageFile(file){
+    const dataUrl = await prepareImageForUpload(file);
+    const data = await api('/api/admin?action=upload-image', {
+      method: 'POST',
+      body: JSON.stringify({ filename: file.name, dataUrl: dataUrl })
+    });
+    return data.url;
+  }
+
+  document.getElementById('ciUploadBtn').addEventListener('click', async function(){
+    const btn = this;
+    const errEl = document.getElementById('ciErr');
+    const okEl = document.getElementById('ciOk');
+    errEl.textContent = '';
+    okEl.textContent = '';
+    const id = ciPicker.value;
+    const fileInput = document.getElementById('ciFile');
+    if (!id) { errEl.textContent = 'בחרו מוצר.'; return; }
+    if (!fileInput.files[0]) { errEl.textContent = 'בחרו קובץ תמונה.'; return; }
+    btn.disabled = true;
+    try {
+      const url = await uploadImageFile(fileInput.files[0]);
+      await api('/api/products', { method:'POST', body: JSON.stringify({ id: id, image: url }) });
+      okEl.textContent = 'התמונה עודכנה בהצלחה ומוצגת עכשיו באתר.';
+      fileInput.value = '';
+    } catch(e) {
+      errEl.textContent = e.message || 'שגיאה בהעלאה.';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  /* Text fields shown/saved on this tab - keep in sync with the
+     data-content-key attributes on the matching elements in index.html. */
+  const CONTENT_TEXT_FIELDS_HOME = [
+    { key:'hero_tagline', label:'כותרת ראשית (עמוד הבית)', multiline:false },
+    { key:'hero_subtagline', label:'תת-כותרת (עמוד הבית)', multiline:true }
+  ];
+  const CONTENT_TEXT_FIELDS_ABOUT = [
+    { key:'about_title', label:'כותרת עמוד אודות', multiline:false },
+    { key:'about_lead', label:'משפט פתיחה', multiline:true },
+    { key:'about_body_1', label:'פסקה ראשונה', multiline:true },
+    { key:'about_body_2', label:'פסקה שנייה', multiline:true }
+  ];
+  const CONTENT_IMAGE_FIELDS_HOME = [
+    { key:'hero_slide_1', label:'תמונת רקע 1' },
+    { key:'hero_slide_2', label:'תמונת רקע 2' },
+    { key:'hero_slide_3', label:'תמונת רקע 3' },
+    { key:'hero_slide_4', label:'תמונת רקע 4' },
+    { key:'hero_slide_5', label:'תמונת רקע 5' },
+    { key:'hero_slide_6', label:'תמונת רקע 6' }
+  ];
+  const CONTENT_IMAGE_FIELDS_ABOUT = [
+    { key:'about_image', label:'תמונת עמוד אודות' }
+  ];
+
+  let lastContent = {};
+
+  function renderContentTextFields(containerId, fields){
+    const wrap = document.getElementById(containerId);
+    wrap.innerHTML = fields.map(function(f){
+      const val = escapeHtml(lastContent[f.key] || '');
+      const inputHtml = f.multiline
+        ? '<textarea id="cf-' + f.key + '" rows="3" style="width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13.5px;background:#FFFDF7;">' + val + '</textarea>'
+        : '<input type="text" id="cf-' + f.key + '" value="' + val + '" style="width:100%;">';
+      return '<div class="field" style="margin-bottom:14px;"><label for="cf-' + f.key + '">' + escapeHtml(f.label) + '</label>' + inputHtml + '</div>';
+    }).join('');
+  }
+
+  function renderContentImageFields(containerId, fields){
+    const wrap = document.getElementById(containerId);
+    wrap.innerHTML = fields.map(function(f){
+      const imgSrc = lastContent[f.key] || '';
+      const preview = imgSrc
+        ? '<img src="' + imgSrc + '" alt="" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--line);">'
+        : '<div style="width:80px;height:80px;border-radius:8px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:10.5px;color:var(--taupe);text-align:center;">ברירת<br>מחדל</div>';
+      return '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:12px 0;border-bottom:1px solid #EFE4C4;">' +
+        preview +
+        '<div style="flex:1;min-width:220px;">' +
+        '<div style="font-size:13px;margin-bottom:8px;">' + escapeHtml(f.label) + '</div>' +
+        '<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-content-image-key="' + f.key + '"> ' +
+        '<button type="button" class="btn outline small" data-content-image-upload="' + f.key + '">העלאה</button>' +
+        '<div class="err-msg" id="cf-err-' + f.key + '" style="margin-top:6px;"></div>' +
+        '<div class="ok-msg" id="cf-ok-' + f.key + '" style="margin-top:6px;"></div>' +
+        '</div></div>';
+    }).join('');
+
+    wrap.querySelectorAll('[data-content-image-upload]').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        const key = btn.getAttribute('data-content-image-upload');
+        const fileInput = wrap.querySelector('[data-content-image-key="' + key + '"]');
+        const errEl = document.getElementById('cf-err-' + key);
+        const okEl = document.getElementById('cf-ok-' + key);
+        errEl.textContent = '';
+        okEl.textContent = '';
+        if (!fileInput.files[0]) { errEl.textContent = 'בחרו קובץ תמונה.'; return; }
+        btn.disabled = true;
+        try {
+          const url = await uploadImageFile(fileInput.files[0]);
+          await api('/api/content', { method:'POST', body: JSON.stringify({ key: key, value: url }) });
+          lastContent[key] = url;
+          okEl.textContent = 'עודכן בהצלחה.';
+          renderContentImageFields(containerId, fields);
+        } catch(e) {
+          errEl.textContent = e.message || 'שגיאה בהעלאה.';
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    });
+  }
+
+  async function saveContentTextFields(fields, errId, okId, btn){
+    const errEl = document.getElementById(errId);
+    const okEl = document.getElementById(okId);
+    errEl.textContent = '';
+    okEl.textContent = '';
+    btn.disabled = true;
+    try {
+      for (let i = 0; i < fields.length; i++) {
+        const f = fields[i];
+        const el = document.getElementById('cf-' + f.key);
+        const value = el ? el.value : '';
+        await api('/api/content', { method:'POST', body: JSON.stringify({ key: f.key, value: value }) });
+        lastContent[f.key] = value;
+      }
+      okEl.textContent = 'נשמר בהצלחה - השינויים מוצגים עכשיו לכל הגולשים באתר.';
+    } catch(e) {
+      errEl.textContent = e.message || 'שגיאה בשמירה.';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  document.getElementById('contentSaveHomeBtn').addEventListener('click', function(){
+    saveContentTextFields(CONTENT_TEXT_FIELDS_HOME, 'contentHomeErr', 'contentHomeOk', this);
+  });
+  document.getElementById('contentSaveAboutBtn').addEventListener('click', function(){
+    saveContentTextFields(CONTENT_TEXT_FIELDS_ABOUT, 'contentAboutErr', 'contentAboutOk', this);
+  });
+
+  async function loadContent(){
+    try {
+      const data = await api('/api/content');
+      lastContent = {};
+      (data.content || []).forEach(function(row){ lastContent[row.key] = row.value; });
+    } catch(e) {
+      lastContent = {};
+    }
+    renderContentTextFields('contentTextFieldsHome', CONTENT_TEXT_FIELDS_HOME);
+    renderContentTextFields('contentTextFieldsAbout', CONTENT_TEXT_FIELDS_ABOUT);
+    renderContentImageFields('contentImageFieldsHome', CONTENT_IMAGE_FIELDS_HOME);
+    renderContentImageFields('contentImageFieldsAbout', CONTENT_IMAGE_FIELDS_ABOUT);
+  }
+
+  function renderProducts(products){
+    const wrap = document.getElementById('productsTableWrap');
+    if (!products || !products.length) {
+      wrap.innerHTML = '<div class="empty">אין כרגע שום מוצר עם מחיר/שם ששונה &mdash; כל האתר מציג את המחירים המקוריים.</div>';
+      return;
+    }
+    let html = '<table><thead><tr>' +
+      '<th>מוצר</th><th>שם חלופי</th><th>מחיר מקורי</th><th>מחיר חדש</th><th>מחיר לפני מבצע</th><th>מלאי</th><th>סטטוס</th><th>עודכן</th><th></th>' +
+      '</tr></thead><tbody>';
+    products.forEach(function(p){
+      const catalogEntry = CATALOG_BY_ID[p.id];
+      const displayName = (catalogEntry ? catalogEntry.name : p.id) + ' (' + escapeHtml(p.id) + ')';
+      const onSale = p.compare_at_price != null && Number(p.compare_at_price) > Number(p.price != null ? p.price : (catalogEntry ? catalogEntry.price : 0));
+      html += '<tr>' +
+        '<td>' + escapeHtml(displayName) + '</td>' +
+        '<td>' + escapeHtml(p.name || '-') + '</td>' +
+        '<td>' + (catalogEntry ? '₪' + escapeHtml(catalogEntry.price) : '-') + '</td>' +
+        '<td>' + (p.price != null ? '₪' + escapeHtml(p.price) : '-') + '</td>' +
+        '<td>' + (p.compare_at_price != null ? '₪' + escapeHtml(p.compare_at_price) + (onSale ? ' <span class="tag active">במבצע</span>' : '') : '-') + '</td>' +
+        '<td>' + (p.out_of_stock ? '<span class="tag inactive">אזל מהמלאי</span>' : '<span class="tag active">במלאי</span>') + '</td>' +
+        '<td><span class="tag active">פעיל</span></td>' +
+        '<td>' + (p.updated_at ? new Date(p.updated_at).toLocaleString('he-IL') : '-') + '</td>' +
+        '<td><button type="button" class="btn outline small" data-delete-product="' + escapeHtml(p.id) + '">איפוס למקור</button></td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+
+    wrap.querySelectorAll('[data-delete-product]').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        const id = btn.getAttribute('data-delete-product');
+        if (!confirm('לאפס את המחיר/שם עבור "' + id + '" ולהחזיר למקור?')) return;
+        try {
+          await api('/api/products?id=' + encodeURIComponent(id), { method:'DELETE' });
+          loadProducts();
+        } catch(e) {
+          alert(e.message || 'שגיאה באיפוס.');
+        }
+      });
+    });
+  }
+
+  async function loadProducts(){
+    const wrap = document.getElementById('productsTableWrap');
+    try {
+      const data = await api('/api/products');
+      renderProducts(data.products);
+      document.getElementById('productsRefreshed').textContent =
+        'עודכן: ' + new Date().toLocaleTimeString('he-IL');
+    } catch (e) {
+      wrap.innerHTML = '<div class="empty">שגיאה בטעינה: ' + escapeHtml(e.message) + '</div>';
+    }
+  }
+
+  productForm.addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    productErr.textContent = '';
+    productOk.textContent = '';
+
+    const id = pIdField.value.trim();
+    if (!id) {
+      productErr.textContent = 'בחרו מוצר מהרשימה למעלה.';
+      return;
+    }
+    const priceRaw = document.getElementById('pPrice').value;
+    const compareAtRaw = document.getElementById('pCompareAt').value;
+    const name = document.getElementById('pName').value.trim();
+    if (compareAtRaw !== '' && priceRaw !== '' && Number(compareAtRaw) <= Number(priceRaw)) {
+      productErr.textContent = 'מחיר לפני מבצע חייב להיות גבוה מהמחיר החדש, אחרת המבצע לא יוצג.';
+      return;
+    }
+
+    productSaveBtn.disabled = true;
+    const active = document.getElementById('pActive').checked;
+    const outOfStock = document.getElementById('pOutOfStock').checked;
+
+    try {
+      await api('/api/products', {
+        method:'POST',
+        body: JSON.stringify({
+          id: id,
+          name: name || undefined,
+          price: priceRaw !== '' ? Number(priceRaw) : undefined,
+          compareAtPrice: compareAtRaw !== '' ? Number(compareAtRaw) : undefined,
+          outOfStock: outOfStock,
+          active: active
+        })
+      });
+      productOk.textContent = 'נשמר בהצלחה - השינויים מוצגים עכשיו לכל הגולשים באתר.';
+      productForm.reset();
+      pPicker.value = '';
+      pIdField.value = '';
+      pDefaultPriceField.value = '';
+      document.getElementById('pActive').checked = true;
+      document.getElementById('pOutOfStock').checked = false;
+      loadProducts();
+    } catch (e) {
+      productErr.textContent = e.message || 'שגיאה בשמירה.';
+    } finally {
+      productSaveBtn.disabled = false;
+    }
+  });
+
+  /* ---------- Coupons ---------- */
+  const couponForm = document.getElementById('couponForm');
+  const couponErr = document.getElementById('couponErr');
+  const couponOk = document.getElementById('couponOk');
+  const couponSaveBtn = document.getElementById('couponSaveBtn');
+
+  function renderCoupons(coupons){
+    const wrap = document.getElementById('couponsTableWrap');
+    if (!coupons || !coupons.length) {
+      wrap.innerHTML = '<div class="empty">אין עדיין קופונים &mdash; הוסיפו אחד למעלה.</div>';
+      return;
+    }
+    let html = '<table><thead><tr>' +
+      '<th>קוד</th><th>הנחה</th><th>מינימום</th><th>סטטוס</th><th>עודכן</th><th></th>' +
+      '</tr></thead><tbody>';
+    coupons.forEach(function(c){
+      let statusHtml;
+      if (c.used_at) {
+        statusHtml = '<span class="tag inactive" title="נוצל בהזמנה ' + escapeHtml(c.used_order_id || '') + ' בתאריך ' + new Date(c.used_at).toLocaleString('he-IL') + '">נוצל</span>';
+      } else if (c.active) {
+        statusHtml = '<span class="tag active">פעיל</span>';
+      } else {
+        statusHtml = '<span class="tag inactive">כבוי</span>';
+      }
+      html += '<tr>' +
+        '<td>' + escapeHtml(c.code) + '</td>' +
+        '<td>' + escapeHtml(c.percent) + '%</td>' +
+        '<td>' + (c.min_subtotal != null ? '₪' + escapeHtml(c.min_subtotal) : '-') + '</td>' +
+        '<td>' + statusHtml + '</td>' +
+        '<td>' + (c.updated_at ? new Date(c.updated_at).toLocaleString('he-IL') : '-') + '</td>' +
+        '<td>' +
+          (c.used_at ? '<button type="button" class="btn outline small" data-reset-coupon="' + escapeHtml(c.code) + '" data-percent="' + escapeHtml(c.percent) + '" data-min="' + (c.min_subtotal != null ? escapeHtml(c.min_subtotal) : '') + '">אפשר שימוש חוזר</button> ' : '') +
+          '<button type="button" class="btn danger small" data-delete-coupon="' + escapeHtml(c.code) + '">מחיקה</button>' +
+        '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+
+    wrap.querySelectorAll('[data-delete-coupon]').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        const code = btn.getAttribute('data-delete-coupon');
+        if (!confirm('למחוק את הקופון "' + code + '"?')) return;
+        try {
+          await api('/api/coupons?code=' + encodeURIComponent(code), { method:'DELETE' });
+          loadCoupons();
+        } catch(e) {
+          alert(e.message || 'שגיאה במחיקה.');
+        }
+      });
+    });
+
+    wrap.querySelectorAll('[data-reset-coupon]').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        const code = btn.getAttribute('data-reset-coupon');
+        if (!confirm('לאפשר שימוש חוזר בקופון "' + code + '"? הוא יחזור להיות תקף לכל לקוח, פעם אחת נוספת.')) return;
+        try {
+          await api('/api/coupons', {
+            method:'POST',
+            body: JSON.stringify({
+              code: code,
+              percent: Number(btn.getAttribute('data-percent')),
+              minSubtotal: btn.getAttribute('data-min') ? Number(btn.getAttribute('data-min')) : undefined,
+              active: true,
+              resetUsage: true
+            })
+          });
+          loadCoupons();
+        } catch(e) {
+          alert(e.message || 'שגיאה באיפוס.');
+        }
+      });
+    });
+  }
+
+  async function loadCoupons(){
+    const wrap = document.getElementById('couponsTableWrap');
+    try {
+      const data = await api('/api/coupons');
+      renderCoupons(data.coupons);
+      document.getElementById('couponsRefreshed').textContent =
+        'עודכן: ' + new Date().toLocaleTimeString('he-IL');
+    } catch (e) {
+      wrap.innerHTML = '<div class="empty">שגיאה בטעינה: ' + escapeHtml(e.message) + '</div>';
+    }
+  }
+
+  document.getElementById('couponsRefreshBtn').addEventListener('click', loadCoupons);
+
+  couponForm.addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    couponErr.textContent = '';
+    couponOk.textContent = '';
+    couponSaveBtn.disabled = true;
+
+    const code = document.getElementById('cCode').value.trim();
+    const percent = document.getElementById('cPercent').value;
+    const minSubtotalRaw = document.getElementById('cMinSubtotal').value;
+    const active = document.getElementById('cActive').checked;
+
+    try {
+      await api('/api/coupons', {
+        method:'POST',
+        body: JSON.stringify({
+          code: code,
+          percent: percent !== '' ? Number(percent) : undefined,
+          minSubtotal: minSubtotalRaw !== '' ? Number(minSubtotalRaw) : undefined,
+          active: active
+        })
+      });
+      couponOk.textContent = 'נשמר בהצלחה.';
+      couponForm.reset();
+      document.getElementById('cActive').checked = true;
+      loadCoupons();
+    } catch (e) {
+      couponErr.textContent = e.message || 'שגיאה בשמירה.';
+    } finally {
+      couponSaveBtn.disabled = false;
+    }
+  });
+
+  /* ---------- Overview / dashboard ----------
+     Reuses whatever orders/inquiries data was last fetched by the Orders
+     and Inquiries tabs (loadOrders/loadInquiries below stash it in these
+     two variables) instead of making extra API calls - the overview tab
+     just needs to summarize data the admin panel already has. */
+  let lastOrders = [];
+  let lastInquiries = [];
+
+  function renderOverview(){
+    const orders = lastOrders || [];
+    const inquiries = lastInquiries || [];
+
+    const revenue = orders
+      .filter(function(o){ return o.status !== 'cancelled'; })
+      .reduce(function(sum, o){ return sum + (Number(o.total) || 0); }, 0);
+    document.getElementById('statRevenue').textContent = '₪' + revenue.toLocaleString('he-IL');
+    document.getElementById('statOrdersCount').textContent = orders.length;
+
+    const today = new Date();
+    const isToday = function(dateStr){
+      if (!dateStr) return false;
+      const d = new Date(dateStr);
+      return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
+    };
+    document.getElementById('statOrdersToday').textContent = orders.filter(function(o){ return isToday(o.created_at); }).length;
+    document.getElementById('statOrdersPending').textContent = orders.filter(function(o){ return o.status === 'new' || o.status === 'confirmed'; }).length;
+    document.getElementById('statInquiriesNew').textContent = inquiries.filter(function(q){ return q.status === 'new'; }).length;
+
+    /* Top-selling products: tally quantities across every order's items */
+    const productTotals = {};
+    orders.forEach(function(o){
+      try {
+        (o.items || []).forEach(function(it){
+          const key = it.name || it.id || 'פריט';
+          productTotals[key] = (productTotals[key] || 0) + (Number(it.qty) || 1);
+        });
+      } catch(e) { /* ignore malformed items */ }
+    });
+    const topProducts = Object.keys(productTotals)
+      .map(function(name){ return { name: name, qty: productTotals[name] }; })
+      .sort(function(a, b){ return b.qty - a.qty; })
+      .slice(0, 5);
+
+    const topProductsWrap = document.getElementById('topProductsWrap');
+    if (!topProducts.length) {
+      topProductsWrap.innerHTML = '<div class="empty">אין עדיין מספיק נתוני הזמנות.</div>';
+    } else {
+      topProductsWrap.innerHTML = '<table class="mini-table"><thead><tr><th>מוצר</th><th>כמות שנמכרה</th></tr></thead><tbody>' +
+        topProducts.map(function(p){ return '<tr><td>' + escapeHtml(p.name) + '</td><td>' + p.qty + '</td></tr>'; }).join('') +
+        '</tbody></table>';
+    }
+
+    /* 5 most recent orders */
+    const recentOrdersWrap = document.getElementById('recentOrdersWrap');
+    const recentOrders = orders.slice(0, 5);
+    if (!recentOrders.length) {
+      recentOrdersWrap.innerHTML = '<div class="empty">עדיין לא התקבלו הזמנות.</div>';
+    } else {
+      recentOrdersWrap.innerHTML = '<table class="mini-table"><thead><tr><th>מס׳ הזמנה</th><th>לקוח</th><th>סה"כ</th><th>סטטוס</th><th>תאריך</th></tr></thead><tbody>' +
+        recentOrders.map(function(o){
+          const customer = o.customer || {};
+          return '<tr><td>' + escapeHtml(o.order_id) + '</td><td>' + escapeHtml(customer.name || '-') + '</td>' +
+            '<td>' + (o.total != null ? '₪' + escapeHtml(o.total) : '-') + '</td>' +
+            '<td>' + escapeHtml(STATUS_LABELS[o.status] || o.status || '-') + '</td>' +
+            '<td>' + (o.created_at ? new Date(o.created_at).toLocaleString('he-IL') : '-') + '</td></tr>';
+        }).join('') +
+        '</tbody></table>';
+    }
+  }
+
+  /* ---------- Orders ---------- */
+  const STATUS_LABELS = {
+    new: 'חדשה',
+    confirmed: 'אושרה',
+    shipped: 'נשלחה',
+    done: 'הושלמה',
+    cancelled: 'בוטלה'
+  };
+
+  function renderOrders(orders){
+    const wrap = document.getElementById('ordersTableWrap');
+    if (!orders || !orders.length) {
+      wrap.innerHTML = '<div class="empty">עדיין לא התקבלו הזמנות.</div>';
+      return;
+    }
+    let html = '<table><thead><tr>' +
+      '<th>מס׳ הזמנה</th><th>לקוח</th><th>טלפון</th><th>פריטים</th><th>סה"כ</th><th>תאריך</th><th>סטטוס</th><th></th>' +
+      '</tr></thead><tbody>';
+    orders.forEach(function(o, idx){
+      const customer = o.customer || {};
+      let itemsText = '';
+      try {
+        itemsText = (o.items || []).map(function(it){
+          return (it.name || it.id || 'פריט') + (it.qty ? (' x' + it.qty) : '');
+        }).join('\n');
+      } catch(e) { itemsText = ''; }
+
+      const statusOptions = Object.keys(STATUS_LABELS).map(function(key){
+        return '<option value="' + key + '"' + (o.status === key ? ' selected' : '') + '>' +
+          STATUS_LABELS[key] + '</option>';
+      }).join('');
+
+      const detailId = 'orderDetail' + idx;
+
+      html += '<tr>' +
+        '<td>' + escapeHtml(o.order_id) + '</td>' +
+        '<td>' + escapeHtml(customer.name) + '</td>' +
+        '<td>' + escapeHtml(customer.phone) + '</td>' +
+        '<td class="items-cell">' + escapeHtml(itemsText) + '</td>' +
+        '<td>' + (o.total != null ? '₪' + escapeHtml(o.total) : '-') + '</td>' +
+        '<td>' + (o.created_at ? new Date(o.created_at).toLocaleString('he-IL') : '-') + '</td>' +
+        '<td><select class="status-select" data-order-id="' + escapeHtml(o.id) + '">' + statusOptions + '</select></td>' +
+        '<td>' +
+          '<button type="button" class="btn outline small" data-detail-toggle="' + detailId + '">פרטים מלאים</button> ' +
+          '<button type="button" class="btn danger small" data-delete-order="' + escapeHtml(o.id) + '">מחיקה</button>' +
+        '</td>' +
+        '</tr>' +
+        '<tr class="detail-row" id="' + detailId + '" style="display:none;"><td colspan="8">' +
+          renderOrderDetail(o, customer) +
+        '</td></tr>';
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+
+    wrap.querySelectorAll('.status-select').forEach(function(sel){
+      sel.addEventListener('change', async function(){
+        const id = sel.getAttribute('data-order-id');
+        const status = sel.value;
+        sel.disabled = true;
+        try {
+          await api('/api/orders', {
+            method:'PUT',
+            body: JSON.stringify({ id: id, status: status })
+          });
+        } catch(e) {
+          alert(e.message || 'שגיאה בעדכון הסטטוס.');
+        } finally {
+          sel.disabled = false;
+        }
+      });
+    });
+
+    wrap.querySelectorAll('[data-detail-toggle]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        const row = document.getElementById(btn.getAttribute('data-detail-toggle'));
+        if (!row) return;
+        const isOpen = row.style.display !== 'none';
+        row.style.display = isOpen ? 'none' : 'table-row';
+        btn.textContent = isOpen ? 'פרטים מלאים' : 'הסתרת פרטים';
+      });
+    });
+
+    wrap.querySelectorAll('[data-delete-order]').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        const id = btn.getAttribute('data-delete-order');
+        if (!confirm('למחוק את ההזמנה הזו לצמיתות? לא ניתן לשחזר אותה.')) return;
+        btn.disabled = true;
+        try {
+          await api('/api/orders?id=' + encodeURIComponent(id), { method:'DELETE' });
+          loadOrders();
+        } catch(e) {
+          alert(e.message || 'שגיאה במחיקה.');
+          btn.disabled = false;
+        }
+      });
+    });
+  }
+
+  /* Builds the full-detail block for one order: every field saved on the
+     order (customer info, address, shipping, marketing opt-in, item prices,
+     notes, internal id, last update) - not just what fits in the table. */
+  function renderOrderDetail(o, customer){
+    const SHIPPING_LABELS = { pickup: 'איסוף עצמי', delivery: 'משלוח עד הבית', courier: 'שליח' };
+    function row(label, value){
+      if (value === undefined || value === null || value === '') return '';
+      return '<dt>' + escapeHtml(label) + '</dt><dd>' + escapeHtml(value) + '</dd>';
+    }
+
+    let itemsRows = '';
+    try {
+      (o.items || []).forEach(function(it){
+        itemsRows += '<tr>' +
+          '<td>' + escapeHtml(it.name || it.id || 'פריט') + '</td>' +
+          '<td>' + escapeHtml(it.qty != null ? it.qty : '-') + '</td>' +
+          '<td>' + (it.price != null ? '₪' + escapeHtml(it.price) : '-') + '</td>' +
+          '</tr>';
+      });
+    } catch(e) { /* ignore */ }
+
+    let html = '<div class="detail-grid">';
+    html += row('שם מלא', customer.name);
+    html += row('שם פרטי', customer.first_name);
+    html += row('שם משפחה', customer.last_name);
+    html += row('טלפון', customer.phone);
+    html += row('טלפון נוסף', customer.phone2);
+    html += row('אימייל', customer.email);
+    html += row('כתובת', customer.address);
+    html += row('עיר', customer.city);
+    html += row('מיקוד', customer.zip);
+    html += row('אופן משלוח', SHIPPING_LABELS[customer.shipping_method] || customer.shipping_method);
+    html += row('הרשמה לדיוור', customer.marketing_opt_in === true ? 'כן' : (customer.marketing_opt_in === false ? 'לא' : ''));
+    html += row('מזהה פנימי', o.id);
+    html += row('עודכן לאחרונה', o.updated_at ? new Date(o.updated_at).toLocaleString('he-IL') : '');
+
+    if (itemsRows) {
+      html += '<div class="detail-items"><dt style="margin-bottom:6px;">פירוט פריטים ומחירים</dt>' +
+        '<table><thead><tr><th>פריט</th><th>כמות</th><th>מחיר</th></tr></thead><tbody>' + itemsRows + '</tbody></table>' +
+        '</div>';
+    }
+
+    if (o.notes) {
+      html += '<div class="detail-notes"><dt>הערות</dt><dd>' + escapeHtml(o.notes) + '</dd></div>';
+    }
+
+    html += '</div>';
+    return html;
+  }
+
+  async function loadOrders(){
+    const wrap = document.getElementById('ordersTableWrap');
+    try {
+      const data = await api('/api/orders');
+      lastOrders = data.orders || [];
+      applyOrdersFilter();
+      document.getElementById('ordersRefreshed').textContent =
+        'עודכן: ' + new Date().toLocaleTimeString('he-IL');
+      renderOverview();
+    } catch (e) {
+      wrap.innerHTML = '<div class="empty">שגיאה בטעינה: ' + escapeHtml(e.message) + '</div>';
+    }
+  }
+
+  document.getElementById('ordersRefreshBtn').addEventListener('click', loadOrders);
+
+  /* Client-side search across name/phone/email/order id - the admin
+     already has every order loaded in lastOrders, so filtering it here
+     is instant and needs no extra server round-trip. */
+  function applyOrdersFilter(){
+    const q = (document.getElementById('ordersSearch').value || '').trim().toLowerCase();
+    if (!q) { renderOrders(lastOrders); return; }
+    const filtered = lastOrders.filter(function(o){
+      const c = o.customer || {};
+      const haystack = [o.order_id, c.name, c.phone, c.phone2, c.email, c.city].filter(Boolean).join(' ').toLowerCase();
+      return haystack.indexOf(q) !== -1;
+    });
+    renderOrders(filtered);
+  }
+  document.getElementById('ordersSearch').addEventListener('input', applyOrdersFilter);
+
+  /* CSV export of everything currently in view (respects the active
+     search filter), so the admin can open it in Excel/Sheets. */
+  document.getElementById('ordersExportBtn').addEventListener('click', function(){
+    const q = (document.getElementById('ordersSearch').value || '').trim().toLowerCase();
+    const rows = q ? lastOrders.filter(function(o){
+      const c = o.customer || {};
+      const haystack = [o.order_id, c.name, c.phone, c.phone2, c.email, c.city].filter(Boolean).join(' ').toLowerCase();
+      return haystack.indexOf(q) !== -1;
+    }) : lastOrders;
+
+    if (!rows.length) { alert('אין הזמנות לייצוא.'); return; }
+
+    const headers = ['מס׳ הזמנה', 'שם', 'טלפון', 'אימייל', 'כתובת', 'עיר', 'מיקוד', 'סה"כ', 'סטטוס', 'תאריך', 'הערות'];
+    function csvCell(v){
+      const s = (v === undefined || v === null) ? '' : String(v);
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+    const lines = [headers.map(csvCell).join(',')];
+    rows.forEach(function(o){
+      const c = o.customer || {};
+      lines.push([
+        o.order_id, c.name, c.phone, c.email, c.address, c.city, c.zip,
+        o.total, STATUS_LABELS[o.status] || o.status,
+        o.created_at ? new Date(o.created_at).toLocaleString('he-IL') : '',
+        o.notes
+      ].map(csvCell).join(','));
+    });
+    const csvContent = '\uFEFF' + lines.join('\r\n'); // BOM so Excel opens Hebrew correctly
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'orders-' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  /* ---------- Order attempts ---------- */
+  const ATTEMPT_STATUS_LABELS = {
+    started: 'התחיל תשלום',
+    success: 'שולם בהצלחה',
+    failed: 'נכשל / בוטל'
+  };
+  const ATTEMPT_STATUS_TAG_CLASS = {
+    started: '',
+    success: 'active',
+    failed: 'inactive'
+  };
+
+  function renderOrderAttempts(attempts){
+    const wrap = document.getElementById('attemptsTableWrap');
+    if (!attempts || !attempts.length) {
+      wrap.innerHTML = '<div class="empty">עדיין לא נרשמו ניסיונות תשלום.</div>';
+      return;
+    }
+    let html = '<table><thead><tr>' +
+      '<th>לקוח</th><th>טלפון</th><th>סה"כ</th><th>סטטוס</th><th>זמן</th><th>IP</th>' +
+      '</tr></thead><tbody>';
+    attempts.forEach(function(a){
+      const customer = a.customer || {};
+      const statusKey = ATTEMPT_STATUS_LABELS[a.status] ? a.status : 'started';
+      html += '<tr>' +
+        '<td>' + escapeHtml(customer.name || '-') + '</td>' +
+        '<td>' + escapeHtml(customer.phone || '-') + '</td>' +
+        '<td>' + (a.total != null ? '₪' + escapeHtml(a.total) : '-') + '</td>' +
+        '<td><span class="tag ' + ATTEMPT_STATUS_TAG_CLASS[statusKey] + '">' + ATTEMPT_STATUS_LABELS[statusKey] + '</span></td>' +
+        '<td>' + (a.created_at ? new Date(a.created_at).toLocaleString('he-IL') : '-') + '</td>' +
+        '<td>' + escapeHtml(a.ip || '-') + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+  }
+
+  async function loadOrderAttempts(){
+    const wrap = document.getElementById('attemptsTableWrap');
+    try {
+      const data = await api('/api/order-attempts');
+      renderOrderAttempts(data.attempts);
+      document.getElementById('attemptsRefreshed').textContent =
+        'עודכן: ' + new Date().toLocaleTimeString('he-IL');
+    } catch (e) {
+      wrap.innerHTML = '<div class="empty">שגיאה בטעינה: ' + escapeHtml(e.message) + '</div>';
+    }
+  }
+
+  document.getElementById('attemptsRefreshBtn').addEventListener('click', loadOrderAttempts);
+
+  /* ---------- Site visits ---------- */
+  function renderVisits(visits){
+    const wrap = document.getElementById('visitsTableWrap');
+    if (!visits || !visits.length) {
+      wrap.innerHTML = '<div class="empty">עדיין לא נרשמו ביקורים.</div>';
+      return;
+    }
+    let html = '<table><thead><tr>' +
+      '<th>עמוד</th><th>הגיע מ-</th><th>IP</th><th>דפדפן</th><th>זמן</th>' +
+      '</tr></thead><tbody>';
+    visits.forEach(function(v){
+      html += '<tr>' +
+        '<td>' + escapeHtml(v.path || '/') + '</td>' +
+        '<td>' + escapeHtml(v.referrer || 'ישיר') + '</td>' +
+        '<td>' + escapeHtml(v.ip || '-') + '</td>' +
+        '<td class="items-cell">' + escapeHtml(v.user_agent || '-') + '</td>' +
+        '<td>' + (v.created_at ? new Date(v.created_at).toLocaleString('he-IL') : '-') + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+  }
+
+  async function loadVisits(){
+    const wrap = document.getElementById('visitsTableWrap');
+    try {
+      const data = await api('/api/track-visit');
+      renderVisits(data.visits);
+      document.getElementById('visitsTotalCount').textContent = data.total != null ? data.total : (data.visits ? data.visits.length : 0);
+      document.getElementById('visitsRefreshed').textContent =
+        'עודכן: ' + new Date().toLocaleTimeString('he-IL');
+    } catch (e) {
+      wrap.innerHTML = '<div class="empty">שגיאה בטעינה: ' + escapeHtml(e.message) + '</div>';
+    }
+  }
+
+  document.getElementById('visitsRefreshBtn').addEventListener('click', loadVisits);
+
+  /* ---------- Inquiries ---------- */
+  const INQUIRY_STATUS_LABELS = {
+    new: 'חדשה',
+    handled: 'טופלה'
+  };
+  const INQUIRY_TYPE_LABELS = {
+    contact: 'צור קשר',
+    checkout_contact: 'טופס בקופה'
+  };
+
+  function renderInquiries(inquiries){
+    const wrap = document.getElementById('inquiriesTableWrap');
+    if (!inquiries || !inquiries.length) {
+      wrap.innerHTML = '<div class="empty">עדיין לא התקבלו פניות.</div>';
+      return;
+    }
+    let html = '<table><thead><tr>' +
+      '<th>מקור</th><th>שם</th><th>טלפון</th><th>אימייל</th><th>הודעה</th><th>תאריך</th><th>סטטוס</th><th></th>' +
+      '</tr></thead><tbody>';
+    inquiries.forEach(function(q){
+      const statusOptions = Object.keys(INQUIRY_STATUS_LABELS).map(function(key){
+        return '<option value="' + key + '"' + (q.status === key ? ' selected' : '') + '>' +
+          INQUIRY_STATUS_LABELS[key] + '</option>';
+      }).join('');
+
+      html += '<tr>' +
+        '<td>' + escapeHtml(INQUIRY_TYPE_LABELS[q.type] || q.type || '-') + '</td>' +
+        '<td>' + escapeHtml(q.name || '-') + '</td>' +
+        '<td>' + escapeHtml(q.phone || '-') + '</td>' +
+        '<td>' + escapeHtml(q.email || '-') + '</td>' +
+        '<td class="items-cell">' + escapeHtml(q.message || '-') + '</td>' +
+        '<td>' + (q.created_at ? new Date(q.created_at).toLocaleString('he-IL') : '-') + '</td>' +
+        '<td><select class="inquiry-status-select" data-inquiry-id="' + escapeHtml(q.id) + '">' + statusOptions + '</select></td>' +
+        '<td><button type="button" class="btn danger small" data-delete-inquiry="' + escapeHtml(q.id) + '">מחיקה</button></td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+
+    wrap.querySelectorAll('.inquiry-status-select').forEach(function(sel){
+      sel.addEventListener('change', async function(){
+        const id = sel.getAttribute('data-inquiry-id');
+        const status = sel.value;
+        sel.disabled = true;
+        try {
+          await api('/api/inquiries', {
+            method:'PUT',
+            body: JSON.stringify({ id: id, status: status })
+          });
+        } catch(e) {
+          alert(e.message || 'שגיאה בעדכון הסטטוס.');
+        } finally {
+          sel.disabled = false;
+        }
+      });
+    });
+
+    wrap.querySelectorAll('[data-delete-inquiry]').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        const id = btn.getAttribute('data-delete-inquiry');
+        if (!confirm('למחוק את הפנייה הזו לצמיתות? לא ניתן לשחזר אותה.')) return;
+        btn.disabled = true;
+        try {
+          await api('/api/inquiries?id=' + encodeURIComponent(id), { method:'DELETE' });
+          loadInquiries();
+        } catch(e) {
+          alert(e.message || 'שגיאה במחיקה.');
+          btn.disabled = false;
+        }
+      });
+    });
+  }
+
+  async function loadInquiries(){
+    const wrap = document.getElementById('inquiriesTableWrap');
+    try {
+      const data = await api('/api/inquiries');
+      lastInquiries = data.inquiries || [];
+      applyInquiriesFilter();
+      document.getElementById('inquiriesRefreshed').textContent =
+        'עודכן: ' + new Date().toLocaleTimeString('he-IL');
+      renderOverview();
+    } catch (e) {
+      wrap.innerHTML = '<div class="empty">שגיאה בטעינה: ' + escapeHtml(e.message) + '</div>';
+    }
+  }
+
+  document.getElementById('inquiriesRefreshBtn').addEventListener('click', loadInquiries);
+
+  function applyInquiriesFilter(){
+    const q = (document.getElementById('inquiriesSearch').value || '').trim().toLowerCase();
+    if (!q) { renderInquiries(lastInquiries); return; }
+    const filtered = lastInquiries.filter(function(query){
+      const haystack = [query.name, query.phone, query.email, query.message].filter(Boolean).join(' ').toLowerCase();
+      return haystack.indexOf(q) !== -1;
+    });
+    renderInquiries(filtered);
+  }
+  document.getElementById('inquiriesSearch').addEventListener('input', applyInquiriesFilter);
+
+  /* ---------- Activity log ---------- */
+  const ACTION_LABELS = {
+    login: 'התחברות',
+    logout: 'התנתקות',
+    order_status_update: 'עדכון סטטוס הזמנה',
+    order_delete: 'מחיקת הזמנה',
+    inquiry_status_update: 'עדכון סטטוס פנייה',
+    inquiry_delete: 'מחיקת פנייה',
+    product_upsert: 'עדכון/הוספת מוצר',
+    product_delete: 'מחיקת override מוצר'
+  };
+
+  function renderActivity(entries){
+    const wrap = document.getElementById('activityTableWrap');
+    if (!entries || !entries.length) {
+      wrap.innerHTML = '<div class="empty">עדיין אין פעולות רשומות.</div>';
+      return;
+    }
+    let html = '<table><thead><tr>' +
+      '<th>תאריך</th><th>משתמש</th><th>פעולה</th><th>פרטים</th><th>IP</th>' +
+      '</tr></thead><tbody>';
+    entries.forEach(function(a){
+      let detailsText = '';
+      try {
+        if (a.target) detailsText = 'מזהה: ' + a.target;
+        if (a.details) detailsText += (detailsText ? ' | ' : '') + JSON.stringify(a.details);
+      } catch(e) { detailsText = ''; }
+      html += '<tr>' +
+        '<td>' + (a.created_at ? new Date(a.created_at).toLocaleString('he-IL') : '-') + '</td>' +
+        '<td>' + escapeHtml(a.actor) + '</td>' +
+        '<td>' + escapeHtml(ACTION_LABELS[a.action] || a.action) + '</td>' +
+        '<td class="items-cell">' + escapeHtml(detailsText || '-') + '</td>' +
+        '<td>' + escapeHtml(a.ip || '-') + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+  }
+
+  function renderFailedLogins(attempts){
+    const wrap = document.getElementById('failedLoginsTableWrap');
+    if (!attempts || !attempts.length) {
+      wrap.innerHTML = '<div class="empty">אין ניסיונות התחברות כושלים לאחרונה.</div>';
+      return;
+    }
+    let html = '<table><thead><tr>' +
+      '<th>תאריך</th><th>שם משתמש שנוסה</th><th>IP</th>' +
+      '</tr></thead><tbody>';
+    attempts.forEach(function(a){
+      html += '<tr>' +
+        '<td>' + (a.created_at ? new Date(a.created_at).toLocaleString('he-IL') : '-') + '</td>' +
+        '<td>' + escapeHtml(a.username || '-') + '</td>' +
+        '<td>' + escapeHtml(a.ip || '-') + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+  }
+
+  async function loadActivity(){
+    const wrap = document.getElementById('activityTableWrap');
+    const failedWrap = document.getElementById('failedLoginsTableWrap');
+    try {
+      const data = await api('/api/admin?action=audit-log');
+      renderActivity(data.log);
+      renderFailedLogins(data.failed_logins);
+      document.getElementById('activityRefreshed').textContent =
+        'עודכן: ' + new Date().toLocaleTimeString('he-IL');
+    } catch (e) {
+      wrap.innerHTML = '<div class="empty">שגיאה בטעינה: ' + escapeHtml(e.message) + '</div>';
+      failedWrap.innerHTML = '';
+    }
+  }
+
+  document.getElementById('activityRefreshBtn').addEventListener('click', loadActivity);
+
+  checkSession();
+})();
+</script>
+</body>
+</html>

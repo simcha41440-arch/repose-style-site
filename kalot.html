@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>רפאוז סטייל | תכשיטים יוקרתיים לכלה</title>
+<meta name="description" content="קולקציית תכשיטים יוקרתית לכלות - עיצוב אלגנטי, איכות פרימיום. גלו את הקולקציה עכשיו.">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="רפאוז סטייל | תכשיטים יוקרתיים לכלה">
+<meta property="og:description" content="ליום החתונה שלך מגיע להיות מושלם. קולקציית תכשיטים יוקרתית שנוצרה במיוחד לכלות.">
+<meta property="og:image" content="https://reposestyle.com/images/products/royal.jpg">
+<meta property="og:url" content="https://reposestyle.com/kalot.html">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="רפאוז סטייל | תכשיטים יוקרתיים לכלה">
+<meta name="twitter:description" content="ליום החתונה שלך מגיע להיות מושלם. קולקציית תכשיטים יוקרתית שנוצרה במיוחד לכלות.">
+<meta name="twitter:image" content="https://reposestyle.com/images/products/royal.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:'Assistant','Rubik',sans-serif;
+    background:#1C1712;
+    color:#F1DFA0;
+    overflow-x:hidden;
+  }
+  :root{
+    --gold:#B08A3E;
+    --gold-light:#E3C378;
+    --gold-pale:#EEDCA6;
+    --ivory:#F1DFA0;
+    --ink:#1C1712;
+    --ink-2:#2B2420;
+  }
+
+  /* ambient sparkle */
+  .sparkle{
+    position:fixed; border-radius:50%; background:var(--gold-light);
+    opacity:0; pointer-events:none; z-index:1;
+    animation:twinkle 3.2s ease-in-out infinite;
+  }
+  @keyframes twinkle{
+    0%,100%{opacity:0; transform:scale(0.4);}
+    50%{opacity:.85; transform:scale(1);}
+  }
+
+  .hero{
+    position:relative; min-height:100svh; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center;
+    padding:32px 20px; overflow:hidden;
+    background:radial-gradient(ellipse at 50% 20%, rgba(176,138,62,0.35), transparent 60%), var(--ink);
+  }
+  .hero::before{
+    content:''; position:absolute; inset:0;
+    background:linear-gradient(180deg, transparent 0%, rgba(28,23,18,0.4) 70%, var(--ink) 100%);
+    z-index:1;
+  }
+  .hero-bg{
+    position:absolute; inset:0; z-index:0;
+    background-image:url('/images/products/royal.jpg');
+    background-size:cover; background-position:center;
+    opacity:0; filter:saturate(0.85) brightness(0.55);
+    animation:bgIn 1.8s ease-out .1s forwards;
+  }
+  @keyframes bgIn{ to{opacity:.55;} }
+
+  .hero-content{position:relative; z-index:2; max-width:640px;}
+  .fadeup{opacity:0; transform:translateY(30px); animation:fadeup .9s cubic-bezier(.19,1,.22,1) forwards;}
+  @keyframes fadeup{ to{opacity:1; transform:translateY(0);} }
+
+  .eyebrow{
+    font-size:13px; letter-spacing:.32em; text-transform:uppercase;
+    color:var(--gold-light); font-weight:600; margin-bottom:18px;
+    animation-delay:.15s;
+  }
+  .headline{
+    font-family:'Rubik',sans-serif; font-weight:600;
+    font-size:clamp(32px,7vw,54px); line-height:1.25; color:var(--ivory);
+    margin-bottom:20px; animation-delay:.32s;
+  }
+  .headline .shine{
+    background:linear-gradient(90deg, var(--gold-pale) 0%, var(--gold-light) 25%, var(--ivory) 50%, var(--gold-light) 75%, var(--gold-pale) 100%);
+    background-size:200% auto; -webkit-background-clip:text; background-clip:text; color:transparent;
+    animation:shine 3.5s linear infinite;
+  }
+  @keyframes shine{ to{background-position:-200% center;} }
+  .subline{
+    font-size:clamp(15px,2.6vw,19px); color:rgba(241,223,160,0.85); line-height:1.7;
+    margin-bottom:36px; animation-delay:.48s;
+  }
+  .cta{
+    display:inline-block; position:relative; animation-delay:.62s;
+  }
+  .cta a{
+    display:inline-flex; align-items:center; gap:10px;
+    background:linear-gradient(135deg, var(--gold-light), var(--gold));
+    color:#241C10; font-weight:700; font-size:17px;
+    padding:18px 44px; border-radius:999px; text-decoration:none;
+    box-shadow:0 14px 34px -10px rgba(176,138,62,0.65);
+    animation:pulse 2.4s ease-in-out infinite;
+    transition:transform .25s ease;
+  }
+  .cta a:hover{transform:scale(1.05);}
+  @keyframes pulse{
+    0%,100%{box-shadow:0 14px 34px -10px rgba(176,138,62,0.65);}
+    50%{box-shadow:0 18px 46px -8px rgba(227,195,120,0.85);}
+  }
+  .scroll-hint{
+    position:absolute; bottom:28px; left:50%; transform:translateX(-50%);
+    font-size:12px; letter-spacing:.2em; color:rgba(241,223,160,0.55);
+    z-index:2; animation:bounce 2s ease-in-out infinite; animation-delay:1s;
+  }
+  @keyframes bounce{ 0%,100%{transform:translate(-50%,0);} 50%{transform:translate(-50%,8px);} }
+
+  section{padding:70px 20px;}
+  .section-title{
+    text-align:center; font-family:'Rubik',sans-serif; font-weight:600;
+    font-size:clamp(24px,4vw,32px); color:var(--ivory); margin-bottom:12px;
+  }
+  .section-sub{
+    text-align:center; color:rgba(241,223,160,0.7); font-size:15px;
+    max-width:480px; margin:0 auto 44px;
+  }
+
+  .grid{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:28px; max-width:1000px; margin:0 auto;
+  }
+  .card{
+    background:var(--ink-2); border:1px solid rgba(176,138,62,0.25); border-radius:16px;
+    overflow:hidden; opacity:0; transform:translateY(40px);
+  }
+  .card.reveal{animation:fadeup .8s cubic-bezier(.19,1,.22,1) forwards;}
+  .card img{width:100%; aspect-ratio:1/1; object-fit:cover; display:block;}
+  .card-body{padding:20px 22px;}
+  .card-body h3{font-family:'Rubik',sans-serif; font-size:18px; color:var(--ivory); margin-bottom:6px;}
+  .card-body p{font-size:14px; color:rgba(241,223,160,0.65);}
+  .card-price{font-weight:700; color:var(--gold-light); font-size:16px; margin-top:10px;}
+
+  .quote-strip{
+    text-align:center; padding:60px 20px; background:linear-gradient(180deg, transparent, rgba(176,138,62,0.08), transparent);
+  }
+  .quote-strip p{
+    font-family:'Rubik',sans-serif; font-size:clamp(20px,3.6vw,28px); line-height:1.6;
+    color:var(--gold-pale); max-width:640px; margin:0 auto; font-weight:500;
+  }
+
+  .final-cta{
+    text-align:center; padding:80px 20px 100px;
+  }
+  .final-cta h2{
+    font-family:'Rubik',sans-serif; font-size:clamp(26px,4.4vw,36px); color:var(--ivory);
+    margin-bottom:18px; font-weight:600;
+  }
+  .final-cta p{color:rgba(241,223,160,0.75); margin-bottom:32px; font-size:16px;}
+
+  footer{
+    text-align:center; padding:30px 20px; color:rgba(241,223,160,0.4); font-size:12px;
+    border-top:1px solid rgba(176,138,62,0.15);
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <div class="eyebrow fadeup">רפאוז סטייל · קולקציית כלות</div>
+    <h1 class="headline fadeup">ליום החתונה שלך<br><span class="shine">מגיע להיות מושלם</span></h1>
+    <p class="subline fadeup">תכשיטים יוקרתיים שנבחרו בקפידה עבור הכלה שרוצה להרגיש הכי יפה ביום הכי חשוב בחייה.</p>
+    <div class="cta fadeup">
+      <a href="https://reposestyle.com" target="_blank" rel="noopener">לצפייה בקולקציה המלאה ←</a>
+    </div>
+  </div>
+  <div class="scroll-hint">גללו למטה ↓</div>
+</div>
+
+<section>
+  <div class="section-title">הנבחרים שלנו לכלה</div>
+  <div class="section-sub">שלושה עיצובים שמדברים בעדינות, בברק ובאלגנטיות</div>
+  <div class="grid" id="product-grid">
+    <div class="card">
+      <img src="/images/products/yahalom.jpg" alt="יהלום">
+      <div class="card-body">
+        <h3>יהלום</h3>
+        <p>עיצוב נוצץ ומדויק, לתשומת לב מכל זווית</p>
+        <div class="card-price">1,490 ₪</div>
+      </div>
+    </div>
+    <div class="card">
+      <img src="/images/products/royal.jpg" alt="רויאל">
+      <div class="card-body">
+        <h3>רויאל</h3>
+        <p>קלאסיקה יוקרתית שמתאימה לכל שמלת כלה</p>
+        <div class="card-price">1,190 ₪</div>
+      </div>
+    </div>
+    <div class="card">
+      <img src="/images/products/elegantia.jpg" alt="מלודיה">
+      <div class="card-body">
+        <h3>מלודיה</h3>
+        <p>עדינות ונשית, לכלה שאוהבת מגע רך</p>
+        <div class="card-price">700 ₪</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="quote-strip">
+  <p>"היום הזה קורה פעם אחת. תבחרי להיראות בו בדיוק כמו שתמיד חלמת."</p>
+</div>
+
+<div class="final-cta">
+  <h2>מוכנה להשלים את המראה?</h2>
+  <p>הקולקציה המלאה מחכה לך - משלוח מהיר, אריזה מהודרת, ותמיכה אישית לאורך כל הדרך.</p>
+  <div class="cta">
+    <a href="https://reposestyle.com" target="_blank" rel="noopener">כניסה לחנות ←</a>
+  </div>
+</div>
+
+<footer>רפאוז סטייל © כל הזכויות שמורות</footer>
+
+<script>
+  // ambient sparkles
+  const sparkleColors = ['#E3C378','#F1DFA0','#EEDCA6'];
+  for(let i=0;i<18;i++){
+    const s = document.createElement('div');
+    s.className = 'sparkle';
+    const size = Math.random()*3+1.5;
+    s.style.width = size+'px';
+    s.style.height = size+'px';
+    s.style.left = Math.random()*100+'vw';
+    s.style.top = Math.random()*100+'vh';
+    s.style.background = sparkleColors[Math.floor(Math.random()*sparkleColors.length)];
+    s.style.animationDelay = (Math.random()*3)+'s';
+    s.style.animationDuration = (2.4+Math.random()*2.4)+'s';
+    document.body.appendChild(s);
+  }
+
+  // scroll-reveal for product cards
+  const cards = document.querySelectorAll('.card');
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach((entry,i)=>{
+      if(entry.isIntersecting){
+        setTimeout(()=>{ entry.target.classList.add('reveal'); }, i*120);
+        io.unobserve(entry.target);
+      }
+    });
+  }, {threshold:0.2});
+  cards.forEach(c=>io.observe(c));
+</script>
+
+</body>
+</html>

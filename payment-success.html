@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<title>מעבד תשלום… | רפאוז סטייל</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#F8F4EC;font-family:'Assistant','Almoni Neue',sans-serif;}
+  .wrap{display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:14px;color:#5B4E3C;}
+  .spinner{width:34px;height:34px;border:3px solid #E4D8BE;border-top-color:#B99143;border-radius:50%;animation:spin 0.8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="spinner"></div>
+    <p>התשלום אושר, משלימים את ההזמנה…</p>
+  </div>
+  <script>
+    /*
+      This page is the "success_url_address" target that Tranzila
+      redirects the payment iframe to once a charge succeeds.
+      Tranzila appends the transaction result as query-string
+      parameters (e.g. Response=000&ConfirmationCode=...&index=...).
+      We simply forward that raw query string to the parent window
+      (our own store page, same origin) via postMessage, so the
+      shopper never actually has to look at this page - it swaps
+      back to the store's own success screen almost instantly.
+      See TRANZILA-SETUP.md for the full flow.
+    */
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+          source: "rstyle-tranzila-callback",
+          status: "success",
+          raw: window.location.search.replace(/^\?/, "")
+        }, window.location.origin);
+      }
+    } catch (err) {
+      // If postMessage fails for any reason, at least show a manual
+      // fallback instead of a silent stuck spinner.
+      document.querySelector(".wrap p").textContent =
+        "התשלום אושר! אנא חזרו לחלון החנות, או צרו איתנו קשר לאישור ההזמנה.";
+    }
+  </script>
+</body>
+</html>

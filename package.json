@@ -1,0 +1,9 @@
+{
+  "name": "rstyle-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Static storefront + Vercel serverless API backed by Supabase for product/price overrides and orders.",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4"
+  }
+}
