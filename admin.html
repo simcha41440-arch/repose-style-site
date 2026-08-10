@@ -259,7 +259,7 @@
     <!-- Content editing tab -->
     <section id="tab-content" style="display:none;">
       <h1 class="serif">עריכת תוכן</h1>
-      <p class="sub">עריכת הטקסטים המרכזיים ותמונות בעמוד הבית ובעמוד "אודות", והחלפת תמונת מוצר - בלי לגעת בקוד. שינויים כאן מופיעים לכל הגולשים מיד.</p>
+      <p class="sub">עריכת הטקסטים המרכזיים ותמונות בעמוד הבית ובעמוד "אודות", והחלפת תמונת מוצר - בלי לגעת בקוד. שינויים כאן מופיעים לכל הגולשים מיד. ליד כל תמונה שהועלתה מופיע כפתור "מחיקה - חזרה למקור" שמבטל את ההעלאה ומחזיר את תמונת ברירת המחדל של האתר.</p>
 
       <div class="panel">
         <h3>תמונת מוצר</h3>
@@ -274,6 +274,7 @@
             <input type="file" id="ciFile" accept="image/jpeg,image/png,image/webp,image/gif">
           </div>
           <button type="button" class="btn small" id="ciUploadBtn">העלאה ושמירה</button>
+          <button type="button" class="btn outline small" id="ciResetBtn" style="display:none;">מחיקת תמונה - חזרה למקור</button>
         </div>
         <div class="err-msg" id="ciErr"></div>
         <div class="ok-msg" id="ciOk"></div>
@@ -613,6 +614,42 @@
     ciPicker.appendChild(opt);
   });
 
+  // Shows/hides the "מחיקת תמונה - חזרה למקור" button next to the product
+  // image upload control, based on whether the currently-picked product
+  // actually has a custom image saved (lastProductOverrides is kept in
+  // sync by loadProducts()).
+  function updateCiResetVisibility(){
+    const resetBtn = document.getElementById('ciResetBtn');
+    const id = ciPicker.value;
+    const hasImage = !!(id && lastProductOverrides[id] && lastProductOverrides[id].image);
+    resetBtn.style.display = hasImage ? 'inline-block' : 'none';
+  }
+
+  ciPicker.addEventListener('change', updateCiResetVisibility);
+
+  document.getElementById('ciResetBtn').addEventListener('click', async function(){
+    const btn = this;
+    const errEl = document.getElementById('ciErr');
+    const okEl = document.getElementById('ciOk');
+    errEl.textContent = '';
+    okEl.textContent = '';
+    const id = ciPicker.value;
+    if (!id) { errEl.textContent = 'בחרו מוצר.'; return; }
+    if (!confirm('למחוק את התמונה שהועלתה למוצר ולהחזיר את תמונת ברירת המחדל?')) return;
+    btn.disabled = true;
+    try {
+      // Explicitly clearing just the image field - other overrides
+      // (מחיר/שם/מלאי וכו') על אותו מוצר, אם יש, נשארים כפי שהם.
+      await api('/api/products', { method:'POST', body: JSON.stringify({ id: id, image: null }) });
+      okEl.textContent = 'התמונה נמחקה - המוצר חזר להציג את תמונת ברירת המחדל.';
+      loadProducts();
+    } catch(e) {
+      errEl.textContent = e.message || 'שגיאה במחיקה.';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
   function fileToDataURL(file){
     return new Promise(function(resolve, reject){
       const reader = new FileReader();
@@ -792,12 +829,19 @@
       const preview = imgSrc
         ? '<img src="' + imgSrc + '" alt="" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--line);">'
         : '<div style="width:80px;height:80px;border-radius:8px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:10.5px;color:var(--taupe);text-align:center;">ברירת<br>מחדל</div>';
+      // Only show the "revert" button when there's actually a saved
+      // override to remove - if the field is already showing the
+      // default image there's nothing to undo.
+      const resetBtn = imgSrc
+        ? ' <button type="button" class="btn outline small" data-content-image-reset="' + f.key + '">מחיקה - חזרה למקור</button>'
+        : '';
       return '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:12px 0;border-bottom:1px solid #EFE4C4;">' +
         preview +
         '<div style="flex:1;min-width:220px;">' +
         '<div style="font-size:13px;margin-bottom:8px;">' + escapeHtml(f.label) + '</div>' +
         '<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-content-image-key="' + f.key + '"> ' +
         '<button type="button" class="btn outline small" data-content-image-upload="' + f.key + '">העלאה</button>' +
+        resetBtn +
         '<div class="err-msg" id="cf-err-' + f.key + '" style="margin-top:6px;"></div>' +
         '<div class="ok-msg" id="cf-ok-' + f.key + '" style="margin-top:6px;"></div>' +
         '</div></div>';
@@ -817,11 +861,28 @@
           const url = await uploadImageFile(fileInput.files[0]);
           await api('/api/content', { method:'POST', body: JSON.stringify({ key: key, value: url }) });
           lastContent[key] = url;
-          okEl.textContent = 'עודכן בהצלחה.';
           renderContentImageFields(containerId, fields);
         } catch(e) {
           errEl.textContent = e.message || 'שגיאה בהעלאה.';
         } finally {
+          btn.disabled = false;
+        }
+      });
+    });
+
+    wrap.querySelectorAll('[data-content-image-reset]').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        const key = btn.getAttribute('data-content-image-reset');
+        const errEl = document.getElementById('cf-err-' + key);
+        errEl.textContent = '';
+        if (!confirm('למחוק את התמונה שהועלתה ולהחזיר את תמונת ברירת המחדל?')) return;
+        btn.disabled = true;
+        try {
+          await api('/api/content?key=' + encodeURIComponent(key), { method:'DELETE' });
+          delete lastContent[key];
+          renderContentImageFields(containerId, fields);
+        } catch(e) {
+          errEl.textContent = e.message || 'שגיאה במחיקה.';
           btn.disabled = false;
         }
       });
@@ -913,11 +974,16 @@
     });
   }
 
+  let lastProductOverrides = {};
+
   async function loadProducts(){
     const wrap = document.getElementById('productsTableWrap');
     try {
       const data = await api('/api/products');
+      lastProductOverrides = {};
+      (data.products || []).forEach(function(p){ lastProductOverrides[p.id] = p; });
       renderProducts(data.products);
+      updateCiResetVisibility();
       document.getElementById('productsRefreshed').textContent =
         'עודכן: ' + new Date().toLocaleTimeString('he-IL');
     } catch (e) {

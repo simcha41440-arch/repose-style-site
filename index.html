@@ -1109,12 +1109,8 @@ if("serviceWorker" in navigator){
      onward, so the very first page still gets its gentle entrance. */
   html.nav-instant .view{animation:none !important;}
 
-  /* ===== PAGE TRANSITION (top loading bar + centered brand loader) =====
-     A deliberate, branded loading beat between pages - like the pause
-     you get on high-end retail sites - rather than an instant snap.
-     Total duration lives in one place: PAGE_TRANSITION_MS in the main
-     script below; everything here just needs to be >= that so nothing
-     gets cut off mid-animation. */
+  /* ===== gold top progress bar - now triggered on every button click
+     (see the click-delegation script near the end of <body>). */
   #page-transition-bar{
     position:fixed;top:0;inset-inline:0;height:3px;
     background:linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-light));
@@ -1610,6 +1606,30 @@ if("serviceWorker" in navigator){
   @media (max-width:560px){
     .collection-nav{gap:18px;}
     .collection-btn{width:100%;max-width:340px;height:260px;}
+  }
+
+  /* Gold spinner overlay shown briefly when a collection is selected */
+  .collection-loading-overlay{
+    position:fixed;inset:0;z-index:9999;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(20,16,12,0.35);
+    backdrop-filter:blur(2px);
+    opacity:0;visibility:hidden;
+    transition:opacity .25s ease;
+    pointer-events:none;
+  }
+  .collection-loading-overlay.active{
+    opacity:1;visibility:visible;pointer-events:auto;
+  }
+  .collection-loading-spinner{
+    width:64px;height:64px;border-radius:50%;
+    border:4px solid var(--gold-pale);
+    border-top-color:var(--gold-dark);
+    box-shadow:0 4px 24px rgba(0,0,0,0.25);
+    animation:collectionSpin .8s linear infinite;
+  }
+  @keyframes collectionSpin{
+    to{transform:rotate(360deg);}
   }
 
   .collection-page-header{padding-bottom:12px;}
@@ -2500,6 +2520,9 @@ if("serviceWorker" in navigator){
 </head>
 <body>
 
+<div class="collection-loading-overlay" id="collection-loading-overlay" aria-hidden="true">
+  <div class="collection-loading-spinner"></div>
+</div>
 <div id="page-transition-bar" aria-hidden="true"></div>
 <div id="image-lightbox" class="image-lightbox" role="dialog" aria-modal="true" aria-hidden="true">
   <button type="button" class="lightbox-close" aria-label="סגירה">&times;</button>
@@ -3962,47 +3985,16 @@ function viewForPath(path){
 /* ============================================================
    NAVIGATION
    ============================================================ */
-let _pageTransitionTimer = null;
 let _hasRenderedFirstView = false;
 
-/* Deliberate branded pause between pages (collection <-> collection,
-   opening a product, etc.) - like the loading beat you get on premium
-   retail sites, rather than an instant snap. This one constant controls
-   it everywhere; the old content fades out, the centered R·S loader
-   holds for this long, then the new page fades in underneath it. */
-const PAGE_TRANSITION_MS = 900;
-
 function showView(name, updateHistory, productId){
-  /* First paint on load: render instantly, no transition delay */
-  if(!_hasRenderedFirstView){
-    _hasRenderedFirstView = true;
-    renderViewNow(name, updateHistory, productId);
-    return;
-  }
-
-  const bar = document.getElementById("page-transition-bar");
-
-  /* The screen stays completely still during the wait - like a browser tab
-     "loading" state - no fade/slide on the outgoing page. Only the thin
-     gold progress bar at the top moves. When the timer below fires, the
-     new page is swapped in directly (also with no fade/slide - see the
-     "nav-instant" class on <html>, added once below). */
+  /* Navigation is instant - no artificial wait, no loading bar, no fade.
+     The page swap happens the moment you click, exactly like the very
+     first paint on load (see the "nav-instant" class below, which keeps
+     the .fadeIn entrance animation from playing on any page after the
+     first one). */
   document.documentElement.classList.add("nav-instant");
-
-  if(bar){
-    bar.classList.remove("finishing");
-    void bar.offsetWidth; /* restart transition */
-    bar.classList.add("loading");
-  }
-
-  clearTimeout(_pageTransitionTimer);
-  _pageTransitionTimer = setTimeout(()=>{
-    renderViewNow(name, updateHistory, productId);
-    if(bar){
-      bar.classList.remove("loading");
-      bar.classList.add("finishing");
-    }
-  }, PAGE_TRANSITION_MS);
+  renderViewNow(name, updateHistory, productId);
 }
 
 function renderViewNow(name, updateHistory, productId){
@@ -4247,6 +4239,21 @@ function goToProduct(id){
   showView("product", true, id);
 }
 
+/* גלגל טעינה זהוב שמופיע לרגע (1.25 שניות) בכל לחיצה על כפתורי
+   הקולקציות בעמוד המצעים (Renaissance / Bloom / Heritage), לפני
+   שהניווט בפועל קורה - נותן תחושת "טעינה" מפנקת. */
+const collectionLoadingOverlay = document.getElementById("collection-loading-overlay");
+function navigateWithCollectionLoader(navTarget){
+  if(!collectionLoadingOverlay){ showView(navTarget); return; }
+  collectionLoadingOverlay.classList.add("active");
+  collectionLoadingOverlay.setAttribute("aria-hidden","false");
+  setTimeout(()=>{
+    collectionLoadingOverlay.classList.remove("active");
+    collectionLoadingOverlay.setAttribute("aria-hidden","true");
+    showView(navTarget);
+  }, 1250);
+}
+
 document.querySelectorAll("[data-nav]").forEach(el=>{
   el.addEventListener("click", (e)=>{
     // קישורים אמיתיים (<a href>): קליק "רגיל" (עכבר שמאלי, בלי מקש
@@ -4257,11 +4264,19 @@ document.querySelectorAll("[data-nav]").forEach(el=>{
       if(e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     }
     e.preventDefault();
+    if(el.classList.contains("collection-btn")){
+      navigateWithCollectionLoader(el.dataset.nav);
+      return;
+    }
     showView(el.dataset.nav);
   });
   el.addEventListener("keydown", (e)=>{
     if(e.key !== "Enter" && e.key !== " ") return;
     e.preventDefault();
+    if(el.classList.contains("collection-btn")){
+      navigateWithCollectionLoader(el.dataset.nav);
+      return;
+    }
     showView(el.dataset.nav);
   });
 });
@@ -6044,5 +6059,34 @@ applyAdminOverrides().finally(function(){
 applyContentOverrides();
 </script>
 
+<script>
+(function(){
+  var bar = document.getElementById('page-transition-bar');
+  if(!bar) return;
+  var hideTimer, finishTimer;
+
+  function playBar(){
+    clearTimeout(hideTimer);
+    clearTimeout(finishTimer);
+    bar.classList.remove('finishing');
+    // force reflow so the animation restarts even on rapid clicks
+    void bar.offsetWidth;
+    bar.classList.add('loading');
+
+    finishTimer = setTimeout(function(){
+      bar.classList.remove('loading');
+      bar.classList.add('finishing');
+      hideTimer = setTimeout(function(){
+        bar.classList.remove('finishing');
+      }, 450);
+    }, 260);
+  }
+
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('button');
+    if(btn) playBar();
+  }, true);
+})();
+</script>
 </body>
 </html>

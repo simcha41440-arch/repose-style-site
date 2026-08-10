@@ -62,6 +62,26 @@ module.exports = async (req, res) => {
     return res.status(200).json({ content: data && data[0] });
   }
 
-  res.setHeader('Allow', 'GET, POST, PUT');
+  // Delete a saved override so the storefront falls back to whatever is
+  // baked into index.html for that key - i.e. an "undo" for a single
+  // saved text/image change (see the "מחיקה - חזרה למקור" button next to
+  // each image field on the admin panel's "עריכת תוכן" tab).
+  if (req.method === 'DELETE') {
+    const key = req.query && req.query.key;
+    if (!key || typeof key !== 'string') {
+      return res.status(400).json({ error: 'Content key is required.' });
+    }
+
+    const { error } = await withFriendlyError(
+      supabase.from('site_content').delete().eq('key', key)
+    );
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+    await logAdminAction(supabase, session.user, 'content_delete', key, null, getClientIp(req));
+    return res.status(200).json({ ok: true });
+  }
+
+  res.setHeader('Allow', 'GET, POST, PUT, DELETE');
   return res.status(405).json({ error: 'Method not allowed.' });
 };
