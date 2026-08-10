@@ -244,19 +244,6 @@
         </form>
         <div class="err-msg" id="productErr"></div>
         <div class="ok-msg" id="productOk"></div>
-
-        <h3 style="margin-top:22px;">תמונת מוצר</h3>
-        <p class="sub" style="margin:-6px 0 14px;">בחרו מוצר מהרשימה למעלה, ואז העלו תמונה חדשה או אפסו לתמונת ברירת המחדל של האתר.</p>
-        <div class="grid-form">
-          <div class="field">
-            <label for="pImgFile">קובץ תמונה חדש (JPG / PNG / WEBP)</label>
-            <input type="file" id="pImgFile" accept="image/jpeg,image/png,image/webp,image/gif">
-          </div>
-          <button type="button" class="btn small" id="pImgUploadBtn">העלאה ושמירה</button>
-          <button type="button" class="btn outline small" id="pImgResetBtn" style="display:none;">מחיקת תמונה - חזרה למקור</button>
-        </div>
-        <div class="err-msg" id="pImgErr"></div>
-        <div class="ok-msg" id="pImgOk"></div>
       </div>
 
       <div class="panel">
@@ -612,21 +599,10 @@
     pPicker.appendChild(opt);
   });
 
-  // Shows/hides the "מחיקת תמונה - חזרה למקור" button next to the product
-  // image upload control on the "ניהול מוצרים" tab, based on whether the
-  // currently-picked product actually has a custom image saved.
-  function updatePImgResetVisibility(){
-    const resetBtn = document.getElementById('pImgResetBtn');
-    const id = pPicker.value;
-    const hasImage = !!(id && lastProductOverrides[id] && lastProductOverrides[id].image);
-    resetBtn.style.display = hasImage ? 'inline-block' : 'none';
-  }
-
   pPicker.addEventListener('change', function(){
     const c = CATALOG_BY_ID[pPicker.value];
     pIdField.value = c ? c.id : '';
     pDefaultPriceField.value = c ? ('₪' + c.price) : '';
-    updatePImgResetVisibility();
   });
 
   /* ---------- Content editing ---------- */
@@ -785,53 +761,6 @@
     });
     return data.url;
   }
-
-  document.getElementById('pImgUploadBtn').addEventListener('click', async function(){
-    const btn = this;
-    const errEl = document.getElementById('pImgErr');
-    const okEl = document.getElementById('pImgOk');
-    errEl.textContent = '';
-    okEl.textContent = '';
-    const id = pIdField.value.trim();
-    const fileInput = document.getElementById('pImgFile');
-    if (!id) { errEl.textContent = 'בחרו מוצר מהרשימה למעלה.'; return; }
-    if (!fileInput.files[0]) { errEl.textContent = 'בחרו קובץ תמונה.'; return; }
-    btn.disabled = true;
-    try {
-      const url = await uploadImageFile(fileInput.files[0]);
-      await api('/api/products', { method:'POST', body: JSON.stringify({ id: id, image: url }) });
-      okEl.textContent = 'התמונה עודכנה בהצלחה ומוצגת עכשיו באתר.';
-      fileInput.value = '';
-      loadProducts();
-    } catch(e) {
-      errEl.textContent = e.message || 'שגיאה בהעלאה.';
-    } finally {
-      btn.disabled = false;
-    }
-  });
-
-  document.getElementById('pImgResetBtn').addEventListener('click', async function(){
-    const btn = this;
-    const errEl = document.getElementById('pImgErr');
-    const okEl = document.getElementById('pImgOk');
-    errEl.textContent = '';
-    okEl.textContent = '';
-    const id = pIdField.value.trim();
-    if (!id) { errEl.textContent = 'בחרו מוצר מהרשימה למעלה.'; return; }
-    if (!confirm('למחוק את התמונה שהועלתה למוצר ולהחזיר את תמונת ברירת המחדל?')) return;
-    btn.disabled = true;
-    try {
-      // Explicitly clearing just the image field - other overrides
-      // (מחיר/שם/מלאי וכו') על אותו מוצר, אם יש, נשארים כפי שהם.
-      await api('/api/products', { method:'POST', body: JSON.stringify({ id: id, image: null }) });
-      okEl.textContent = 'התמונה נמחקה - המוצר חזר להציג את תמונת ברירת המחדל.';
-      loadProducts();
-    } catch(e) {
-      errEl.textContent = e.message || 'שגיאה במחיקה.';
-    } finally {
-      btn.disabled = false;
-    }
-  });
 
   document.getElementById('ciUploadBtn').addEventListener('click', async function(){
     const btn = this;
@@ -1055,7 +984,6 @@
       (data.products || []).forEach(function(p){ lastProductOverrides[p.id] = p; });
       renderProducts(data.products);
       updateCiResetVisibility();
-      updatePImgResetVisibility();
       document.getElementById('productsRefreshed').textContent =
         'עודכן: ' + new Date().toLocaleTimeString('he-IL');
     } catch (e) {

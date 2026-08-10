@@ -1898,6 +1898,51 @@ if("serviceWorker" in navigator){
   .ci-remove:hover{color:var(--danger);}
   .cart-empty{text-align:center;padding:80px 20px;color:var(--taupe);}
   .cart-empty svg{width:44px;height:44px;stroke:var(--taupe-light);margin-bottom:18px;}
+  /* ===== ACCOUNT AUTH (login / register / logged-in summary) ===== */
+  .auth-box{
+    background:var(--ivory);border:1px solid var(--line);
+    padding:30px 34px;margin-bottom:48px;max-width:440px;
+  }
+  .auth-tabs{display:flex;gap:6px;margin-bottom:24px;border-bottom:1px solid var(--line);}
+  .auth-tab{
+    flex:1;background:none;border:none;padding:10px 4px 14px;cursor:pointer;
+    font-family:'Rubik','Almoni Neue',sans-serif;font-size:14.5px;color:var(--taupe);
+    position:relative;top:1px;border-bottom:2px solid transparent;
+  }
+  .auth-tab.active{color:var(--text-gold);border-bottom-color:var(--gold);font-weight:600;}
+  .auth-form{display:none;}
+  .auth-form.active{display:block;}
+  .auth-form .btn{width:100%;justify-content:center;margin-top:4px;}
+  .auth-form-error{
+    display:none;background:rgba(182,91,74,0.1);border:1px solid rgba(182,91,74,0.35);
+    color:var(--danger);font-size:13px;border-radius:12px;padding:12px 14px;margin-bottom:16px;line-height:1.6;
+  }
+  .auth-form-error.show{display:block;}
+  .auth-form-success{
+    display:none;background:rgba(59,122,84,0.1);border:1px solid rgba(59,122,84,0.35);
+    color:#3B7A54;font-size:13px;border-radius:12px;padding:12px 14px;margin-bottom:16px;line-height:1.6;
+  }
+  .auth-form-success.show{display:block;}
+  .auth-password-wrap{position:relative;}
+  .auth-password-wrap input{padding-inline-end:42px;}
+  .auth-toggle-pw{
+    position:absolute;top:50%;transform:translateY(-50%);inset-inline-end:10px;
+    background:none;border:none;padding:4px;cursor:pointer;color:var(--taupe-light);
+  }
+  .auth-toggle-pw svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.6;}
+  .auth-toggle-pw.active{color:var(--text-gold);}
+  .auth-hint{font-size:12px;color:var(--taupe-light);margin-top:6px;}
+  .auth-forgot-link{
+    background:none;border:none;color:var(--taupe);font-size:12.5px;text-decoration:underline;
+    cursor:pointer;padding:0;margin:-10px 0 18px;display:block;text-align:start;
+  }
+  .auth-forgot-link:hover{color:var(--text-gold);}
+  .auth-loggedin-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+  .auth-loggedin-hello{font-family:'Rubik','Almoni Neue',sans-serif;font-size:16px;font-weight:600;color:var(--text-gold);}
+  .auth-loggedin-email{color:var(--taupe);font-size:13.5px;margin-top:4px;}
+  @media (max-width:520px){
+    .auth-box{padding:24px 20px;max-width:none;}
+  }
   .account-empty{color:var(--taupe);font-size:14px;padding:10px 0;}
   .account-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:20px;}
   .account-item{background:var(--ivory);border:1px solid var(--line);padding:14px;display:flex;gap:12px;align-items:center;}
@@ -3316,6 +3361,108 @@ if("serviceWorker" in navigator){
     <h1 class="serif" style="margin-bottom:8px;">האזור האישי שלי</h1>
     <p style="color:var(--taupe);margin-bottom:34px;">ההזמנות שביצעת, המועדפים שלך והעגלה השמורה — הכל במקום אחד.</p>
 
+    <!-- Logged-out: login / register tabs. Logged-in: short account summary
+         with a logout button. Toggled by renderAccountAuth() based on
+         GET /api/auth?action=me - see api/auth.js. -->
+    <div id="account-auth-box" class="auth-box">
+      <div id="account-auth-loggedout">
+        <div class="auth-tabs" role="tablist">
+          <button type="button" class="auth-tab active" id="auth-tab-login" data-tab="login">כניסה</button>
+          <button type="button" class="auth-tab" id="auth-tab-register" data-tab="register">הרשמה</button>
+        </div>
+
+        <form id="auth-form-login" class="auth-form active" novalidate>
+          <div class="auth-form-error" id="auth-login-error" role="alert"></div>
+          <div class="form-group">
+            <label for="auth-login-email">דוא"ל</label>
+            <input type="email" id="auth-login-email" name="email" required maxlength="150" autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label for="auth-login-password">סיסמה</label>
+            <div class="auth-password-wrap">
+              <input type="password" id="auth-login-password" name="password" required maxlength="100" autocomplete="current-password">
+              <button type="button" class="auth-toggle-pw" data-for="auth-login-password" aria-label="הצג סיסמה">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+          <button type="button" class="auth-forgot-link" id="auth-forgot-open">שכחתי סיסמה</button>
+          <button type="submit" class="btn">התחברות</button>
+        </form>
+
+        <form id="auth-form-register" class="auth-form" novalidate>
+          <div class="auth-form-error" id="auth-register-error" role="alert"></div>
+          <div class="form-group">
+            <label for="auth-register-name">שם מלא</label>
+            <input type="text" id="auth-register-name" name="name" required maxlength="100" autocomplete="name">
+          </div>
+          <div class="form-group">
+            <label for="auth-register-email">דוא"ל</label>
+            <input type="email" id="auth-register-email" name="email" required maxlength="150" autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label for="auth-register-phone">טלפון (לא חובה)</label>
+            <input type="tel" id="auth-register-phone" name="phone" maxlength="20" autocomplete="tel">
+          </div>
+          <div class="form-group">
+            <label for="auth-register-password">סיסמה</label>
+            <div class="auth-password-wrap">
+              <input type="password" id="auth-register-password" name="password" required maxlength="100" minlength="8" autocomplete="new-password">
+              <button type="button" class="auth-toggle-pw" data-for="auth-register-password" aria-label="הצג סיסמה">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <div class="auth-hint">לפחות 8 תווים</div>
+          </div>
+          <button type="submit" class="btn">יצירת חשבון</button>
+        </form>
+
+        <!-- "שכחתי סיסמה" mini-form - hidden until "auth-forgot-open" is
+             clicked. Sends a reset link by email (api/auth?action=forgot),
+             always with the same success message so the endpoint can't be
+             used to check which emails have an account. -->
+        <form id="auth-form-forgot" class="auth-form" novalidate>
+          <p style="color:var(--taupe);font-size:13.5px;margin-bottom:16px;">נשלח אליכם קישור לאיפוס הסיסמה בדוא"ל.</p>
+          <div class="auth-form-error" id="auth-forgot-error" role="alert"></div>
+          <div class="auth-form-success" id="auth-forgot-success" role="status">נשלח קישור לאיפוס הסיסמה, בדקו את תיבת הדוא"ל.</div>
+          <div class="form-group">
+            <label for="auth-forgot-email">דוא"ל</label>
+            <input type="email" id="auth-forgot-email" name="email" required maxlength="150" autocomplete="email">
+          </div>
+          <button type="submit" class="btn">שליחת קישור לאיפוס</button>
+          <button type="button" class="auth-forgot-link" id="auth-forgot-cancel">חזרה להתחברות</button>
+        </form>
+
+        <!-- Set-a-new-password form - only shown when the page loads with
+             ?reset_token=... in the URL (the link from the reset email). -->
+        <form id="auth-form-reset" class="auth-form" novalidate>
+          <p style="color:var(--taupe);font-size:13.5px;margin-bottom:16px;">בחרו סיסמה חדשה לחשבון שלכם.</p>
+          <div class="auth-form-error" id="auth-reset-error" role="alert"></div>
+          <div class="form-group">
+            <label for="auth-reset-password">סיסמה חדשה</label>
+            <div class="auth-password-wrap">
+              <input type="password" id="auth-reset-password" name="password" required maxlength="100" minlength="8" autocomplete="new-password">
+              <button type="button" class="auth-toggle-pw" data-for="auth-reset-password" aria-label="הצג סיסמה">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <div class="auth-hint">לפחות 8 תווים</div>
+          </div>
+          <button type="submit" class="btn">שמירת סיסמה חדשה</button>
+        </form>
+      </div>
+
+      <div id="account-auth-loggedin" style="display:none;">
+        <div class="auth-loggedin-row">
+          <div>
+            <div class="auth-loggedin-hello">שלום, <span id="auth-loggedin-name"></span></div>
+            <div class="auth-loggedin-email" id="auth-loggedin-email"></div>
+          </div>
+          <button type="button" class="btn outline" id="auth-logout-btn">התנתקות</button>
+        </div>
+      </div>
+    </div>
+
     <h2 class="serif" style="font-size:22px;margin-bottom:16px;">ההזמנות שלי</h2>
     <div id="account-orders" style="margin-bottom:56px;"></div>
 
@@ -3987,13 +4134,39 @@ function viewForPath(path){
    ============================================================ */
 let _hasRenderedFirstView = false;
 
+/* ===== gold top progress bar - fires on every navigation: forward
+   clicks AND browser back/forward (popstate), since both paths run
+   through showView(). See click-delegation script near end of <body>
+   for the additional "any button click" trigger. */
+var __transitionBarHideTimer, __transitionBarFinishTimer;
+function playPageTransitionBar(){
+  var bar = document.getElementById('page-transition-bar');
+  if(!bar) return;
+  clearTimeout(__transitionBarHideTimer);
+  clearTimeout(__transitionBarFinishTimer);
+  bar.classList.remove('finishing');
+  // force reflow so the animation restarts even on rapid clicks
+  void bar.offsetWidth;
+  bar.classList.add('loading');
+
+  __transitionBarFinishTimer = setTimeout(function(){
+    bar.classList.remove('loading');
+    bar.classList.add('finishing');
+    __transitionBarHideTimer = setTimeout(function(){
+      bar.classList.remove('finishing');
+    }, 450);
+  }, 260);
+}
+
 function showView(name, updateHistory, productId){
-  /* Navigation is instant - no artificial wait, no loading bar, no fade.
-     The page swap happens the moment you click, exactly like the very
-     first paint on load (see the "nav-instant" class below, which keeps
-     the .fadeIn entrance animation from playing on any page after the
-     first one). */
+  /* Navigation is instant - no artificial wait, no fade. The page swap
+     happens the moment you click, exactly like the very first paint on
+     load (see the "nav-instant" class below, which keeps the .fadeIn
+     entrance animation from playing on any page after the first one).
+     The gold progress bar still flashes briefly on every navigation,
+     including browser back/forward, since this runs on every call. */
   document.documentElement.classList.add("nav-instant");
+  playPageTransitionBar();
   renderViewNow(name, updateHistory, productId);
 }
 
@@ -5287,7 +5460,224 @@ function renderCheckoutSummary(){
   document.getElementById("checkout-total").textContent = `${Math.max(0, subtotal - discount + shipping).toLocaleString('he-IL')} ₪`;
 }
 
+// Captured once when the account page notices ?reset_token= in the URL -
+// the INIT bootstrap below replaces the URL without the query string
+// shortly after, so the "set new password" form can't just re-read
+// location.search when it submits; it needs this instead.
+// Captured once when the account page notices ?reset_token= in the URL -
+// the INIT bootstrap below replaces the URL without the query string
+// shortly after, so the "set new password" form can't just re-read
+// location.search when it submits; it needs this instead.
+let pendingResetToken = null;
+
+/* ============================================================
+   ACCOUNT LOGIN / REGISTER (see api/auth.js + CUSTOMER-AUTH-SETUP.sql)
+   ============================================================ */
+// Which of the four auth forms is visible: "login", "register", "forgot",
+// or "reset" (the last one only ever shown via a ?reset_token= link).
+function setAuthTab(tab){
+  document.getElementById("auth-tab-login").classList.toggle("active", tab === "login");
+  document.getElementById("auth-tab-register").classList.toggle("active", tab === "register");
+  document.getElementById("auth-form-login").classList.toggle("active", tab === "login");
+  document.getElementById("auth-form-register").classList.toggle("active", tab === "register");
+  document.getElementById("auth-form-forgot").classList.toggle("active", tab === "forgot");
+  document.getElementById("auth-form-reset").classList.toggle("active", tab === "reset");
+  // The tab bar itself only makes sense for login/register.
+  document.querySelector("#account-auth-loggedout .auth-tabs").style.display = (tab === "login" || tab === "register") ? "" : "none";
+}
+
+function showAuthError(id, message){
+  const el = document.getElementById(id);
+  if(!el) return;
+  if(message){
+    el.textContent = message;
+    el.classList.add("show");
+  } else {
+    el.textContent = "";
+    el.classList.remove("show");
+  }
+}
+
+function showLoggedInAccount(customer){
+  document.getElementById("account-auth-loggedout").style.display = "none";
+  const loggedIn = document.getElementById("account-auth-loggedin");
+  loggedIn.style.display = "";
+  document.getElementById("auth-loggedin-name").textContent = customer.name || "";
+  document.getElementById("auth-loggedin-email").textContent = customer.email || "";
+}
+
+function showLoggedOutAccount(){
+  document.getElementById("account-auth-loggedin").style.display = "none";
+  document.getElementById("account-auth-loggedout").style.display = "";
+}
+
+/* Checks the signed HttpOnly session cookie against the server (the
+   cookie itself is never readable from JS) and swaps the account page
+   between the login/register tabs and the logged-in summary. If the URL
+   carries a ?reset_token= (from the "forgot password" email), the
+   set-new-password form takes priority over both. */
+async function renderAccountAuth(){
+  const resetToken = new URLSearchParams(window.location.search).get("reset_token");
+  if(resetToken){
+    pendingResetToken = resetToken;
+    showLoggedOutAccount();
+    setAuthTab("reset");
+    return;
+  }
+  try{
+    const res = await fetch("/api/auth?action=me", { credentials:"same-origin" });
+    if(res.ok){
+      const data = await res.json();
+      if(data && data.customer){ showLoggedInAccount(data.customer); return; }
+    }
+    showLoggedOutAccount();
+  } catch(err){
+    // Network hiccup - default to the login form rather than leaving the
+    // box blank.
+    showLoggedOutAccount();
+  }
+}
+
+function initAuthBox(){
+  const box = document.getElementById("account-auth-box");
+  if(!box || box.dataset.wired) return;
+  box.dataset.wired = "1";
+
+  document.getElementById("auth-tab-login").addEventListener("click", ()=>setAuthTab("login"));
+  document.getElementById("auth-tab-register").addEventListener("click", ()=>setAuthTab("register"));
+  document.getElementById("auth-forgot-open").addEventListener("click", ()=>setAuthTab("forgot"));
+  document.getElementById("auth-forgot-cancel").addEventListener("click", ()=>setAuthTab("login"));
+
+  // Eye-icon show/hide toggle on every password field in the auth box.
+  box.querySelectorAll(".auth-toggle-pw").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const input = document.getElementById(btn.dataset.for);
+      if(!input) return;
+      const show = input.type === "password";
+      input.type = show ? "text" : "password";
+      btn.classList.toggle("active", show);
+      btn.setAttribute("aria-label", show ? "הסתר סיסמה" : "הצג סיסמה");
+    });
+  });
+
+  document.getElementById("auth-form-login").addEventListener("submit", async (e)=>{
+    e.preventDefault();
+    showAuthError("auth-login-error", "");
+    const email = document.getElementById("auth-login-email").value.trim();
+    const password = document.getElementById("auth-login-password").value;
+    const btn = e.target.querySelector("button[type=submit]");
+    btn.disabled = true;
+    try{
+      const res = await fetch("/api/auth?action=login", {
+        method:"POST", credentials:"same-origin",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if(!res.ok){ showAuthError("auth-login-error", data.error || "אירעה שגיאה. נסו שוב."); return; }
+      document.getElementById("auth-form-login").reset();
+      showLoggedInAccount(data.customer);
+    } catch(err){
+      showAuthError("auth-login-error", "בעיית תקשורת. בדקו את החיבור ונסו שוב.");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById("auth-form-register").addEventListener("submit", async (e)=>{
+    e.preventDefault();
+    showAuthError("auth-register-error", "");
+    const name = document.getElementById("auth-register-name").value.trim();
+    const email = document.getElementById("auth-register-email").value.trim();
+    const phone = document.getElementById("auth-register-phone").value.trim();
+    const password = document.getElementById("auth-register-password").value;
+    if(password.length < 8){ showAuthError("auth-register-error", "הסיסמה חייבת להכיל לפחות 8 תווים."); return; }
+    const btn = e.target.querySelector("button[type=submit]");
+    btn.disabled = true;
+    try{
+      const res = await fetch("/api/auth?action=register", {
+        method:"POST", credentials:"same-origin",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ name, email, phone, password }),
+      });
+      const data = await res.json();
+      if(!res.ok){ showAuthError("auth-register-error", data.error || "אירעה שגיאה. נסו שוב."); return; }
+      document.getElementById("auth-form-register").reset();
+      showLoggedInAccount(data.customer);
+    } catch(err){
+      showAuthError("auth-register-error", "בעיית תקשורת. בדקו את החיבור ונסו שוב.");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById("auth-form-forgot").addEventListener("submit", async (e)=>{
+    e.preventDefault();
+    showAuthError("auth-forgot-error", "");
+    document.getElementById("auth-forgot-success").classList.remove("show");
+    const email = document.getElementById("auth-forgot-email").value.trim();
+    const btn = e.target.querySelector("button[type=submit]");
+    btn.disabled = true;
+    try{
+      const res = await fetch("/api/auth?action=forgot", {
+        method:"POST", credentials:"same-origin",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if(!res.ok){ showAuthError("auth-forgot-error", data.error || "אירעה שגיאה. נסו שוב."); return; }
+      document.getElementById("auth-form-forgot").reset();
+      document.getElementById("auth-forgot-success").classList.add("show");
+    } catch(err){
+      showAuthError("auth-forgot-error", "בעיית תקשורת. בדקו את החיבור ונסו שוב.");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById("auth-form-reset").addEventListener("submit", async (e)=>{
+    e.preventDefault();
+    showAuthError("auth-reset-error", "");
+    const password = document.getElementById("auth-reset-password").value;
+    const token = pendingResetToken;
+    if(password.length < 8){ showAuthError("auth-reset-error", "הסיסמה חייבת להכיל לפחות 8 תווים."); return; }
+    const btn = e.target.querySelector("button[type=submit]");
+    btn.disabled = true;
+    try{
+      const res = await fetch("/api/auth?action=reset", {
+        method:"POST", credentials:"same-origin",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ token, password }),
+      });
+      const data = await res.json();
+      if(!res.ok){ showAuthError("auth-reset-error", data.error || "אירעה שגיאה. נסו שוב."); return; }
+      document.getElementById("auth-form-reset").reset();
+      pendingResetToken = null;
+      // Drop ?reset_token from the URL (it may already be gone - see
+      // pendingResetToken above) now that it's used either way.
+      const url = new URL(window.location.href);
+      url.searchParams.delete("reset_token");
+      window.history.replaceState(window.history.state, "", url.pathname + url.search);
+      showLoggedInAccount(data.customer);
+    } catch(err){
+      showAuthError("auth-reset-error", "בעיית תקשורת. בדקו את החיבור ונסו שוב.");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById("auth-logout-btn").addEventListener("click", async ()=>{
+    try{ await fetch("/api/auth?action=logout", { method:"POST", credentials:"same-origin" }); }
+    catch(err){ /* cookie clears client-side view regardless */ }
+    setAuthTab("login");
+    showLoggedOutAccount();
+  });
+}
+
 function renderAccountPage(){
+  initAuthBox();
+  renderAccountAuth();
+
   /* Orders */
   const ordersWrap = document.getElementById("account-orders");
   if(orders.length === 0){
@@ -6061,30 +6451,13 @@ applyContentOverrides();
 
 <script>
 (function(){
-  var bar = document.getElementById('page-transition-bar');
-  if(!bar) return;
-  var hideTimer, finishTimer;
-
-  function playBar(){
-    clearTimeout(hideTimer);
-    clearTimeout(finishTimer);
-    bar.classList.remove('finishing');
-    // force reflow so the animation restarts even on rapid clicks
-    void bar.offsetWidth;
-    bar.classList.add('loading');
-
-    finishTimer = setTimeout(function(){
-      bar.classList.remove('loading');
-      bar.classList.add('finishing');
-      hideTimer = setTimeout(function(){
-        bar.classList.remove('finishing');
-      }, 450);
-    }, 260);
-  }
-
+  // showView() already flashes the bar on every real navigation
+  // (clicks, back/forward). This just catches plain buttons that
+  // don't go through showView (e.g. "add to cart"), so the bar still
+  // gives feedback on those.
   document.addEventListener('click', function(e){
     var btn = e.target.closest('button');
-    if(btn) playBar();
+    if(btn && typeof playPageTransitionBar === 'function') playPageTransitionBar();
   }, true);
 })();
 </script>
