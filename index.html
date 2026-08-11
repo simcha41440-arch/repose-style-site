@@ -1261,8 +1261,16 @@ if("serviceWorker" in navigator){
   .hero-brand-sub{
     display:block;text-align:center;font-family:'Assistant',sans-serif;font-weight:200;
     font-size:clamp(30px,4.2vw,54px);letter-spacing:0.05em;
-    color:var(--gold-pale);
-    opacity:0.9;
+    background:linear-gradient(100deg, var(--gold-pale) 0%, var(--gold-light) 22%, var(--gold-metal) 45%, var(--gold-dark) 58%, var(--gold-light) 75%, var(--gold-pale) 100%);
+    background-size:220% 100%;
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    -webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 2px 30px rgba(214,177,94,0.4));
+    animation:heroBrandShimmer 7s ease-in-out infinite;
+    opacity:0.98;
+  }
+  @media (prefers-reduced-motion:reduce){
+    .hero-brand-sub{animation:none;}
   }
   @media (max-width:860px){
     .hero-brand{width:90vw;}
