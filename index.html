@@ -918,7 +918,7 @@ if("serviceWorker" in navigator){
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Rubik:wght@300;400;500;600;700&family=Jost:wght@200;300;400;500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Poppins:wght@200;300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Rubik:wght@300;400;500;600;700&family=Jost:wght@200;300;400;500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Poppins:wght@200;300;400&family=Montserrat:wght@100;200;300;400&display=swap" rel="stylesheet">
 <style>
   :root{
     --cream:#E7C77E;
@@ -1003,23 +1003,19 @@ if("serviceWorker" in navigator){
     border-bottom-color:rgba(138,108,46,0.4);
     box-shadow:0 10px 30px -18px rgba(43,36,32,0.35);
   }
-  /* ===== NAV OVER HERO — melts into the hero photo at the very top of the
-     homepage, then gradually separates into the normal solid bar as the
-     visitor scrolls (driven by --nav-o, set in JS from scroll position). ===== */
+  /* ===== NAV OVER HERO — fully invisible at the very top of the homepage
+     (no bar, no logo, no links), then fades in as one piece once the
+     visitor starts scrolling (driven by --nav-o, set in JS from scroll
+     position). ===== */
   header.site-nav.nav-hero{
     --nav-o:0;
+    opacity:var(--nav-o);
     background:linear-gradient(180deg, rgb(248 236 201 / var(--nav-o)) 0%, rgb(214 177 94 / var(--nav-o)) 100%);
     border-bottom-color:rgb(138 108 46 / calc(var(--nav-o) * 0.4));
     box-shadow:0 10px 30px -18px rgb(43 36 32 / calc(var(--nav-o) * 0.35));
-    transition:box-shadow .2s ease;
+    transition:opacity .2s ease, box-shadow .2s ease;
   }
-  header.site-nav.nav-hero .nav-brand img,
-  header.site-nav.nav-hero .nav-links a,
-  header.site-nav.nav-hero .nav-links button,
-  header.site-nav.nav-hero .icon-btn svg,
-  header.site-nav.nav-hero .hamburger span{
-    filter:drop-shadow(0 1px 5px rgb(20 16 12 / calc((1 - var(--nav-o)) * 0.55)));
-  }
+  header.site-nav.nav-hero:not(.nav-visible){pointer-events:none;}
   header.site-nav.nav-hero nav.nav-links{
     background:rgb(255 248 224 / calc(var(--nav-o) * 0.5));
     border-color:rgb(138 108 46 / calc(var(--nav-o) * 0.28));
@@ -1237,22 +1233,38 @@ if("serviceWorker" in navigator){
     width:min(50vw, 820px);padding-inline-start:56px;pointer-events:none;
   }
   .hero-brand-main{
-    display:block;text-align:left;font-family:'Jost',sans-serif;
-    font-size:clamp(72px,12.4vw,200px);font-weight:200;letter-spacing:0.09em;
+    display:block;text-align:left;font-family:'Montserrat',sans-serif;
+    font-size:clamp(66px,11.4vw,188px);font-weight:100;letter-spacing:0.07em;
     line-height:0.92;
-    color:var(--gold-metal);
-    text-shadow:0 2px 34px rgba(214,177,94,0.32);
+    background:linear-gradient(100deg, var(--gold-pale) 0%, var(--gold-light) 22%, var(--gold-metal) 45%, var(--gold-dark) 58%, var(--gold-light) 75%, var(--gold-pale) 100%);
+    background-size:220% 100%;
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    -webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 2px 30px rgba(214,177,94,0.4));
+    animation:heroBrandShimmer 7s ease-in-out infinite;
+  }
+  @keyframes heroBrandShimmer{
+    0%{background-position:0% 0;}
+    50%{background-position:100% 0;}
+    100%{background-position:0% 0;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .hero-brand-main{animation:none;}
+  }
+  .hero-brand-sub-wrap{
+    position:relative;display:inline-block;margin-top:22px;
   }
   .hero-brand-sub{
-    display:block;text-align:left;font-family:'Jost',sans-serif;font-weight:200;
-    font-size:clamp(15px,1.7vw,22px);letter-spacing:0.62em;
-    text-transform:lowercase;margin-top:22px;color:var(--gold-pale);
+    display:block;text-align:left;font-family:'Montserrat',sans-serif;font-weight:100;
+    font-size:clamp(15px,1.7vw,22px);letter-spacing:0.66em;
+    text-transform:lowercase;color:var(--gold-pale);
     opacity:0.85;
   }
   @media (max-width:860px){
     .hero-brand{width:80vw;padding-inline-start:26px;}
     .hero-brand-main{font-size:clamp(52px,17vw,96px);}
-    .hero-brand-sub{font-size:14px;letter-spacing:0.4em;margin-top:12px;}
+    .hero-brand-sub{font-size:14px;letter-spacing:0.4em;}
+    .hero-brand-sub-wrap{margin-top:12px;}
   }
   .btn{
     position:relative;
@@ -1284,26 +1296,49 @@ if("serviceWorker" in navigator){
   .btn.mail:hover{background:linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);color:#fff;}
   .btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;box-shadow:none;}
   .hero-scroll-cue{
-    position:absolute;z-index:3;left:50%;bottom:34px;transform:translateX(-50%);
-    color:#EDE6D6;font-size:11px;letter-spacing:0.2em;display:flex;flex-direction:column;align-items:center;gap:8px;
+    position:absolute;z-index:3;left:50%;bottom:38px;transform:translateX(-50%);
+    display:flex;flex-direction:column;align-items:center;
     opacity:0;transition:opacity 1s ease 1.5s;
+    background:none;border:none;padding:0;cursor:pointer;
   }
-  .hero-scroll-cue .line{position:relative;width:1px;height:34px;background:linear-gradient(180deg, rgba(255,255,255,0.9), transparent);overflow:hidden;}
-  .hero-scroll-cue .dot{position:absolute;top:0;right:-1.5px;width:4px;height:4px;border-radius:50%;background:var(--gold-pale);box-shadow:0 0 6px rgba(238,220,166,0.9);animation:heroScrollDot 1.8s ease-in-out infinite;}
-  .hero.hero-loaded .hero-scroll-cue{animation:heroScrollBounce 2.2s ease-in-out infinite;}
-  @keyframes heroScrollDot{
-    0%{transform:translateY(-4px);opacity:0;}
-    15%{opacity:1;}
-    85%{opacity:1;}
-    100%{transform:translateY(34px);opacity:0;}
+  .hero-scroll-cue .hsc-ring{
+    position:relative;width:42px;height:60px;border-radius:21px;
+    border:1.5px solid rgba(238,220,166,0.6);
+    background:rgba(20,16,12,0.24);
+    backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+    box-shadow:0 12px 28px -14px rgba(20,16,12,0.55), inset 0 1px 0 rgba(255,255,255,0.08);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+    transition:border-color .3s ease, background .3s ease, transform .3s cubic-bezier(.19,1,.22,1), box-shadow .3s ease;
   }
-  @keyframes heroScrollBounce{
-    0%,100%{transform:translateY(0);}
-    50%{transform:translateY(8px);}
+  .hero-scroll-cue:hover .hsc-ring{
+    border-color:rgba(238,220,166,0.95);background:rgba(20,16,12,0.42);transform:scale(1.05);
+    box-shadow:0 16px 34px -14px rgba(20,16,12,0.65), inset 0 1px 0 rgba(255,255,255,0.12);
+  }
+  .hero-scroll-cue .hsc-chevron{
+    width:16px;height:16px;fill:none;stroke:var(--gold-pale);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;
+  }
+  .hero-scroll-cue .hsc-chevron.c2{position:absolute;opacity:0;}
+  .hero.hero-loaded .hero-scroll-cue{opacity:1;}
+  .hero.hero-loaded .hero-scroll-cue .hsc-chevron.c1{animation:hscChevron1 1.8s ease-in-out infinite;}
+  .hero.hero-loaded .hero-scroll-cue .hsc-chevron.c2{animation:hscChevron2 1.8s ease-in-out infinite;}
+  @keyframes hscChevron1{
+    0%{transform:translateY(-11px);opacity:0;}
+    30%{opacity:1;}
+    70%{opacity:1;}
+    100%{transform:translateY(11px);opacity:0;}
+  }
+  @keyframes hscChevron2{
+    0%{transform:translateY(-22px);opacity:0;}
+    30%{opacity:0;}
+    50%{opacity:.55;}
+    100%{transform:translateY(0px);opacity:0;}
+  }
+  @media (max-width:860px){
+    .hero-scroll-cue .hsc-ring{width:38px;height:54px;border-radius:19px;}
   }
   @media (prefers-reduced-motion:reduce){
-    .hero-scroll-cue .dot{animation:none;}
-    .hero.hero-loaded .hero-scroll-cue{animation:none;}
+    .hero-scroll-cue .hsc-chevron{animation:none !important;opacity:1;}
+    .hero-scroll-cue .hsc-chevron.c2{display:none;}
   }
 
   /* ===== LUXURY MOTION: HERO ENTRANCE ===== */
@@ -1532,7 +1567,7 @@ if("serviceWorker" in navigator){
     transition:opacity 1s cubic-bezier(.19,1,.22,1), transform 1s cubic-bezier(.19,1,.22,1);
   }
   .bedding-img.in{opacity:1;transform:translateX(0);}
-  .bedding-img img{width:100%;height:auto;display:block;filter:drop-shadow(0 26px 46px rgba(20,16,10,0.45));}
+  .bedding-img img{width:82%;height:auto;display:block;margin:0 auto;filter:drop-shadow(0 26px 46px rgba(20,16,10,0.45));}
   .bedding-copy{
     opacity:0;transform:translateX(46px);
     transition:opacity 1s cubic-bezier(.19,1,.22,1) .12s, transform 1s cubic-bezier(.19,1,.22,1) .12s;
@@ -2569,6 +2604,49 @@ if("serviceWorker" in navigator){
     #cookie-consent-accept{width:100%;}
   }
 
+  /* "Collection" shortcut button — sits centered directly under the
+     "of the house" hero subtitle, so it reads as one composition with it. */
+  #collection-fab{
+    position:absolute;top:100%;left:50%;z-index:5;pointer-events:auto;
+    margin-top:44px;
+    display:flex;align-items:center;gap:9px;
+    padding:13px 20px 13px 16px;border-radius:999px;border:1px solid rgba(238,220,166,0.55);
+    background:linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 45%, var(--gold-dark) 100%);
+    color:#fff;font-family:'Rubik','Almoni Neue',sans-serif;font-size:13.5px;font-weight:700;letter-spacing:0.01em;
+    cursor:pointer;white-space:nowrap;box-shadow:0 10px 26px -8px rgba(20,16,12,0.5);
+    opacity:0;transform:translateX(-50%) translateY(18px) scale(.94);
+    transition:transform .5s cubic-bezier(.19,1,.22,1), opacity .5s ease, box-shadow .3s ease, filter .3s ease;
+    animation:fabFloat 3.6s ease-in-out infinite;
+    animation-play-state:paused;
+  }
+  .hero.hero-loaded #collection-fab{
+    opacity:1;transform:translateX(-50%) translateY(0) scale(1);animation-play-state:running;
+    transition-delay:.55s;
+  }
+  #collection-fab:hover{filter:brightness(1.07);box-shadow:0 14px 32px -8px rgba(20,16,12,0.6);}
+  #collection-fab .fab-ring{
+    position:absolute;inset:0;border-radius:999px;border:1.5px solid rgba(238,220,166,0.85);
+    opacity:0;animation:fabPulse 2.8s cubic-bezier(.19,1,.22,1) infinite;
+  }
+  #collection-fab .fab-icon{
+    width:20px;height:20px;flex-shrink:0;fill:none;stroke:#fff;stroke-width:1.6;
+  }
+  @keyframes fabFloat{
+    0%,100%{transform:translateX(-50%) translateY(0) scale(1);}
+    50%{transform:translateX(-50%) translateY(-6px) scale(1);}
+  }
+  @keyframes fabPulse{
+    0%{opacity:.55;transform:scale(1);}
+    100%{opacity:0;transform:scale(1.28);}
+  }
+  @media (max-width:860px){
+    #collection-fab{padding:11px 16px 11px 13px;font-size:12.5px;margin-top:30px;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    #collection-fab{animation:none;}
+    #collection-fab .fab-ring{animation:none;display:none;}
+  }
+
   /* Accessibility widget */
   #a11y-toggle{
     position:fixed;bottom:26px;left:22px;z-index:980;
@@ -2688,11 +2766,23 @@ if("serviceWorker" in navigator){
       <span class="light-glow spot-2"></span>
       <span class="light-glow spot-3"></span>
     </div>
-    <div class="hero-brand" dir="ltr" aria-hidden="true">
-      <span class="hero-brand-main">REPOSE</span>
-      <span class="hero-brand-sub">of the house</span>
+    <div class="hero-brand" dir="ltr">
+      <span class="hero-brand-main" aria-hidden="true">REPOSE</span>
+      <span class="hero-brand-sub-wrap">
+        <span class="hero-brand-sub" aria-hidden="true">of the house</span>
+        <button type="button" id="collection-fab" data-nav="shop" dir="rtl">
+          <span class="fab-ring" aria-hidden="true"></span>
+          <svg class="fab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/></svg>
+          <span>לקולקציה שלנו</span>
+        </button>
+      </span>
     </div>
-    <div class="hero-scroll-cue"><span>גללו</span><div class="line"><div class="dot"></div></div></div>
+    <button type="button" class="hero-scroll-cue" id="hero-scroll-cue" aria-label="גללו למטה">
+      <span class="hsc-ring" aria-hidden="true">
+        <svg class="hsc-chevron c1" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        <svg class="hsc-chevron c2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+      </span>
+    </button>
   </div>
 
   <div class="hero-showcase" id="hero-showcase">
@@ -3838,6 +3928,16 @@ function escapeHTML(str){
     });
   }
 
+  const scrollCue = document.getElementById('hero-scroll-cue');
+  if(scrollCue){
+    scrollCue.addEventListener('click', function(){
+      window.scrollTo({
+        top: window.innerHeight * 0.92,
+        behavior: reduceMotion ? 'auto' : 'smooth'
+      });
+    });
+  }
+
   let revealObserver;
   if('IntersectionObserver' in window){
     revealObserver = new IntersectionObserver(function(entries){
@@ -4470,24 +4570,25 @@ if(siteNav){
 
   window.addEventListener("scroll", queueNavScrolledUpdate, {passive:true});
 
-  /* ---- Transparent-over-hero effect (home page only) ----
-     At scrollY 0 the nav has no background at all - it visually reads as
-     part of the hero photo, logo and links floating directly over it (just
-     like the reference video). As the visitor scrolls, --nav-o eases from
-     0 to 1 across the top portion of the hero, so the gold bar "separates"
-     from the image gradually instead of snapping in. */
+  /* ---- Invisible-until-scrolled nav (home page only) ----
+     At scrollY 0 the whole bar - background, logo, links - is invisible,
+     so the hero reads as if there's no toolbar there at all. As the
+     visitor scrolls, --nav-o eases from 0 to 1 across the top portion of
+     the hero and the bar fades in as one piece. */
   let navHeroRaf = false;
   function applyNavHeroProgress(){
     navHeroRaf = false;
     const heroEl = document.querySelector("#view-home.active .hero");
     if(!heroEl){
       siteNav.classList.remove("nav-hero");
+      siteNav.classList.add("nav-visible");
       return;
     }
     siteNav.classList.add("nav-hero");
     const fadeDist = Math.min(heroEl.offsetHeight * 0.55, 340);
     const p = fadeDist > 0 ? Math.min(1, Math.max(0, window.scrollY / fadeDist)) : 1;
     siteNav.style.setProperty("--nav-o", p.toFixed(3));
+    siteNav.classList.toggle("nav-visible", p > 0.02);
   }
   function queueNavHeroProgress(){
     if(navHeroRaf) return;
