@@ -918,7 +918,7 @@ if("serviceWorker" in navigator){
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Rubik:wght@300;400;500;600;700&family=Jost:wght@200;300;400;500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Poppins:wght@200;300;400&family=Montserrat:wght@100;200;300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@200;300;400;500;600;700&family=Rubik:wght@300;400;500;600;700&family=Jost:wght@200;300;400;500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Poppins:wght@200;300;400&family=Montserrat:wght@100;200;300;400&display=swap" rel="stylesheet">
 <style>
   :root{
     --cream:#E7C77E;
@@ -1229,13 +1229,17 @@ if("serviceWorker" in navigator){
     .light-glow{animation:none;opacity:.55;}
   }
   .hero-brand{
-    position:absolute;z-index:3;left:0;top:50%;transform:translateY(-50%);
-    width:min(50vw, 820px);padding-inline-start:56px;pointer-events:none;
+    position:absolute;z-index:3;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:min(70vw, 900px);text-align:center;pointer-events:none;
+  }
+  .hero-brand-logo{
+    display:block;margin:0 auto 14px;width:clamp(70px,8vw,120px);height:auto;
+    filter:drop-shadow(0 2px 20px rgba(214,177,94,0.35));
   }
   .hero-brand-main{
-    display:block;text-align:left;font-family:'Montserrat',sans-serif;
-    font-size:clamp(66px,11.4vw,188px);font-weight:100;letter-spacing:0.07em;
-    line-height:0.92;
+    display:block;text-align:center;font-family:'Assistant',sans-serif;
+    font-size:clamp(18px,2vw,26px);font-weight:300;letter-spacing:0.12em;
+    line-height:1.35;
     background:linear-gradient(100deg, var(--gold-pale) 0%, var(--gold-light) 22%, var(--gold-metal) 45%, var(--gold-dark) 58%, var(--gold-light) 75%, var(--gold-pale) 100%);
     background-size:220% 100%;
     -webkit-background-clip:text;background-clip:text;color:transparent;
@@ -1252,18 +1256,19 @@ if("serviceWorker" in navigator){
     .hero-brand-main{animation:none;}
   }
   .hero-brand-sub-wrap{
-    position:relative;display:inline-block;margin-top:22px;
+    position:relative;display:inline-block;margin-top:16px;text-align:center;
   }
   .hero-brand-sub{
-    display:block;text-align:left;font-family:'Montserrat',sans-serif;font-weight:100;
-    font-size:clamp(15px,1.7vw,22px);letter-spacing:0.66em;
-    text-transform:lowercase;color:var(--gold-pale);
-    opacity:0.85;
+    display:block;text-align:center;font-family:'Assistant',sans-serif;font-weight:200;
+    font-size:clamp(30px,4.2vw,54px);letter-spacing:0.05em;
+    color:var(--gold-pale);
+    opacity:0.9;
   }
   @media (max-width:860px){
-    .hero-brand{width:80vw;padding-inline-start:26px;}
-    .hero-brand-main{font-size:clamp(52px,17vw,96px);}
-    .hero-brand-sub{font-size:14px;letter-spacing:0.4em;}
+    .hero-brand{width:90vw;}
+    .hero-brand-logo{width:clamp(56px,16vw,80px);margin-bottom:10px;}
+    .hero-brand-main{font-size:clamp(15px,4vw,19px);}
+    .hero-brand-sub{font-size:clamp(24px,7vw,32px);}
     .hero-brand-sub-wrap{margin-top:12px;}
   }
   .btn{
@@ -1343,14 +1348,17 @@ if("serviceWorker" in navigator){
 
   /* ===== LUXURY MOTION: HERO ENTRANCE ===== */
   .hero-brand{will-change:transform,opacity;}
+  .hero-brand-logo,
   .hero-brand-main,
   .hero-brand-sub{
     opacity:0;transform:translateY(26px);
     transition:opacity 1.2s cubic-bezier(.19,1,.22,1), transform 1.2s cubic-bezier(.19,1,.22,1);
   }
+  .hero-brand-logo{transition-delay:0s;}
   .hero-brand-main{transition-delay:.15s;}
   .hero-brand-sub{transition-delay:.4s;}
   .hero.hero-loaded .hero-scroll-cue{opacity:1;}
+  .hero.hero-loaded .hero-brand-logo,
   .hero.hero-loaded .hero-brand-main,
   .hero.hero-loaded .hero-brand-sub{
     opacity:1;transform:translateY(0);
@@ -1385,7 +1393,7 @@ if("serviceWorker" in navigator){
   .cta-band .btn.reveal{transition-delay:.28s;}
   @media (prefers-reduced-motion: reduce){
     .reveal,.reveal-scale,.feature-row,
-    .hero-brand-main,.hero-brand-sub,.hero-scroll-cue,
+    .hero-brand-logo,.hero-brand-main,.hero-brand-sub,.hero-scroll-cue,
     .bedding-feature .bedding-img,.bedding-feature .bedding-copy{
       transition:none !important;opacity:1 !important;transform:none !important;
     }
@@ -2766,10 +2774,11 @@ if("serviceWorker" in navigator){
       <span class="light-glow spot-2"></span>
       <span class="light-glow spot-3"></span>
     </div>
-    <div class="hero-brand" dir="ltr">
-      <span class="hero-brand-main" aria-hidden="true">REPOSE</span>
+    <div class="hero-brand" dir="rtl">
+      <img class="hero-brand-logo" src="/images/site/rs-mark.png" alt="רפאוז סטייל" aria-hidden="true">
+      <span class="hero-brand-main" aria-hidden="true">רפאוז סטייל · קולקציית מצעים יוקרתית</span>
       <span class="hero-brand-sub-wrap">
-        <span class="hero-brand-sub" aria-hidden="true">of the house</span>
+        <span class="hero-brand-sub" aria-hidden="true">יוקרה שתעצב לכם את הבית</span>
         <button type="button" id="collection-fab" data-nav="shop" dir="rtl">
           <span class="fab-ring" aria-hidden="true"></span>
           <svg class="fab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/></svg>
