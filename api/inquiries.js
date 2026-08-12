@@ -53,8 +53,14 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'לא ניתן להשלים את הבקשה. אנא רעננו את הדף ונסו שוב.' });
     }
 
-    const { type, name, phone, email, message } = body || {};
+    const { type, name, phone, email, message, time_on_site_seconds } = body || {};
     const inquiryType = TYPE_LABELS[type] ? type : 'contact';
+    // Sanity-bound: a plain integer, capped at 24h - never trust the
+    // client's number blindly, but it's only ever used for the "🔥 חם /
+    // ❄️ קר" admin badge, not for anything security-sensitive.
+    const timeOnSite = Number.isFinite(Number(time_on_site_seconds))
+      ? Math.max(0, Math.min(86400, Math.round(Number(time_on_site_seconds))))
+      : null;
 
     if (!name) {
       return res.status(400).json({ error: 'Name is required.' });
@@ -75,6 +81,7 @@ module.exports = async (req, res) => {
           email: email || null,
           message: message || null,
           status: 'new',
+          time_on_site_seconds: timeOnSite,
         })
         .select()
     );
@@ -88,7 +95,7 @@ module.exports = async (req, res) => {
     // here is logged but never turns an already-saved inquiry into an
     // error response for the visitor.
     try {
-      const notifyTo = sanitizeEnvValue(process.env.ORDER_NOTIFY_EMAIL) || 'rstyle.israel@gmail.com';
+      const notifyTo = sanitizeEnvValue(process.env.ORDER_NOTIFY_EMAIL) || 'simcha41440@gmail.com';
       const title = TYPE_LABELS[inquiryType];
       const rows = [];
       rows.push(`<b>שם:</b> ${escapeHtml(name)}`);
@@ -108,6 +115,29 @@ module.exports = async (req, res) => {
       });
     } catch (err) {
       console.error(`Inquiry ${inquiryId}: notification email failed (non-fatal):`, err);
+    }
+
+    // Confirmation to the person who submitted the form - only if they
+    // gave an email address. Same best-effort treatment as the business
+    // notification above: never turns an already-saved inquiry into an
+    // error response for the visitor.
+    if (email) {
+      try {
+        const confirmHtml = `
+          <div dir="rtl" style="font-family:Arial,sans-serif;font-size:15px;color:#333;">
+            <p>שלום ${escapeHtml(name)},</p>
+            <p>הפנייה שלך התקבלה בהצלחה ומספרה <b>${escapeHtml(inquiryId)}</b>. אנו נחזור אליך בהקדם האפשרי.</p>
+            ${message ? `<p style="margin:14px 0 0;"><b>ההודעה ששלחת:</b><br>${escapeHtml(message).replace(/\n/g, '<br>')}</p>` : ''}
+            <p style="margin:14px 0 0;">תודה,<br>צוות רפאוז סטייל</p>
+          </div>`;
+        await sendEmail({
+          to: email,
+          subject: `הפנייה שלך התקבלה - רפאוז סטייל`,
+          html: confirmHtml,
+        });
+      } catch (err) {
+        console.error(`Inquiry ${inquiryId}: customer confirmation email failed (non-fatal):`, err);
+      }
     }
 
     return res.status(201).json({ inquiry: data && data[0] });

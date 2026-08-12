@@ -88,6 +88,11 @@
   .tag{display:inline-block; padding:3px 10px; border-radius:999px; font-size:11.5px; font-weight:600;}
   .tag.active{background:#E1F3E9; color:var(--green-wa);}
   .tag.inactive{background:#F4E4E0; color:var(--danger);}
+  .tag.hot{background:#FBE7DD; color:#C1571F;}
+  .tag.cold{background:#E4EEF7; color:#2E6DA4;}
+  .lead-time{font-size:11px; color:var(--taupe); display:block; margin-top:3px;}
+  .btn.whatsapp{background:var(--green-wa); box-shadow:none;}
+  .btn.whatsapp:hover{filter:brightness(1.08);}
   select.status-select{
     padding:6px 8px; border:1px solid var(--line); border-radius:6px; font-family:inherit; font-size:12.5px; background:#FFFDF7;
   }
@@ -151,6 +156,7 @@
     <button data-tab="attempts">ניסיונות תשלום</button>
     <button data-tab="coupons">קופונים</button>
     <button data-tab="inquiries">פניות</button>
+    <button data-tab="drafts">טיוטות פניות</button>
     <button data-tab="visits">ביקורים באתר</button>
     <button data-tab="activity">יומן פעילות</button>
     <button class="logout" id="logoutBtn">התנתקות</button>
@@ -395,6 +401,22 @@
       </div>
     </section>
 
+    <!-- Form drafts tab -->
+    <section id="tab-drafts" style="display:none;">
+      <h1 class="serif">טיוטות פניות</h1>
+      <p class="sub">מה מבקרים מתחילים להקליד בטופס "צור קשר" או בטופס המיני-קשר בקופה, גם אם הם לא לוחצים שליחה. ברגע שפנייה נשלחת בפועל, הטיוטה שלה נמחקת אוטומטית.</p>
+
+      <div class="panel">
+        <div class="top-row">
+          <h3 style="margin:0">טיוטות פתוחות: <span id="draftsTotalCount">-</span></h3>
+          <span class="refresh" id="draftsRefreshed"></span>
+          <button class="btn outline small" id="draftsRefreshBtn" type="button">רענון</button>
+          <button class="btn danger small" id="draftsDeleteAllBtn" type="button">מחיקת כל הטיוטות</button>
+        </div>
+        <div id="draftsTableWrap"><div class="empty">טוען...</div></div>
+      </div>
+    </section>
+
     <!-- Site visits tab -->
     <section id="tab-visits" style="display:none;">
       <h1 class="serif">ביקורים באתר</h1>
@@ -405,6 +427,7 @@
           <h3 style="margin:0">סה"כ ביקורים שנרשמו: <span id="visitsTotalCount">-</span></h3>
           <span class="refresh" id="visitsRefreshed"></span>
           <button class="btn outline small" id="visitsRefreshBtn" type="button">רענון</button>
+          <button class="btn danger small" id="visitsDeleteAllBtn" type="button">מחיקת כל הביקורים</button>
         </div>
         <div id="visitsTableWrap"><div class="empty">טוען...</div></div>
       </div>
@@ -534,6 +557,7 @@
       document.getElementById('tab-attempts').style.display = (tab === 'attempts') ? 'block' : 'none';
       document.getElementById('tab-coupons').style.display = (tab === 'coupons') ? 'block' : 'none';
       document.getElementById('tab-inquiries').style.display = (tab === 'inquiries') ? 'block' : 'none';
+      document.getElementById('tab-drafts').style.display = (tab === 'drafts') ? 'block' : 'none';
       document.getElementById('tab-visits').style.display = (tab === 'visits') ? 'block' : 'none';
       document.getElementById('tab-activity').style.display = (tab === 'activity') ? 'block' : 'none';
       if (tab === 'overview') renderOverview();
@@ -543,6 +567,7 @@
       if (tab === 'content') loadContent();
       if (tab === 'coupons') loadCoupons();
       if (tab === 'inquiries') loadInquiries();
+      if (tab === 'drafts') loadDrafts();
       if (tab === 'visits') loadVisits();
       if (tab === 'activity') loadActivity();
     });
@@ -560,6 +585,48 @@
   function escapeHtml(str){
     return String(str == null ? '' : str)
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ---------- Lead temperature (🔥 חם / ❄️ קר) ---------- */
+  // How long (in seconds) a visitor was on the site before they reached
+  // out (see time_on_site_seconds - set client-side in index.html and
+  // stored on both inquiries and form_drafts). 2+ minutes of browsing
+  // before contacting reads as a genuinely interested "hot" lead;
+  // anything shorter (including inquiries with no timing data, e.g. ones
+  // submitted before this feature existed) is shown as "cold".
+  const HOT_THRESHOLD_SECONDS = 120;
+  function leadTempBadge(seconds){
+    if (seconds === null || seconds === undefined || seconds === '') {
+      return '<span class="tag cold">❄️ קר</span>';
+    }
+    const s = Number(seconds);
+    const isHot = s >= HOT_THRESHOLD_SECONDS;
+    const mins = Math.floor(s / 60);
+    const secs = s % 60;
+    const label = mins > 0 ? (mins + ' דק׳ ' + secs + ' שנ׳') : (secs + ' שנ׳');
+    return '<span class="tag ' + (isHot ? 'hot">🔥 חם' : 'cold">❄️ קר') + '</span><span class="lead-time">' + label + ' באתר</span>';
+  }
+
+  /* ---------- WhatsApp quick-send ---------- */
+  // Normalizes an Israeli phone number (05X-XXXXXXX, with/without
+  // dashes/spaces, or already in 972 form) into the digits-only
+  // international format wa.me needs. Returns null for anything that
+  // doesn't look like a usable phone number.
+  function toWhatsappNumber(phone){
+    if (!phone) return null;
+    const digits = String(phone).replace(/\D/g, '');
+    if (!digits) return null;
+    if (digits.startsWith('972')) return digits;
+    if (digits.startsWith('0')) return '972' + digits.slice(1);
+    if (digits.length >= 8) return digits;
+    return null;
+  }
+  function whatsappButtonHtml(phone, name){
+    const wa = toWhatsappNumber(phone);
+    if (!wa) return '';
+    const greeting = 'שלום ' + (name || '') + ', מדברים מרפאוז סטייל - קיבלנו את הפנייה שלך ונשמח לעזור! 😊';
+    const url = 'https://wa.me/' + wa + '?text=' + encodeURIComponent(greeting);
+    return '<a class="btn whatsapp small" href="' + url + '" target="_blank" rel="noopener">וואטסאפ</a>';
   }
 
   /* Mirrors the built-in catalog defined in index.html (id -> display name
@@ -1508,7 +1575,7 @@
       return;
     }
     let html = '<table><thead><tr>' +
-      '<th>עמוד</th><th>הגיע מ-</th><th>IP</th><th>דפדפן</th><th>זמן</th>' +
+      '<th>עמוד</th><th>הגיע מ-</th><th>IP</th><th>דפדפן</th><th>זמן</th><th></th>' +
       '</tr></thead><tbody>';
     visits.forEach(function(v){
       html += '<tr>' +
@@ -1517,10 +1584,26 @@
         '<td>' + escapeHtml(v.ip || '-') + '</td>' +
         '<td class="items-cell">' + escapeHtml(v.user_agent || '-') + '</td>' +
         '<td>' + (v.created_at ? new Date(v.created_at).toLocaleString('he-IL') : '-') + '</td>' +
+        '<td><button type="button" class="btn danger small" data-delete-visit="' + escapeHtml(v.id) + '">מחיקה</button></td>' +
         '</tr>';
     });
     html += '</tbody></table>';
     wrap.innerHTML = html;
+
+    wrap.querySelectorAll('[data-delete-visit]').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        const id = btn.getAttribute('data-delete-visit');
+        if (!confirm('למחוק את הביקור הזה?')) return;
+        btn.disabled = true;
+        try {
+          await api('/api/track-visit?id=' + encodeURIComponent(id), { method: 'DELETE' });
+          loadVisits();
+        } catch (e) {
+          alert(e.message || 'שגיאה במחיקה.');
+          btn.disabled = false;
+        }
+      });
+    });
   }
 
   async function loadVisits(){
@@ -1537,6 +1620,20 @@
   }
 
   document.getElementById('visitsRefreshBtn').addEventListener('click', loadVisits);
+
+  document.getElementById('visitsDeleteAllBtn').addEventListener('click', async function(){
+    if (!confirm('למחוק את כל הביקורים שנרשמו לצמיתות? לא ניתן לשחזר את זה.')) return;
+    const btn = this;
+    btn.disabled = true;
+    try {
+      await api('/api/track-visit?all=1', { method: 'DELETE' });
+      loadVisits();
+    } catch (e) {
+      alert(e.message || 'שגיאה במחיקה.');
+    } finally {
+      btn.disabled = false;
+    }
+  });
 
   /* ---------- Inquiries ---------- */
   const INQUIRY_STATUS_LABELS = {
@@ -1555,7 +1652,7 @@
       return;
     }
     let html = '<table><thead><tr>' +
-      '<th>מקור</th><th>שם</th><th>טלפון</th><th>אימייל</th><th>הודעה</th><th>תאריך</th><th>סטטוס</th><th></th>' +
+      '<th>מקור</th><th>שם</th><th>טלפון</th><th>אימייל</th><th>הודעה</th><th>תאריך</th><th>ליד</th><th>סטטוס</th><th></th>' +
       '</tr></thead><tbody>';
     inquiries.forEach(function(q){
       const statusOptions = Object.keys(INQUIRY_STATUS_LABELS).map(function(key){
@@ -1570,8 +1667,9 @@
         '<td>' + escapeHtml(q.email || '-') + '</td>' +
         '<td class="items-cell">' + escapeHtml(q.message || '-') + '</td>' +
         '<td>' + (q.created_at ? new Date(q.created_at).toLocaleString('he-IL') : '-') + '</td>' +
+        '<td>' + leadTempBadge(q.time_on_site_seconds) + '</td>' +
         '<td><select class="inquiry-status-select" data-inquiry-id="' + escapeHtml(q.id) + '">' + statusOptions + '</select></td>' +
-        '<td><button type="button" class="btn danger small" data-delete-inquiry="' + escapeHtml(q.id) + '">מחיקה</button></td>' +
+        '<td style="display:flex;gap:6px;flex-wrap:wrap;">' + whatsappButtonHtml(q.phone, q.name) + '<button type="button" class="btn danger small" data-delete-inquiry="' + escapeHtml(q.id) + '">מחיקה</button></td>' +
         '</tr>';
     });
     html += '</tbody></table>';
@@ -1638,6 +1736,82 @@
   }
   document.getElementById('inquiriesSearch').addEventListener('input', applyInquiriesFilter);
 
+  /* ---------- Form drafts (unsent contact-form typing) ---------- */
+  const DRAFT_TYPE_LABELS = {
+    contact: 'צור קשר',
+    checkout_contact: 'מיני-קשר בקופה',
+  };
+
+  function renderDrafts(drafts){
+    const wrap = document.getElementById('draftsTableWrap');
+    if (!drafts || !drafts.length) {
+      wrap.innerHTML = '<div class="empty">אין כרגע טיוטות פתוחות.</div>';
+      return;
+    }
+    let html = '<table><thead><tr>' +
+      '<th>מקור</th><th>שם</th><th>טלפון</th><th>אימייל</th><th>הודעה (עד כה)</th><th>עודכן לאחרונה</th><th>ליד</th><th></th>' +
+      '</tr></thead><tbody>';
+    drafts.forEach(function(d){
+      html += '<tr>' +
+        '<td>' + escapeHtml(DRAFT_TYPE_LABELS[d.type] || d.type || '-') + '</td>' +
+        '<td>' + escapeHtml(d.name || '-') + '</td>' +
+        '<td>' + escapeHtml(d.phone || '-') + '</td>' +
+        '<td>' + escapeHtml(d.email || '-') + '</td>' +
+        '<td class="items-cell">' + escapeHtml(d.message || '-') + '</td>' +
+        '<td>' + (d.updated_at ? new Date(d.updated_at).toLocaleString('he-IL') : '-') + '</td>' +
+        '<td>' + leadTempBadge(d.time_on_site_seconds) + '</td>' +
+        '<td style="display:flex;gap:6px;flex-wrap:wrap;">' + whatsappButtonHtml(d.phone, d.name) + '<button type="button" class="btn danger small" data-delete-draft="' + escapeHtml(d.id) + '">מחיקה</button></td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+
+    wrap.querySelectorAll('[data-delete-draft]').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        const id = btn.getAttribute('data-delete-draft');
+        if (!confirm('למחוק את הטיוטה הזו?')) return;
+        btn.disabled = true;
+        try {
+          await api('/api/form-drafts?id=' + encodeURIComponent(id), { method: 'DELETE' });
+          loadDrafts();
+        } catch (e) {
+          alert(e.message || 'שגיאה במחיקה.');
+          btn.disabled = false;
+        }
+      });
+    });
+  }
+
+  async function loadDrafts(){
+    const wrap = document.getElementById('draftsTableWrap');
+    try {
+      const data = await api('/api/form-drafts');
+      const drafts = data.drafts || [];
+      renderDrafts(drafts);
+      document.getElementById('draftsTotalCount').textContent = drafts.length;
+      document.getElementById('draftsRefreshed').textContent =
+        'עודכן: ' + new Date().toLocaleTimeString('he-IL');
+    } catch (e) {
+      wrap.innerHTML = '<div class="empty">שגיאה בטעינה: ' + escapeHtml(e.message) + '</div>';
+    }
+  }
+
+  document.getElementById('draftsRefreshBtn').addEventListener('click', loadDrafts);
+
+  document.getElementById('draftsDeleteAllBtn').addEventListener('click', async function(){
+    if (!confirm('למחוק את כל הטיוטות הפתוחות לצמיתות?')) return;
+    const btn = this;
+    btn.disabled = true;
+    try {
+      await api('/api/form-drafts?all=1', { method: 'DELETE' });
+      loadDrafts();
+    } catch (e) {
+      alert(e.message || 'שגיאה במחיקה.');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
   /* ---------- Activity log ---------- */
   const ACTION_LABELS = {
     login: 'התחברות',
@@ -1647,7 +1821,11 @@
     inquiry_status_update: 'עדכון סטטוס פנייה',
     inquiry_delete: 'מחיקת פנייה',
     product_upsert: 'עדכון/הוספת מוצר',
-    product_delete: 'מחיקת override מוצר'
+    product_delete: 'מחיקת override מוצר',
+    site_visit_delete: 'מחיקת ביקור',
+    site_visits_delete_all: 'מחיקת כל הביקורים',
+    form_draft_delete: 'מחיקת טיוטת פנייה',
+    form_drafts_delete_all: 'מחיקת כל טיוטות הפנייה'
   };
 
   function renderActivity(entries){

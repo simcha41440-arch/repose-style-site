@@ -61,7 +61,7 @@ module.exports = async (req, res) => {
 
   if (supabase) await recordRateLimitEvent(supabase, 'newsletter', ip);
 
-  const notifyTo = sanitizeEnvValue(process.env.ORDER_NOTIFY_EMAIL) || 'rstyle.israel@gmail.com';
+  const notifyTo = sanitizeEnvValue(process.env.ORDER_NOTIFY_EMAIL) || 'simcha41440@gmail.com';
 
   const businessHtml = `
     <div dir="rtl" style="font-family:Arial,sans-serif;font-size:15px;color:#333;">

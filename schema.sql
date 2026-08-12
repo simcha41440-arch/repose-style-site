@@ -75,6 +75,7 @@ create table if not exists inquiries (
   email text,
   message text,
   status text not null default 'new',
+  time_on_site_seconds integer,
   created_at timestamptz not null default now(),
   updated_at timestamptz
 );

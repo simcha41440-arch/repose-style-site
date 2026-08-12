@@ -1,7 +1,7 @@
 const { getSupabase, withFriendlyError } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/session');
 const { parseJsonBody } = require('./_lib/parseJson');
-const { getClientIp, checkRateLimit, recordRateLimitEvent } = require('./_lib/security');
+const { getClientIp, checkRateLimit, recordRateLimitEvent, logAdminAction } = require('./_lib/security');
 
 // Records one row per real page load of the storefront (index.html calls
 // this once on load, only after the cookie-consent bar has been
@@ -81,6 +81,38 @@ module.exports = async (req, res) => {
     return res.status(200).json({ visits: data, total: count || (data ? data.length : 0) });
   }
 
-  res.setHeader('Allow', 'GET, POST');
+  if (req.method === 'DELETE') {
+    // Two modes: ?id=<row id> deletes one visit, ?all=1 clears every
+    // recorded visit (e.g. after testing, or a periodic privacy cleanup).
+    const id = req.query && req.query.id;
+    const all = req.query && (req.query.all === '1' || req.query.all === 'true');
+
+    if (all) {
+      // Supabase requires a filter on delete - "id not null" matches
+      // every row (id is the primary key, never null).
+      const { error } = await withFriendlyError(
+        supabase.from('site_visits').delete().not('id', 'is', null)
+      );
+      if (error) {
+        return res.status(500).json({ error: error.message });
+      }
+      await logAdminAction(supabase, session.user, 'site_visits_delete_all', null, null, getClientIp(req));
+      return res.status(200).json({ ok: true });
+    }
+
+    if (!id) {
+      return res.status(400).json({ error: 'id is required.' });
+    }
+    const { error } = await withFriendlyError(
+      supabase.from('site_visits').delete().eq('id', id)
+    );
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+    await logAdminAction(supabase, session.user, 'site_visit_delete', id, null, getClientIp(req));
+    return res.status(200).json({ ok: true });
+  }
+
+  res.setHeader('Allow', 'GET, POST, DELETE');
   return res.status(405).json({ error: 'Method not allowed.' });
 };

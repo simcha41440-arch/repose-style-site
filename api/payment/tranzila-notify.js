@@ -81,7 +81,7 @@ module.exports = async (req, res) => {
     }
   }
 
-  const notifyTo = sanitizeEnvValue(process.env.ORDER_NOTIFY_EMAIL) || 'rstyle.israel@gmail.com';
+  const notifyTo = sanitizeEnvValue(process.env.ORDER_NOTIFY_EMAIL) || 'simcha41440@gmail.com';
   const rowsHtml = Object.entries(fields)
     .map(([k, v]) => `<tr><td style="padding:2px 8px;color:#888;">${escapeHtml(k)}</td><td style="padding:2px 8px;">${escapeHtml(v)}</td></tr>`)
     .join('');

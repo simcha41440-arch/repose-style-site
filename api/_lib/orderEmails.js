@@ -26,7 +26,7 @@ function itemsTable(items) {
 // AFTER the order is already saved in Supabase, and treat any failure here
 // as a logged warning, not a reason to fail the order-creation request.
 async function sendOrderNotificationEmails({ orderId, customer, items, total, notes }) {
-  const notifyTo = sanitizeEnvValue(process.env.ORDER_NOTIFY_EMAIL) || 'rstyle.israel@gmail.com';
+  const notifyTo = sanitizeEnvValue(process.env.ORDER_NOTIFY_EMAIL) || 'simcha41440@gmail.com';
 
   const businessHtml = `
     <div dir="rtl" style="font-family:Arial,sans-serif;font-size:15px;color:#333;">

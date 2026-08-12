@@ -1310,8 +1310,8 @@ if("serviceWorker" in navigator){
   .hero-brand-desc{
     display:block;text-align:right;font-family:'Assistant',sans-serif;font-weight:300;
     font-size:clamp(17px,2vw,22px);line-height:1.7;letter-spacing:0.01em;
-    color:var(--ivory);opacity:0.85;
-    text-shadow:0 1px 3px rgba(0,0,0,0.7), 0 3px 10px rgba(0,0,0,0.5);
+    color:var(--ivory);opacity:0.97;
+    text-shadow:0 1px 4px rgba(0,0,0,0.85), 0 2px 6px rgba(0,0,0,0.7), 0 4px 14px rgba(0,0,0,0.55);
     max-width:560px;margin:16px 0 0 auto;
   }
   @media (max-width:860px){
@@ -2134,6 +2134,11 @@ if("serviceWorker" in navigator){
     cursor:pointer;padding:0;margin:-10px 0 18px;display:block;text-align:start;
   }
   .auth-forgot-link:hover{color:var(--text-gold);}
+  /* When the link comes right after the submit button (e.g. "שליחת קוד
+     חדש" under the reset-password form) the default negative top margin
+     above would pull it up into the button - give it breathing room
+     instead of overlapping. */
+  .auth-form .btn + .auth-forgot-link{margin-top:16px;}
   .auth-loggedin-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
   .auth-loggedin-hello{font-family:'Rubik','Almoni Neue',sans-serif;font-size:16px;font-weight:600;color:var(--text-gold);}
   .auth-loggedin-email{color:var(--taupe);font-size:13.5px;margin-top:4px;}
@@ -2252,18 +2257,40 @@ if("serviceWorker" in navigator){
     align-items:center;justify-content:center;
     background:rgba(20,16,10,0.88);
     padding:56px 24px;cursor:zoom-out;
-    opacity:0;transition:opacity .25s ease;
+    opacity:0;transition:opacity .6s ease;
   }
-  .image-lightbox.open{display:flex;opacity:1;}
+  .image-lightbox.visible{display:flex;}
+  .image-lightbox.open{opacity:1;}
   .image-lightbox img{
     max-width:min(92vw,1100px);max-height:82vh;
     width:auto;height:auto;object-fit:contain;
     box-shadow:0 20px 60px rgba(0,0,0,0.55);
     border:3px solid var(--gold-pale);background:var(--ivory);
     cursor:default;
-    transform:scale(.96);transition:transform .25s ease;
+    opacity:0;
+    transform:scale(.92);
+    transition:transform .7s cubic-bezier(.19,1,.22,1), opacity .55s ease;
   }
-  .image-lightbox.open img{transform:scale(1);}
+  .image-lightbox img.loaded{opacity:1;transform:scale(1);}
+  /* Two-ring gold spinner shown for a beat while the full-size image
+     loads in, before it fades/scales into view. */
+  .lightbox-spinner{
+    position:absolute;width:86px;height:86px;border-radius:50%;
+    border:4px solid rgba(214,177,94,0.22);
+    border-top-color:var(--gold-light);
+    border-right-color:var(--gold-dark);
+    opacity:0;visibility:hidden;transition:opacity .3s ease;
+    animation:lightboxSpin 1s linear infinite;
+  }
+  .lightbox-spinner::after{
+    content:"";position:absolute;inset:11px;border-radius:50%;
+    border:3px solid transparent;
+    border-bottom-color:var(--gold-metal);
+    border-left-color:var(--gold-pale);
+    animation:lightboxSpin 1.5s linear infinite reverse;
+  }
+  .lightbox-spinner.active{opacity:1;visibility:visible;}
+  @keyframes lightboxSpin{to{transform:rotate(360deg);}}
   .lightbox-close{
     position:absolute;top:20px;inset-inline-end:20px;
     width:44px;height:44px;border-radius:50%;
@@ -2279,7 +2306,7 @@ if("serviceWorker" in navigator){
     .lightbox-close{top:12px;inset-inline-end:12px;width:38px;height:38px;font-size:22px;}
   }
   @media (prefers-reduced-motion: reduce){
-    .image-lightbox, .image-lightbox img{transition:none;}
+    .image-lightbox, .image-lightbox img, .lightbox-spinner{transition:none;animation:none;}
   }
   body.lightbox-open{overflow:hidden;}
 
@@ -2752,6 +2779,54 @@ if("serviceWorker" in navigator){
   body.a11y-grayscale{filter:grayscale(1);}
   body.a11y-spacing, body.a11y-spacing *{letter-spacing:0.06em !important;word-spacing:0.15em !important;line-height:1.9 !important;}
   body.a11y-readable, body.a11y-readable *{font-family:Arial, Verdana, sans-serif !important;}
+
+  /* ===== Floating WhatsApp button - bottom-right, always available,
+     no form to fill in - just opens a chat with the business number. ===== */
+  #wa-float{
+    position:fixed;bottom:26px;right:22px;z-index:980;
+    width:58px;height:58px;border-radius:50%;
+    background:var(--green-wa);color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 10px 26px -6px rgba(20,16,12,0.5);
+    text-decoration:none;
+    transition:transform .3s ease, box-shadow .3s ease;
+  }
+  #wa-float:hover{transform:scale(1.08);box-shadow:0 14px 32px -6px rgba(20,16,12,0.55);}
+  #wa-float svg{width:30px;height:30px;fill:#fff;}
+  #wa-float::before{
+    /* soft pulsing ring so the button reads as "alive" without being
+       obnoxious - stops after a few cycles via animation-iteration-count */
+    content:"";position:absolute;inset:0;border-radius:50%;
+    box-shadow:0 0 0 0 rgba(63,167,114,0.55);
+    animation:waPulse 2.2s ease-out 4;
+  }
+  @keyframes waPulse{
+    0%{box-shadow:0 0 0 0 rgba(63,167,114,0.55);}
+    100%{box-shadow:0 0 0 18px rgba(63,167,114,0);}
+  }
+  #wa-float-tip{
+    position:fixed;bottom:36px;right:90px;z-index:979;
+    background:#fff;color:var(--ink);font-size:13px;
+    padding:10px 16px;border-radius:12px;white-space:nowrap;
+    box-shadow:0 10px 26px -8px rgba(20,16,12,0.35);
+    opacity:0;transform:translateX(8px);pointer-events:none;
+    transition:opacity .35s ease, transform .35s ease;
+  }
+  #wa-float-tip.show{opacity:1;transform:translateX(0);}
+  #wa-float-tip::after{
+    content:"";position:absolute;top:50%;right:-6px;transform:translateY(-50%);
+    width:0;height:0;border-style:solid;
+    border-width:6px 0 6px 6px;border-color:transparent transparent transparent #fff;
+  }
+  @media (max-width:640px){
+    #wa-float{bottom:18px;right:16px;width:52px;height:52px;}
+    #wa-float svg{width:26px;height:26px;}
+    #wa-float-tip{display:none;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    #wa-float::before{animation:none;}
+    #wa-float-tip{transition:none;}
+  }
 </style>
 </head>
 <body>
@@ -2762,6 +2837,7 @@ if("serviceWorker" in navigator){
 <div id="page-transition-bar" aria-hidden="true"></div>
 <div id="image-lightbox" class="image-lightbox" role="dialog" aria-modal="true" aria-hidden="true">
   <button type="button" class="lightbox-close" aria-label="סגירה">&times;</button>
+  <div id="lightbox-spinner" class="lightbox-spinner" aria-hidden="true"></div>
   <img id="lightbox-img" src="" alt="">
 </div>
 <a href="#main-content" class="skip-link">דלג לתוכן הראשי</a>
@@ -3657,7 +3733,7 @@ if("serviceWorker" in navigator){
              sent; the visitor enters the 6-digit code from the email
              together with a new password (no link/token in the URL). -->
         <form id="auth-form-reset" class="auth-form" novalidate>
-          <p style="color:var(--taupe);font-size:13.5px;margin-bottom:16px;">הזינו את הקוד שנשלח לדוא"ל <strong id="auth-reset-email-label"></strong> וקבעו סיסמה חדשה.</p>
+          <p style="color:var(--taupe);font-size:13.5px;margin-bottom:16px;">קיבלתם קוד בן 6 ספרות בדוא"ל <strong id="auth-reset-email-label"></strong>. הזינו אותו וקבעו סיסמה חדשה.</p>
           <div class="auth-form-error" id="auth-reset-error" role="alert"></div>
           <div class="form-group">
             <label for="auth-reset-code">קוד בן 6 ספרות</label>
@@ -3823,6 +3899,12 @@ if("serviceWorker" in navigator){
     <div id="search-results"></div>
   </div>
 </div>
+
+<!-- ============ FLOATING WHATSAPP BUTTON ============ -->
+<div id="wa-float-tip" role="status">דברו איתנו בוואטסאפ 👋</div>
+<a id="wa-float" href="#" target="_blank" rel="noopener" aria-label="פתיחת שיחת וואטסאפ">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12.004 2C6.478 2 2 6.477 2 12c0 1.87.512 3.622 1.404 5.126L2 22l4.994-1.352A9.945 9.945 0 0 0 12.004 22C17.53 22 22 17.523 22 12S17.53 2 12.004 2zm0 18.05c-1.72 0-3.336-.492-4.7-1.34l-.337-.202-3.19.863.85-3.11-.22-.32A8.003 8.003 0 0 1 4 12c0-4.418 3.582-8 8.004-8C16.42 4 20 7.582 20 12s-3.58 8.05-7.996 8.05z"/></svg>
+</a>
 
 <!-- ============ NEWSLETTER POPUP ============ -->
 <!-- ============ ACCESSIBILITY WIDGET ============ -->
@@ -5336,23 +5418,69 @@ function initMagnifier(){
 
 /* ============================================================
    IMAGE LIGHTBOX (פתיחת תמונת המוצר בגודל מלא בלחיצה)
+   פותח לאט: שנייה אחת של גלגל טעינה זהוב מרשים, ואז התמונה נכנסת
+   בהדרגה (עמעום + הגדלה איטית). נסגר גם הוא בהדרגה, לא בבת אחת.
    ============================================================ */
+let lightboxHideTimer = null;
 function openImageLightbox(src, alt){
   const lightbox = document.getElementById("image-lightbox");
   const lbImg = document.getElementById("lightbox-img");
+  const spinner = document.getElementById("lightbox-spinner");
   if(!lightbox || !lbImg || !src) return;
-  lbImg.src = src;
-  lbImg.alt = alt || "";
-  lightbox.classList.add("open");
+
+  clearTimeout(lightboxHideTimer);
+  const reducedMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  lbImg.classList.remove("loaded");
+  lbImg.removeAttribute("src");
+  lightbox.classList.add("visible");
   lightbox.setAttribute("aria-hidden", "false");
   document.body.classList.add("lightbox-open");
+  if(spinner) spinner.classList.add("active");
+  // Two rAFs so the browser paints the "visible" (display:flex) state
+  // first, then starts the opacity transition on the next frame -
+  // otherwise the fade-in gets skipped entirely.
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{ lightbox.classList.add("open"); });
+  });
+
+  const startedAt = Date.now();
+  const MIN_SPINNER_MS = reducedMotion ? 0 : 1000;
+  const preload = new Image();
+  preload.onload = preload.onerror = ()=>{
+    const wait = Math.max(0, MIN_SPINNER_MS - (Date.now() - startedAt));
+    setTimeout(()=>{
+      if(spinner) spinner.classList.remove("active");
+      lbImg.src = src;
+      lbImg.alt = alt || "";
+      requestAnimationFrame(()=>{
+        requestAnimationFrame(()=>{ lbImg.classList.add("loaded"); });
+      });
+    }, wait);
+  };
+  preload.src = src;
 }
 function closeImageLightbox(){
   const lightbox = document.getElementById("image-lightbox");
+  const lbImg = document.getElementById("lightbox-img");
+  const spinner = document.getElementById("lightbox-spinner");
   if(!lightbox) return;
+  const reducedMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   lightbox.classList.remove("open");
+  if(lbImg) lbImg.classList.remove("loaded");
+  if(spinner) spinner.classList.remove("active");
   lightbox.setAttribute("aria-hidden", "true");
   document.body.classList.remove("lightbox-open");
+
+  // Keep display:flex until the slow fade/scale-out transition has
+  // actually finished, so it visibly closes gradually instead of
+  // vanishing the instant the class is removed.
+  clearTimeout(lightboxHideTimer);
+  lightboxHideTimer = setTimeout(()=>{
+    lightbox.classList.remove("visible");
+    if(lbImg) lbImg.removeAttribute("src");
+  }, reducedMotion ? 0 : 650);
 }
 (function initLightboxControls(){
   const lightbox = document.getElementById("image-lightbox");
@@ -6189,6 +6317,23 @@ document.getElementById("ck-coupon-apply").addEventListener("click", async ()=>{
    below - this needs no third-party CAPTCHA service. */
 const RS_PAGE_LOAD_TS = Date.now();
 
+/* How long this visitor has been browsing the site (across pages, in
+   this browser tab) before they reach out - sent along with inquiries
+   and form drafts as time_on_site_seconds, so the admin panel can show
+   a "🔥 חם / ❄️ קר" badge (see renderInquiries/renderDrafts in
+   admin.html). sessionStorage keeps the same start time across page
+   navigations within the visit, but resets in a new tab or once the
+   tab is closed. */
+function rsTimeOnSiteSeconds(){
+  const KEY = "rs_session_start";
+  let start = sessionStorage.getItem(KEY);
+  if(!start){
+    start = String(Date.now());
+    sessionStorage.setItem(KEY, start);
+  }
+  return Math.max(0, Math.round((Date.now() - Number(start)) / 1000));
+}
+
 /* Sends the newsletter signup through /api/notify (best-effort email via
    Resend - low stakes, no need to persist these in the admin panel). */
 async function sendNotify(type, fields){
@@ -6226,6 +6371,71 @@ async function submitInquiry(type, fields){
   return payload && payload.inquiry;
 }
 
+/* ============================================================
+   LIVE FORM DRAFTS - captures what a visitor types into the contact
+   form / checkout mini-contact form even if they never press submit,
+   so it shows up in the admin panel's "טיוטות פניות" tab (see
+   api/form-drafts.js). Each browser tab gets its own random draftId
+   (kept in sessionStorage so a page refresh mid-typing still updates
+   the same row instead of creating a new one); the draft is deleted
+   the moment the visitor actually submits the real form. Entirely
+   best-effort - never shown to the visitor, never blocks anything. */
+function rsDraftId(formKey){
+  const storageKey = "rs_draft_id_" + formKey;
+  let id = sessionStorage.getItem(storageKey);
+  if(!id){
+    id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now() + "-" + Math.random().toString(36).slice(2));
+    sessionStorage.setItem(storageKey, id);
+  }
+  return id;
+}
+function rsNewDraftId(formKey){
+  const storageKey = "rs_draft_id_" + formKey;
+  sessionStorage.removeItem(storageKey);
+  return rsDraftId(formKey);
+}
+function rsWireDraftCapture(formKey, type, fieldIds){
+  const form = document.getElementById(formKey);
+  if(!form) return;
+  let timer = null;
+  function scheduleSave(){
+    clearTimeout(timer);
+    timer = setTimeout(()=>{
+      const fields = {};
+      fieldIds.forEach(fid=>{
+        const el = document.getElementById(fid.id);
+        if(el) fields[fid.field] = el.value;
+      });
+      fetch("/api/form-drafts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ draftId: rsDraftId(formKey), type, time_on_site_seconds: rsTimeOnSiteSeconds(), ...fields })
+      }).catch(()=>{ /* best-effort, never surfaced */ });
+    }, 1200);
+  }
+  fieldIds.forEach(fid=>{
+    const el = document.getElementById(fid.id);
+    if(el) el.addEventListener("input", scheduleSave);
+  });
+}
+function rsClearDraft(formKey){
+  const id = rsDraftId(formKey);
+  fetch("/api/form-drafts?draftId=" + encodeURIComponent(id), { method: "DELETE" }).catch(()=>{});
+  rsNewDraftId(formKey);
+}
+rsWireDraftCapture("contact-form", "contact", [
+  { id: "ct-name", field: "name" },
+  { id: "ct-phone", field: "phone" },
+  { id: "ct-email", field: "email" },
+  { id: "ct-message", field: "message" },
+]);
+rsWireDraftCapture("checkout-mini-contact-form", "checkout_contact", [
+  { id: "mc-name", field: "name" },
+  { id: "mc-email", field: "email" },
+  { id: "mc-phone", field: "phone" },
+  { id: "mc-message", field: "message" },
+]);
+
 document.getElementById("checkout-mini-contact-form").addEventListener("submit", async (e)=>{
   e.preventDefault();
   const form = e.target;
@@ -6240,10 +6450,12 @@ document.getElementById("checkout-mini-contact-form").addEventListener("submit",
     phone: form.phone.value,
     message: form.message ? form.message.value : "",
     hp_website: hpEl ? hpEl.value : "",
-    hp_ts: RS_PAGE_LOAD_TS
+    hp_ts: RS_PAGE_LOAD_TS,
+    time_on_site_seconds: rsTimeOnSiteSeconds()
   };
   try{
     await submitInquiry("checkout_contact", fields);
+    rsClearDraft("checkout-mini-contact-form");
     form.reset();
     showSuccessModal("פנייתכם התקבלה בהצלחה!", "הפרטים שלכם נשלחו אלינו, ניצור איתכם קשר בהקדם האפשרי.");
   } catch(err){
@@ -6501,10 +6713,12 @@ document.getElementById("contact-form").addEventListener("submit", async (e)=>{
     email: form.email.value,
     message: form.message.value,
     hp_website: hpEl ? hpEl.value : "",
-    hp_ts: RS_PAGE_LOAD_TS
+    hp_ts: RS_PAGE_LOAD_TS,
+    time_on_site_seconds: rsTimeOnSiteSeconds()
   };
   try{
     await submitInquiry("contact", fields);
+    rsClearDraft("contact-form");
     form.reset();
     showSuccessModal("פנייתכם התקבלה בהצלחה!", "תודה רבה שפניתם אלינו, ניצור איתכם קשר בהקדם האפשרי.");
   } catch(err){
@@ -6641,6 +6855,38 @@ if(document.readyState !== "complete"){
   window.addEventListener("load", setCollectionNavPhotos);
 }
 document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
+
+/* ============================================================
+   FLOATING WHATSAPP BUTTON
+   ============================================================ */
+(function(){
+  const btn = document.getElementById("wa-float");
+  const tip = document.getElementById("wa-float-tip");
+  if(!btn) return;
+
+  // Same business number already used in the footer's tel: link
+  // (055-6713828) - normalized to the international digits-only format
+  // wa.me needs.
+  const WA_NUMBER = "972556713828";
+  const greeting = 'היי, הגעתי מהאתר ואשמח לעזרה 🙂';
+  btn.href = "https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent(greeting);
+
+  // Shows a small "דברו איתנו" tooltip once per visit, a few seconds
+  // after the page settles, so the button doesn't feel like it's
+  // shouting from the first frame.
+  if(tip && !sessionStorage.getItem("rs_wa_tip_shown")){
+    setTimeout(()=>{
+      tip.classList.add("show");
+      sessionStorage.setItem("rs_wa_tip_shown", "1");
+      setTimeout(()=> tip.classList.remove("show"), 5000);
+    }, 2500);
+  }
+  if(tip){
+    btn.addEventListener("mouseenter", ()=> tip.classList.add("show"));
+    btn.addEventListener("mouseleave", ()=> tip.classList.remove("show"));
+    btn.addEventListener("click", ()=> tip.classList.remove("show"));
+  }
+})();
 
 /* ============================================================
    ACCESSIBILITY WIDGET

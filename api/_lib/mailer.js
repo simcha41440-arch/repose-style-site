@@ -15,7 +15,7 @@
 //                         the Resend account owner - it will silently fail
 //                         for any other recipient.
 //   ORDER_NOTIFY_EMAIL - the business inbox that should receive new-order
-//                         and contact-form alerts, e.g. rstyle.israel@gmail.com
+//                         and contact-form alerts, e.g. simcha41440@gmail.com
 
 const RESEND_API_URL = 'https://api.resend.com/emails';
 
