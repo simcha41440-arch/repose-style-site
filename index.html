@@ -991,42 +991,34 @@ if("serviceWorker" in navigator){
   .container{max-width:1240px;margin:0 auto;padding:0 32px;}
   @media (max-width:640px){.container{padding:0 20px;}}
 
-  /* ===== NAV ===== */
+  /* ===== NAV =====
+     --nav-o (0→1) drives the whole "transparent over hero, fades to full
+     bar on scroll" effect. It defaults to 1 (normal, fully opaque header)
+     everywhere. On the homepage only, JS sets it inline on the header
+     element from 0 (at scrollY 0) up to 1 (after HERO_FADE_DISTANCE px of
+     scroll) — see the scroll script below. Every visual piece of the bar
+     (background, border, shadow, logo, pill, text/icon color) reads from
+     this single value so it all fades in "as one piece" and stays in
+     sync automatically. */
   header.site-nav{
     position:sticky;top:0;z-index:500;
-    background:linear-gradient(180deg, rgba(248,236,201,0.94) 0%, rgba(230,200,119,0.9) 100%);
-    backdrop-filter:blur(6px) saturate(120%);
-    -webkit-backdrop-filter:blur(6px) saturate(120%);
-    border-bottom:1px solid rgba(138,108,46,0.3);
-    transition:box-shadow .35s cubic-bezier(.4,0,.2,1), border-color .35s cubic-bezier(.4,0,.2,1), background .35s cubic-bezier(.4,0,.2,1);
+    --nav-o:1;
+    background:linear-gradient(180deg, rgb(248 236 201 / calc(var(--nav-o) * 0.94)) 0%, rgb(230 200 119 / calc(var(--nav-o) * 0.9)) 100%);
+    backdrop-filter:blur(calc(var(--nav-o) * 6px)) saturate(calc(100% + var(--nav-o) * 20%));
+    -webkit-backdrop-filter:blur(calc(var(--nav-o) * 6px)) saturate(calc(100% + var(--nav-o) * 20%));
+    border-bottom:1px solid rgb(138 108 46 / calc(var(--nav-o) * 0.3));
+    box-shadow:0 10px 30px -18px rgb(43 36 32 / calc(var(--nav-o) * 0.35));
+    transition:box-shadow .35s cubic-bezier(.4,0,.2,1), border-color .35s cubic-bezier(.4,0,.2,1), background .35s cubic-bezier(.4,0,.2,1), backdrop-filter .35s cubic-bezier(.4,0,.2,1);
     transform:translateZ(0);
     backface-visibility:hidden;
     will-change:background;
   }
   header.site-nav.scrolled{
-    background:linear-gradient(180deg, rgba(248,236,201,0.98) 0%, rgba(214,177,94,0.96) 100%);
-    border-bottom-color:rgba(138,108,46,0.4);
-    box-shadow:0 10px 30px -18px rgba(43,36,32,0.35);
-  }
-  /* ===== NAV OVER HERO — fully invisible at the very top of the homepage
-     (no bar, no logo, no links), then fades in as one piece once the
-     visitor starts scrolling (driven by --nav-o, set in JS from scroll
-     position). ===== */
-  header.site-nav.nav-hero{
-    --nav-o:0;
-    opacity:var(--nav-o);
-    background:linear-gradient(180deg, rgb(248 236 201 / var(--nav-o)) 0%, rgb(214 177 94 / var(--nav-o)) 100%);
+    background:linear-gradient(180deg, rgb(248 236 201 / calc(var(--nav-o) * 0.98)) 0%, rgb(214 177 94 / calc(var(--nav-o) * 0.96)) 100%);
     border-bottom-color:rgb(138 108 46 / calc(var(--nav-o) * 0.4));
-    box-shadow:0 10px 30px -18px rgb(43 36 32 / calc(var(--nav-o) * 0.35));
-    transition:opacity .2s ease, box-shadow .2s ease;
-  }
-  header.site-nav.nav-hero:not(.nav-visible){pointer-events:none;}
-  header.site-nav.nav-hero nav.nav-links{
-    background:rgb(255 248 224 / calc(var(--nav-o) * 0.5));
-    border-color:rgb(138 108 46 / calc(var(--nav-o) * 0.28));
   }
   @media (prefers-reduced-motion:reduce){
-    header.site-nav.nav-hero{--nav-o:1;}
+    header.site-nav{transition:none;--nav-o:1 !important;}
   }
   .nav-inner{
     max-width:1240px;margin:0 auto;padding:0 32px;
@@ -1036,7 +1028,11 @@ if("serviceWorker" in navigator){
   }
   header.site-nav.scrolled .nav-inner{height:80px;}
   .nav-brand{display:flex;align-items:center;gap:12px;}
-  .nav-brand img{height:58px;width:auto;transition:height .3s cubic-bezier(.4,0,.2,1);}
+  .nav-brand img{
+    height:58px;width:auto;
+    opacity:var(--nav-o);
+    transition:height .3s cubic-bezier(.4,0,.2,1), opacity .3s ease;
+  }
   header.site-nav.scrolled .nav-brand img{height:46px;}
   .nav-brand .brandname{
     font-family:'Rubik','Almoni Neue',sans-serif;
@@ -1046,16 +1042,23 @@ if("serviceWorker" in navigator){
   .nav-brand .brandname span{display:block;font-family:'Rubik','Almoni Neue',sans-serif;font-size:9.5px;letter-spacing:0.28em;color:var(--gold-dark);font-weight:600;text-transform:uppercase;}
   nav.nav-links{
     display:flex;align-items:center;gap:2px;position:relative;
-    background:rgba(255,248,224,0.5);
-    border:1px solid rgba(138,108,46,0.28);
+    background:rgb(255 248 224 / calc(var(--nav-o) * 0.5));
+    border:1px solid rgb(138 108 46 / calc(var(--nav-o) * 0.28));
     border-radius:var(--radius);
     padding:5px;
+    transition:background .3s ease, border-color .3s ease;
   }
+  /* Link color eases between white (readable floating over the hero photo,
+     with a soft shadow for contrast) and the normal gold ink, tracking
+     the same --nav-o used for the rest of the bar. */
   nav.nav-links button, nav.nav-links a{
-    background:none;border:none;color:var(--text-gold);font-size:14.5px;font-weight:600;
+    background:none;border:none;
+    color:color-mix(in srgb, #fff calc((1 - var(--nav-o)) * 100%), var(--text-gold) calc(var(--nav-o) * 100%));
+    text-shadow:0 1px 4px rgb(20 16 12 / calc((1 - var(--nav-o)) * 0.45));
+    font-size:14.5px;font-weight:600;
     letter-spacing:0.01em;text-decoration:none;cursor:pointer;
     padding:10px 20px;position:relative;z-index:1;border-radius:var(--radius);
-    transition:color .25s ease;
+    transition:color .25s ease, text-shadow .25s ease;
   }
   nav.nav-links button.active, nav.nav-links a.active{color:var(--ivory);}
   .nav-underline{
@@ -1070,13 +1073,15 @@ if("serviceWorker" in navigator){
   .icon-btn{
     background:none;border:none;position:relative;
     display:flex;align-items:center;justify-content:center;
-    width:40px;height:40px;color:var(--text-gold);
+    width:40px;height:40px;
+    color:color-mix(in srgb, #fff calc((1 - var(--nav-o)) * 100%), var(--ink) calc(var(--nav-o) * 100%));
+    filter:drop-shadow(0 1px 3px rgb(20 16 12 / calc((1 - var(--nav-o)) * 0.4)));
     border-radius:50%;
-    transition:background .25s ease, transform .2s ease, box-shadow .25s ease;
+    transition:background .25s ease, transform .2s ease, box-shadow .25s ease, color .25s ease, filter .25s ease;
   }
   .icon-btn:hover{background:var(--gold-glow);transform:translateY(-1px);}
   .icon-btn:focus-visible{outline:none;box-shadow:0 0 0 2px var(--gold-light);}
-  .icon-btn svg{width:20px;height:20px;stroke:var(--ink);}
+  .icon-btn svg{width:20px;height:20px;stroke:currentColor;}
   .cart-count{
     position:absolute;top:1px;left:1px;
     background:var(--gold-dark);color:#fff;
@@ -1093,8 +1098,10 @@ if("serviceWorker" in navigator){
   }
   .hamburger:hover{background:var(--gold-glow);}
   .hamburger span{
-    position:absolute;width:19px;height:1.6px;background:var(--ink);border-radius:2px;
-    transition:transform .3s ease, opacity .25s ease, top .3s ease;
+    position:absolute;width:19px;height:1.6px;border-radius:2px;
+    background:color-mix(in srgb, #fff calc((1 - var(--nav-o)) * 100%), var(--ink) calc(var(--nav-o) * 100%));
+    filter:drop-shadow(0 1px 3px rgb(20 16 12 / calc((1 - var(--nav-o)) * 0.4)));
+    transition:transform .3s ease, opacity .25s ease, top .3s ease, background .25s ease;
   }
   .hamburger span:nth-child(1){top:15px;}
   .hamburger span:nth-child(2){top:20px;}
@@ -4633,16 +4640,32 @@ if(siteNav){
 
   window.addEventListener("scroll", queueNavScrolledUpdate, {passive:true});
 
-  /* ---- Invisible-until-scrolled nav (home page only) ----
-     At scrollY 0 the whole bar - background, logo, links - is invisible,
-     so the hero reads as if there's no toolbar there at all. As the
-     visitor scrolls, --nav-o eases from 0 to 1 across the top portion of
-     the hero and the bar fades in as one piece. */
+  /* ---- Transparent-over-hero nav (home page only) ----
+     At scrollY 0 on the homepage, the bar has no background, no border
+     and no logo - only the nav links and icon buttons float directly on
+     top of the hero, still fully clickable. As the visitor scrolls down,
+     --nav-o eases from 0 to 1 over HERO_FADE_DISTANCE px and every part
+     of the bar (background, border, shadow, logo, pill, text/icon color)
+     fades back in together, since they all read from --nav-o in the CSS
+     above. On every other page (and as a safe default) --nav-o simply
+     stays at its CSS default of 1, i.e. the normal full header. */
+  const HERO_FADE_DISTANCE = 140; // px of scroll to go from transparent to full
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function isHomeViewActive(){
+    const homeView = document.getElementById("view-home");
+    return !!homeView && homeView.classList.contains("active");
+  }
+
   let navHeroRaf = false;
   function applyNavHeroProgress(){
     navHeroRaf = false;
-    siteNav.classList.remove("nav-hero");
-    siteNav.classList.add("nav-visible");
+    if(prefersReducedMotion || !isHomeViewActive()){
+      siteNav.style.removeProperty("--nav-o");
+      return;
+    }
+    const o = Math.max(0, Math.min(1, window.scrollY / HERO_FADE_DISTANCE));
+    siteNav.style.setProperty("--nav-o", o);
   }
   function queueNavHeroProgress(){
     if(navHeroRaf) return;
