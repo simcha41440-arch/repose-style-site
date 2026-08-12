@@ -1584,13 +1584,14 @@ if("serviceWorker" in navigator){
   }
   .bedding-feature-inner{
     display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;
+    transform:translateX(-28px);
   }
   .bedding-img{
     position:relative;opacity:0;transform:translateX(-90px);
     transition:opacity 1s cubic-bezier(.19,1,.22,1), transform 1s cubic-bezier(.19,1,.22,1);
   }
   .bedding-img.in{opacity:1;transform:translateX(0);}
-  .bedding-img img{width:82%;height:auto;display:block;margin:0 auto;filter:drop-shadow(0 26px 46px rgba(20,16,10,0.45));}
+  .bedding-img img{width:82%;height:auto;display:block;margin:0 auto;filter:drop-shadow(0 26px 46px rgba(20,16,10,0.45));transition:transform .35s cubic-bezier(.19,1,.22,1);will-change:transform;}
   .bedding-copy{
     opacity:0;transform:translateX(46px);
     transition:opacity 1s cubic-bezier(.19,1,.22,1) .12s, transform 1s cubic-bezier(.19,1,.22,1) .12s;
@@ -1601,7 +1602,7 @@ if("serviceWorker" in navigator){
   .bedding-copy p{font-size:16px;line-height:1.75;color:var(--gold-pale);opacity:0.88;font-weight:300;max-width:460px;margin-bottom:32px;}
   @media (max-width:860px){
     .bedding-feature{padding:64px 0;}
-    .bedding-feature-inner{grid-template-columns:1fr;gap:36px;text-align:center;}
+    .bedding-feature-inner{grid-template-columns:1fr;gap:36px;text-align:center;transform:translateX(-14px);}
     .bedding-copy p{margin-inline:auto;}
     .bedding-img{transform:translateX(-50px);}
   }
@@ -4004,6 +4005,31 @@ function escapeHTML(str){
     document.querySelectorAll('.bedding-img, .bedding-copy').forEach(function(el){
       el.classList.add('in');
     });
+  }
+
+  /* Subtle cursor-follow parallax on the bedding photo: moving the
+     mouse anywhere on the screen nudges the image a little toward
+     the cursor (right side of screen -> image shifts right, top ->
+     shifts up, etc). Purely cosmetic, so it's skipped for
+     reduced-motion and touch-only visitors (no mousemove there). */
+  const beddingParallaxImg = document.querySelector('.bedding-img img');
+  if(beddingParallaxImg && !window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    const MAX_X = 22, MAX_Y = 16;
+    let parallaxRaf = false, lastX = 0, lastY = 0;
+    const applyParallax = ()=>{
+      parallaxRaf = false;
+      beddingParallaxImg.style.transform = `translate(${lastX.toFixed(1)}px, ${lastY.toFixed(1)}px)`;
+    };
+    window.addEventListener('mousemove', function(e){
+      const nx = (e.clientX / window.innerWidth) * 2 - 1;   // -1 (left) .. 1 (right)
+      const ny = (e.clientY / window.innerHeight) * 2 - 1;  // -1 (top) .. 1 (bottom)
+      lastX = nx * MAX_X;
+      lastY = ny * MAX_Y;
+      if(!parallaxRaf){
+        parallaxRaf = true;
+        requestAnimationFrame(applyParallax);
+      }
+    }, {passive:true});
   }
 })();
 
