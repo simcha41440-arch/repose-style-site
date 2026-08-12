@@ -25,7 +25,6 @@ const { getClientIp, checkRateLimit, recordRateLimitEvent } = require('./_lib/se
 const { sendEmail, escapeHtml } = require('./_lib/mailer');
 const crypto = require('crypto');
 
-const SITE_ORIGIN = 'https://reposestyle.com';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Generous but real limits - stops a script hammering the endpoint
@@ -34,7 +33,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const REGISTER_RATE_LIMIT = { max: 6, windowMinutes: 30 };
 const LOGIN_RATE_LIMIT = { max: 10, windowMinutes: 15 };
 const FORGOT_RATE_LIMIT = { max: 5, windowMinutes: 30 };
-const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
+const RESET_TOKEN_TTL_MS = 15 * 60 * 1000; // 15 minutes - short-lived since it's a 6-digit code
+const RESET_MAX_ATTEMPTS = 6; // wrong-code guesses allowed before the code is invalidated
 
 function publicCustomer(row) {
   return { id: row.id, name: row.name, email: row.email, phone: row.phone || null };
@@ -160,24 +160,26 @@ async function handleForgot(req, res, supabase) {
   // registered - otherwise this endpoint becomes a way to discover which
   // emails have an account.
   if (row) {
-    const token = crypto.randomBytes(32).toString('hex');
+    // 6-digit numeric code (100000-999999), zero-padded just in case.
+    const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
     const expires = new Date(Date.now() + RESET_TOKEN_TTL_MS).toISOString();
     await withFriendlyError(
-      supabase.from('customers').update({ reset_token: token, reset_token_expires: expires }).eq('id', row.id)
+      supabase.from('customers')
+        .update({ reset_token: code, reset_token_expires: expires, reset_attempts: 0 })
+        .eq('id', row.id)
     );
 
-    const resetUrl = `${SITE_ORIGIN}/account?reset_token=${token}`;
     const html = `
       <div dir="rtl" style="font-family:Arial,sans-serif;font-size:15px;color:#333;">
         <h2 style="margin:0 0 10px;">איפוס סיסמה - רפאוז סטייל</h2>
         <p>שלום ${escapeHtml(row.name || '')},</p>
-        <p>קיבלנו בקשה לאיפוס הסיסמה לחשבון שלך. הקישור בתוקף לשעה אחת:</p>
-        <p><a href="${resetUrl}" style="display:inline-block;background:#b08a3e;color:#fff;text-decoration:none;padding:12px 22px;border-radius:4px;">קביעת סיסמה חדשה</a></p>
+        <p>קיבלנו בקשה לאיפוס הסיסמה לחשבון שלך. הזינו את הקוד הבא באתר כדי לקבוע סיסמה חדשה. הקוד בתוקף ל-15 דקות:</p>
+        <p style="font-size:32px;font-weight:700;letter-spacing:6px;background:#f6efdc;color:#8A6C2E;padding:14px 20px;border-radius:6px;text-align:center;">${code}</p>
         <p style="color:#888;font-size:13px;">אם לא ביקשתם לאפס סיסמה, אפשר להתעלם מהמייל הזה - הסיסמה הנוכחית שלכם תישאר בתוקף.</p>
       </div>`;
-    // Never await-fail the request on an email hiccup - the token is
+    // Never await-fail the request on an email hiccup - the code is
     // already saved, so a retry (asking again) still works.
-    sendEmail({ to: row.email, subject: 'איפוס סיסמה - רפאוז סטייל', html }).catch(() => {});
+    sendEmail({ to: row.email, subject: 'קוד לאיפוס סיסמה - רפאוז סטייל', html }).catch(() => {});
   }
 
   return res.status(200).json({ ok: true });
@@ -191,22 +193,41 @@ async function handleReset(req, res, supabase) {
     return res.status(400).json({ error: err.message });
   }
 
-  const token = (body.token || '').trim();
+  const email = (body.email || '').trim().toLowerCase();
+  const code = (body.code || '').trim();
   const password = body.password || '';
-  if (!token) return res.status(400).json({ error: 'קישור לא תקין.' });
+  if (!EMAIL_RE.test(email)) return res.status(400).json({ error: 'נא להזין כתובת דוא"ל תקינה.' });
+  if (!/^\d{6}$/.test(code)) return res.status(400).json({ error: 'נא להזין קוד בן 6 ספרות.' });
   if (password.length < 8) return res.status(400).json({ error: 'הסיסמה חייבת להכיל לפחות 8 תווים.' });
 
   const { data: row, error: rowErr } = await withFriendlyError(
-    supabase.from('customers').select('id, name, email, reset_token, reset_token_expires').eq('reset_token', token).maybeSingle()
+    supabase.from('customers')
+      .select('id, name, email, reset_token, reset_token_expires, reset_attempts')
+      .eq('email', email)
+      .maybeSingle()
   );
   if (rowErr) return res.status(500).json({ error: rowErr.message });
-  if (!row || !row.reset_token_expires || new Date(row.reset_token_expires).getTime() < Date.now()) {
-    return res.status(400).json({ error: 'הקישור פג תוקף. בקשו קישור חדש לאיפוס סיסמה.' });
+
+  const genericError = 'הקוד שגוי או שפג תוקפו. בקשו קוד חדש לאיפוס סיסמה.';
+
+  if (!row || !row.reset_token || !row.reset_token_expires || new Date(row.reset_token_expires).getTime() < Date.now()) {
+    return res.status(400).json({ error: genericError });
+  }
+  if ((row.reset_attempts || 0) >= RESET_MAX_ATTEMPTS) {
+    return res.status(400).json({ error: genericError });
+  }
+  if (row.reset_token !== code) {
+    await withFriendlyError(
+      supabase.from('customers').update({ reset_attempts: (row.reset_attempts || 0) + 1 }).eq('id', row.id)
+    );
+    return res.status(400).json({ error: genericError });
   }
 
   const password_hash = hashPassword(password);
   const { error: updateErr } = await withFriendlyError(
-    supabase.from('customers').update({ password_hash, reset_token: null, reset_token_expires: null }).eq('id', row.id)
+    supabase.from('customers')
+      .update({ password_hash, reset_token: null, reset_token_expires: null, reset_attempts: 0 })
+      .eq('id', row.id)
   );
   if (updateErr) return res.status(500).json({ error: updateErr.message });
 

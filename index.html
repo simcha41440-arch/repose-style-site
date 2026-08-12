@@ -2062,7 +2062,7 @@ if("serviceWorker" in navigator){
   /* ===== ACCOUNT AUTH (login / register / logged-in summary) ===== */
   .auth-box{
     background:var(--ivory);border:1px solid var(--line);
-    padding:30px 34px;margin-bottom:48px;max-width:440px;
+    padding:30px 34px;margin:0 auto 48px;max-width:440px;
   }
   .auth-tabs{display:flex;gap:6px;margin-bottom:24px;border-bottom:1px solid var(--line);}
   .auth-tab{
@@ -3602,26 +3602,31 @@ if("serviceWorker" in navigator){
         </form>
 
         <!-- "שכחתי סיסמה" mini-form - hidden until "auth-forgot-open" is
-             clicked. Sends a reset link by email (api/auth?action=forgot),
-             always with the same success message so the endpoint can't be
-             used to check which emails have an account. -->
+             clicked. Sends a 6-digit reset code by email
+             (api/auth?action=forgot), always with the same success
+             message so the endpoint can't be used to check which emails
+             have an account. -->
         <form id="auth-form-forgot" class="auth-form" novalidate>
-          <p style="color:var(--taupe);font-size:13.5px;margin-bottom:16px;">נשלח אליכם קישור לאיפוס הסיסמה בדוא"ל.</p>
+          <p style="color:var(--taupe);font-size:13.5px;margin-bottom:16px;">נשלח אליכם קוד בן 6 ספרות לאיפוס הסיסמה בדוא"ל.</p>
           <div class="auth-form-error" id="auth-forgot-error" role="alert"></div>
-          <div class="auth-form-success" id="auth-forgot-success" role="status">נשלח קישור לאיפוס הסיסמה, בדקו את תיבת הדוא"ל.</div>
           <div class="form-group">
             <label for="auth-forgot-email">דוא"ל</label>
             <input type="email" id="auth-forgot-email" name="email" required maxlength="150" autocomplete="email">
           </div>
-          <button type="submit" class="btn">שליחת קישור לאיפוס</button>
+          <button type="submit" class="btn">שליחת קוד לאיפוס</button>
           <button type="button" class="auth-forgot-link" id="auth-forgot-cancel">חזרה להתחברות</button>
         </form>
 
-        <!-- Set-a-new-password form - only shown when the page loads with
-             ?reset_token=... in the URL (the link from the reset email). -->
+        <!-- Set-a-new-password form - shown right after a reset code is
+             sent; the visitor enters the 6-digit code from the email
+             together with a new password (no link/token in the URL). -->
         <form id="auth-form-reset" class="auth-form" novalidate>
-          <p style="color:var(--taupe);font-size:13.5px;margin-bottom:16px;">בחרו סיסמה חדשה לחשבון שלכם.</p>
+          <p style="color:var(--taupe);font-size:13.5px;margin-bottom:16px;">הזינו את הקוד שנשלח לדוא"ל <strong id="auth-reset-email-label"></strong> וקבעו סיסמה חדשה.</p>
           <div class="auth-form-error" id="auth-reset-error" role="alert"></div>
+          <div class="form-group">
+            <label for="auth-reset-code">קוד בן 6 ספרות</label>
+            <input type="text" id="auth-reset-code" name="code" required inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" style="letter-spacing:6px;text-align:center;font-size:20px;">
+          </div>
           <div class="form-group">
             <label for="auth-reset-password">סיסמה חדשה</label>
             <div class="auth-password-wrap">
@@ -3633,6 +3638,7 @@ if("serviceWorker" in navigator){
             <div class="auth-hint">לפחות 8 תווים</div>
           </div>
           <button type="submit" class="btn">שמירת סיסמה חדשה</button>
+          <button type="button" class="auth-forgot-link" id="auth-reset-resend">שליחת קוד חדש</button>
         </form>
       </div>
 
@@ -3647,14 +3653,16 @@ if("serviceWorker" in navigator){
       </div>
     </div>
 
-    <h2 class="serif" style="font-size:22px;margin-bottom:16px;">ההזמנות שלי</h2>
-    <div id="account-orders" style="margin-bottom:56px;"></div>
+    <div id="account-content" style="display:none;">
+      <h2 class="serif" style="font-size:22px;margin-bottom:16px;">ההזמנות שלי</h2>
+      <div id="account-orders" style="margin-bottom:56px;"></div>
 
-    <h2 class="serif" style="font-size:22px;margin-bottom:16px;">מועדפים שלי</h2>
-    <div id="account-wishlist" class="account-grid" style="margin-bottom:56px;"></div>
+      <h2 class="serif" style="font-size:22px;margin-bottom:16px;">מועדפים שלי</h2>
+      <div id="account-wishlist" class="account-grid" style="margin-bottom:56px;"></div>
 
-    <h2 class="serif" style="font-size:22px;margin-bottom:16px;">עגלה שמורה (טרם שולם)</h2>
-    <div id="account-cart" class="account-grid"></div>
+      <h2 class="serif" style="font-size:22px;margin-bottom:16px;">עגלה שמורה (טרם שולם)</h2>
+      <div id="account-cart" class="account-grid"></div>
+    </div>
   </div>
 </section>
 
@@ -5698,21 +5706,16 @@ function renderCheckoutSummary(){
   document.getElementById("checkout-total").textContent = `${Math.max(0, subtotal - discount + shipping).toLocaleString('he-IL')} ₪`;
 }
 
-// Captured once when the account page notices ?reset_token= in the URL -
-// the INIT bootstrap below replaces the URL without the query string
-// shortly after, so the "set new password" form can't just re-read
-// location.search when it submits; it needs this instead.
-// Captured once when the account page notices ?reset_token= in the URL -
-// the INIT bootstrap below replaces the URL without the query string
-// shortly after, so the "set new password" form can't just re-read
-// location.search when it submits; it needs this instead.
-let pendingResetToken = null;
+// Captured once the "שכחתי סיסמה" form is submitted successfully, so the
+// "set new password" step (which only asks for the code + new password)
+// knows which account the code belongs to.
+let pendingResetEmail = null;
 
 /* ============================================================
    ACCOUNT LOGIN / REGISTER (see api/auth.js + CUSTOMER-AUTH-SETUP.sql)
    ============================================================ */
 // Which of the four auth forms is visible: "login", "register", "forgot",
-// or "reset" (the last one only ever shown via a ?reset_token= link).
+// or "reset" (shown right after a code is emailed via the forgot form).
 function setAuthTab(tab){
   document.getElementById("auth-tab-login").classList.toggle("active", tab === "login");
   document.getElementById("auth-tab-register").classList.toggle("active", tab === "register");
@@ -5742,26 +5745,19 @@ function showLoggedInAccount(customer){
   loggedIn.style.display = "";
   document.getElementById("auth-loggedin-name").textContent = customer.name || "";
   document.getElementById("auth-loggedin-email").textContent = customer.email || "";
+  document.getElementById("account-content").style.display = "";
 }
 
 function showLoggedOutAccount(){
   document.getElementById("account-auth-loggedin").style.display = "none";
   document.getElementById("account-auth-loggedout").style.display = "";
+  document.getElementById("account-content").style.display = "none";
 }
 
 /* Checks the signed HttpOnly session cookie against the server (the
    cookie itself is never readable from JS) and swaps the account page
-   between the login/register tabs and the logged-in summary. If the URL
-   carries a ?reset_token= (from the "forgot password" email), the
-   set-new-password form takes priority over both. */
+   between the login/register tabs and the logged-in summary. */
 async function renderAccountAuth(){
-  const resetToken = new URLSearchParams(window.location.search).get("reset_token");
-  if(resetToken){
-    pendingResetToken = resetToken;
-    showLoggedOutAccount();
-    setAuthTab("reset");
-    return;
-  }
   try{
     const res = await fetch("/api/auth?action=me", { credentials:"same-origin" });
     if(res.ok){
@@ -5852,7 +5848,6 @@ function initAuthBox(){
   document.getElementById("auth-form-forgot").addEventListener("submit", async (e)=>{
     e.preventDefault();
     showAuthError("auth-forgot-error", "");
-    document.getElementById("auth-forgot-success").classList.remove("show");
     const email = document.getElementById("auth-forgot-email").value.trim();
     const btn = e.target.querySelector("button[type=submit]");
     btn.disabled = true;
@@ -5865,7 +5860,11 @@ function initAuthBox(){
       const data = await res.json();
       if(!res.ok){ showAuthError("auth-forgot-error", data.error || "אירעה שגיאה. נסו שוב."); return; }
       document.getElementById("auth-form-forgot").reset();
-      document.getElementById("auth-forgot-success").classList.add("show");
+      pendingResetEmail = email;
+      document.getElementById("auth-reset-email-label").textContent = email;
+      showAuthError("auth-reset-error", "");
+      document.getElementById("auth-form-reset").reset();
+      setAuthTab("reset");
     } catch(err){
       showAuthError("auth-forgot-error", "בעיית תקשורת. בדקו את החיבור ונסו שוב.");
     } finally {
@@ -5876,8 +5875,11 @@ function initAuthBox(){
   document.getElementById("auth-form-reset").addEventListener("submit", async (e)=>{
     e.preventDefault();
     showAuthError("auth-reset-error", "");
+    const code = document.getElementById("auth-reset-code").value.trim();
     const password = document.getElementById("auth-reset-password").value;
-    const token = pendingResetToken;
+    const email = pendingResetEmail;
+    if(!email){ showAuthError("auth-reset-error", "בקשו קוד לאיפוס סיסמה מחדש."); setAuthTab("forgot"); return; }
+    if(!/^\d{6}$/.test(code)){ showAuthError("auth-reset-error", "נא להזין קוד בן 6 ספרות."); return; }
     if(password.length < 8){ showAuthError("auth-reset-error", "הסיסמה חייבת להכיל לפחות 8 תווים."); return; }
     const btn = e.target.querySelector("button[type=submit]");
     btn.disabled = true;
@@ -5885,18 +5887,38 @@ function initAuthBox(){
       const res = await fetch("/api/auth?action=reset", {
         method:"POST", credentials:"same-origin",
         headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ token, password }),
+        body: JSON.stringify({ email, code, password }),
       });
       const data = await res.json();
       if(!res.ok){ showAuthError("auth-reset-error", data.error || "אירעה שגיאה. נסו שוב."); return; }
       document.getElementById("auth-form-reset").reset();
-      pendingResetToken = null;
-      // Drop ?reset_token from the URL (it may already be gone - see
-      // pendingResetToken above) now that it's used either way.
-      const url = new URL(window.location.href);
-      url.searchParams.delete("reset_token");
-      window.history.replaceState(window.history.state, "", url.pathname + url.search);
+      pendingResetEmail = null;
       showLoggedInAccount(data.customer);
+    } catch(err){
+      showAuthError("auth-reset-error", "בעיית תקשורת. בדקו את החיבור ונסו שוב.");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById("auth-reset-resend").addEventListener("click", async ()=>{
+    const email = pendingResetEmail;
+    if(!email){ setAuthTab("forgot"); return; }
+    showAuthError("auth-reset-error", "");
+    const btn = document.getElementById("auth-reset-resend");
+    btn.disabled = true;
+    try{
+      const res = await fetch("/api/auth?action=forgot", {
+        method:"POST", credentials:"same-origin",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if(!res.ok){ showAuthError("auth-reset-error", data.error || "אירעה שגיאה. נסו שוב."); return; }
+      document.getElementById("auth-reset-code").value = "";
+      showAuthError("auth-reset-error", "");
+      btn.textContent = "קוד חדש נשלח!";
+      setTimeout(()=>{ btn.textContent = "שליחת קוד חדש"; }, 3000);
     } catch(err){
       showAuthError("auth-reset-error", "בעיית תקשורת. בדקו את החיבור ונסו שוב.");
     } finally {

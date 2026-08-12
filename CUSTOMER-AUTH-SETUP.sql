@@ -15,13 +15,16 @@ create table if not exists customers (
   phone text,
   password_hash text not null,
   -- "שכחתי סיסמה" flow (see api/auth.js action=forgot / action=reset):
-  -- a fresh random token + expiry is written here when a reset email is
-  -- requested, and cleared again the moment it's used (or a new one is
-  -- requested). Storing the token itself (not just its hash) is fine
-  -- here because this table is never reachable by the anon/browser role
-  -- - only the server's service-role key can read it.
+  -- a fresh 6-digit numeric code + expiry is written here when a reset
+  -- email is requested, and cleared again the moment it's used (or a new
+  -- one is requested). reset_attempts counts wrong-code guesses against
+  -- the current code, so it can't be brute-forced; it resets to 0 every
+  -- time a new code is issued. Storing the code itself (not just its
+  -- hash) is fine here because this table is never reachable by the
+  -- anon/browser role - only the server's service-role key can read it.
   reset_token text,
   reset_token_expires timestamptz,
+  reset_attempts integer not null default 0,
   created_at timestamptz not null default now()
 );
 
@@ -40,3 +43,4 @@ create index if not exists customers_email_idx on customers (lower(email));
 -- touching existing rows.
 alter table customers add column if not exists reset_token text;
 alter table customers add column if not exists reset_token_expires timestamptz;
+alter table customers add column if not exists reset_attempts integer not null default 0;
