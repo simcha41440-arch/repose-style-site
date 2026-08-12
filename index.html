@@ -6334,11 +6334,13 @@ function rsTimeOnSiteSeconds(){
   return Math.max(0, Math.round((Date.now() - Number(start)) / 1000));
 }
 
-/* Sends the newsletter signup through /api/notify (best-effort email via
-   Resend - low stakes, no need to persist these in the admin panel). */
+/* Sends the newsletter signup through /api/inquiries (merged in from the
+   old /api/notify - see api/inquiries.js - purely to stay under Vercel's
+   Hobby-plan 12-function cap; still best-effort email via Resend, low
+   stakes, no need to persist these in the admin panel). */
 async function sendNotify(type, fields){
   try{
-    const res = await fetch("/api/notify", {
+    const res = await fetch("/api/inquiries", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type, ...fields })

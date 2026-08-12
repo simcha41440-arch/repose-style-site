@@ -20,6 +20,72 @@ const TYPE_LABELS = {
 // once or twice.
 const INQUIRY_RATE_LIMIT = { max: 6, windowMinutes: 10 };
 
+// Newsletter signups: at most 5 per IP every 10 minutes. Kept as its own
+// bucket/limit (separate from INQUIRY_RATE_LIMIT above) since it's a much
+// lower-friction action than filling out the contact form.
+const NEWSLETTER_RATE_LIMIT = { max: 5, windowMinutes: 10 };
+
+// Handles the newsletter signup (type: 'newsletter'). Merged into this
+// file - rather than its own api/notify.js - purely to stay under
+// Vercel's Hobby-plan 12-serverless-function cap (see api/admin.js for
+// the full explanation of that constraint). Unlike a contact-form
+// inquiry, a newsletter signup is never written to the `inquiries`
+// table - it's just a best-effort pair of emails via Resend.
+// `body` is already parsed by the caller (parseJsonBody can only safely
+// read the request stream once per request).
+async function handleNewsletterSignup(req, res, supabase, body) {
+  const ip = getClientIp(req);
+  if (supabase) {
+    const rate = await checkRateLimit(supabase, 'newsletter', ip, NEWSLETTER_RATE_LIMIT);
+    if (!rate.allowed) {
+      res.setHeader('Retry-After', String(rate.retryAfterSeconds));
+      return res.status(429).json({ error: 'יותר מדי בקשות נשלחו לאחרונה. אנא נסו שוב בעוד כמה דקות.' });
+    }
+  }
+
+  if (looksLikeBot(body)) {
+    if (supabase) await recordRateLimitEvent(supabase, 'newsletter', ip);
+    return res.status(400).json({ error: 'לא ניתן להשלים את הבקשה. אנא רעננו את הדף ונסו שוב.' });
+  }
+
+  const { email } = body || {};
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required.' });
+  }
+
+  if (supabase) await recordRateLimitEvent(supabase, 'newsletter', ip);
+
+  const notifyTo = sanitizeEnvValue(process.env.ORDER_NOTIFY_EMAIL) || 'simcha41440@gmail.com';
+
+  const businessHtml = `
+    <div dir="rtl" style="font-family:Arial,sans-serif;font-size:15px;color:#333;">
+      <h2 style="margin:0 0 10px;">הרשמה חדשה לדיוור</h2>
+      <p style="margin:0 0 6px;"><b>אימייל:</b> ${escapeHtml(email)}</p>
+    </div>`;
+
+  const autoHtml = `
+    <div dir="rtl" style="font-family:Arial,sans-serif;font-size:15px;color:#333;">
+      <p>שלום,</p>
+      <p>תודה שנרשמת לדיוור של רפאוז סטייל! ההרשמה שלך התקבלה בהצלחה, ותקבל/י מאיתנו עדכונים והטבות ישירות לתיבת המייל.</p>
+      <p>צוות רפאוז סטייל</p>
+    </div>`;
+
+  // Await so the emails actually finish sending before this serverless
+  // function's response ends (Vercel can freeze the function right after
+  // that). A failure is logged but still returns ok, since the point of
+  // this form is "don't leave the visitor stuck" - the failure is visible
+  // in Vercel's function logs for you to debug (e.g. a bad RESEND_API_KEY).
+  const results = await Promise.all([
+    sendEmail({ to: notifyTo, subject: 'הרשמה חדשה לדיוור - רפאוז סטייל', html: businessHtml, replyTo: email }),
+    sendEmail({ to: email, subject: 'ברוכים הבאים לדיוור - רפאוז סטייל', html: autoHtml }),
+  ]);
+  if (!results[0].ok) {
+    console.error('inquiries(newsletter): business email FAILED:', results[0].error);
+  }
+
+  return res.status(200).json({ ok: true });
+}
+
 module.exports = async (req, res) => {
   let supabase;
   try {
@@ -31,18 +97,28 @@ module.exports = async (req, res) => {
   // Anyone submitting the contact form (or the mini contact form inside
   // checkout) can create an inquiry - no login required, same as orders.
   if (req.method === 'POST') {
-    const ip = getClientIp(req);
-    const rate = await checkRateLimit(supabase, 'inquiry', ip, INQUIRY_RATE_LIMIT);
-    if (!rate.allowed) {
-      res.setHeader('Retry-After', String(rate.retryAfterSeconds));
-      return res.status(429).json({ error: 'יותר מדי פניות נשלחו לאחרונה. אנא נסו שוב בעוד כמה דקות.' });
-    }
-
+    // Parse once up front - the raw request stream can only be consumed
+    // once, so every POST branch below (newsletter or inquiry) shares
+    // this same parsed body instead of each calling parseJsonBody itself.
     let body;
     try {
       body = await parseJsonBody(req);
     } catch (err) {
       return res.status(400).json({ error: err.message });
+    }
+
+    // Newsletter signups are a different shape entirely (no name/message,
+    // never saved to the inquiries table) - branch off to their own
+    // handler before the inquiry-specific rate limit/validation below.
+    if (body && body.type === 'newsletter') {
+      return handleNewsletterSignup(req, res, supabase, body);
+    }
+
+    const ip = getClientIp(req);
+    const rate = await checkRateLimit(supabase, 'inquiry', ip, INQUIRY_RATE_LIMIT);
+    if (!rate.allowed) {
+      res.setHeader('Retry-After', String(rate.retryAfterSeconds));
+      return res.status(429).json({ error: 'יותר מדי פניות נשלחו לאחרונה. אנא נסו שוב בעוד כמה דקות.' });
     }
 
     // Same honeypot/timing bot check used on /api/orders - see the
