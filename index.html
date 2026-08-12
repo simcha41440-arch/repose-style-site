@@ -919,6 +919,11 @@ if("serviceWorker" in navigator){
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@200;300;400;500;600;700&family=Rubik:wght@300;400;500;600;700&family=Jost:wght@200;300;400;500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Poppins:wght@200;300;400&family=Montserrat:wght@100;200;300;400&display=swap" rel="stylesheet">
+<!-- Preloaded with high priority so the first hero photo is already
+     downloading (in parallel with everything else) before the browser
+     even reaches the <img> tag in the body - this is what removes the
+     brief dark flash visitors saw before the photo appeared. -->
+<link rel="preload" as="image" href="/images/site/hero-new/hero-bg-1.jpg" fetchpriority="high">
 <style>
   :root{
     --cream:#E7C77E;
@@ -1173,7 +1178,7 @@ if("serviceWorker" in navigator){
     position:sticky;top:0;
     height:100vh;
     display:flex;align-items:center;justify-content:center;
-    overflow:hidden;background:var(--ink);
+    overflow:hidden;background:linear-gradient(160deg, #6B5433 0%, #3E3021 100%);
     z-index:1;
   }
   .hero img.bg{
@@ -2779,7 +2784,7 @@ if("serviceWorker" in navigator){
 
   <div class="hero-pin-wrap">
   <div class="hero">
-    <img class="bg slide active" data-content-key="hero_slide_1" src="/images/site/hero-new/hero-bg-1.jpg" alt="חדר שינה יוקרתי רפאוז סטייל - מיטה עם מצעי שמנת וזהב" loading="eager">
+    <img class="bg slide active" data-content-key="hero_slide_1" src="/images/site/hero-new/hero-bg-1.jpg" alt="חדר שינה יוקרתי רפאוז סטייל - מיטה עם מצעי שמנת וזהב" loading="eager" fetchpriority="high">
     <img class="bg slide" data-content-key="hero_slide_2" src="/images/site/hero-new/hero-bg-2.jpg" alt="חדר שינה יוקרתי רפאוז סטייל - עיצוב מודרני בגווני שמנת" loading="lazy">
     <img class="bg slide" data-content-key="hero_slide_3" src="/images/site/hero-new/hero-bg-3.jpg" alt="חדר שינה יוקרתי רפאוז סטייל - תאורה חמה ועיצוב עץ" loading="lazy">
     <img class="bg slide" data-content-key="hero_slide_4" src="/images/site/hero-new/hero-bg-4.jpg" alt="חדר שינה יוקרתי רפאוז סטייל - סוויטה מרווחת בגווני חום ושמנת" loading="lazy">
