@@ -46,7 +46,14 @@
     if(view !== "home"){
       var style = document.createElement("style");
       style.id = "rs-initial-view-style";
-      style.textContent = "#view-home{display:none !important;}#view-" + view + "{display:block !important;}";
+      /* Also force the header fully opaque right away on every non-home
+         page. Without this, header.site-nav stays transparent (--nav-o:0)
+         for a brief moment on load: the CSS rule below that drives the
+         transparent-over-hero state matches on #view-home still carrying
+         its raw-markup "active" class, which isn't removed until the
+         main script's deferred init runs a beat later. !important wins
+         over that rule regardless of its own specificity. */
+      style.textContent = "#view-home{display:none !important;}#view-" + view + "{display:block !important;}header.site-nav{--nav-o:1 !important;}";
       document.head.appendChild(style);
     }
   }catch(e){}
@@ -1027,7 +1034,12 @@ if("serviceWorker" in navigator){
      before any JS has had a chance to run. It only affects the very
      top of the page (an inline style from JS - set on first scroll,
      or once the JS above runs on load - always wins over this once
-     present, so scrolling/other views behave exactly as before). */
+     present, so scrolling/other views behave exactly as before).
+     On every other page this rule would also match at first paint
+     (since #view-home keeps its raw-markup "active" class until the
+     deferred main-script init actually swaps it off) - that's covered
+     separately by the early <head> anti-flash script, which forces
+     --nav-o:1 !important on non-home routes before this rule can. */
   @supports selector(:has(*)){
     body:has(#view-home.active) header.site-nav:not([style*="--nav-o"]){
       --nav-o:0;
