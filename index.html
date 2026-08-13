@@ -21,6 +21,27 @@
      script takes over (see the "INIT" section at the bottom of the page). -->
 <script>
 (function(){
+  /* Stop the browser from silently restoring the previous scroll
+     position on an actual page refresh. By default
+     (history.scrollRestoration = "auto"), reloading the page while
+     scrolled down first paints at scrollY 0 - the nav renders in its
+     "top of page" state (unscrolled / transparent-over-hero on the
+     homepage, 104px tall) - and then, a beat later, the browser jumps
+     the page back down to where it was, flipping the nav to its
+     "scrolled" state (opaque, 80px tall) right after first paint.
+     That's the visible "toolbar jumps for a moment" on refresh.
+     This only applies to an actual reload - back/forward navigation
+     is deliberately left alone (see the "First paint" comment in the
+     scroll script further down), since restoring scroll position
+     there is expected and already handled correctly. */
+  try{
+    var navEntry = performance.getEntriesByType && performance.getEntriesByType("navigation")[0];
+    var isReload = navEntry ? navEntry.type === "reload" : (performance.navigation && performance.navigation.type === 1);
+    if(isReload && "scrollRestoration" in history){
+      history.scrollRestoration = "manual";
+      window.scrollTo(0, 0);
+    }
+  }catch(e){}
   try{
     var path = location.pathname.replace(/\/+$/, "") || "/";
     var map = {
