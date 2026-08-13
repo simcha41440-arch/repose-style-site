@@ -1273,39 +1273,25 @@ if("serviceWorker" in navigator){
   }
   .hero-brand-main{
     display:block;text-align:right;font-family:'Assistant',sans-serif;
-    font-size:clamp(13px,1.4vw,18px);font-weight:300;letter-spacing:0.12em;
+    font-size:clamp(13px,1.4vw,18px);font-weight:300;letter-spacing:0.08em;
     line-height:1.35;
-    background:linear-gradient(100deg, var(--gold-pale) 0%, var(--gold-light) 22%, var(--gold-metal) 45%, var(--gold-dark) 58%, var(--gold-light) 75%, var(--gold-pale) 100%);
-    background-size:220% 100%;
-    -webkit-background-clip:text;background-clip:text;color:transparent;
-    -webkit-text-fill-color:transparent;
+    color:var(--cream);
     filter:drop-shadow(0 1px 2px rgba(0,0,0,0.75)) drop-shadow(0 3px 8px rgba(0,0,0,0.55)) drop-shadow(0 2px 30px rgba(214,177,94,0.4));
-    animation:heroBrandShimmer 7s ease-in-out infinite;
   }
   @keyframes heroBrandShimmer{
     0%{background-position:0% 0;}
     50%{background-position:100% 0;}
     100%{background-position:0% 0;}
   }
-  @media (prefers-reduced-motion:reduce){
-    .hero-brand-main{animation:none;}
-  }
   .hero-brand-sub-wrap{
     position:relative;display:block;margin-top:16px;text-align:right;
   }
   .hero-brand-sub{
     display:block;text-align:right;font-family:'Assistant',sans-serif;font-weight:300;
-    font-size:clamp(30px,4.2vw,54px);letter-spacing:0.05em;
-    background:linear-gradient(100deg, var(--gold-pale) 0%, var(--gold-light) 22%, var(--gold-metal) 45%, var(--gold-dark) 58%, var(--gold-light) 75%, var(--gold-pale) 100%);
-    background-size:220% 100%;
-    -webkit-background-clip:text;background-clip:text;color:transparent;
-    -webkit-text-fill-color:transparent;
+    font-size:clamp(30px,4.2vw,54px);letter-spacing:0.03em;
+    color:var(--cream);
     filter:drop-shadow(0 1px 3px rgba(0,0,0,0.75)) drop-shadow(0 4px 10px rgba(0,0,0,0.55)) drop-shadow(0 2px 30px rgba(214,177,94,0.4));
-    animation:heroBrandShimmer 7s ease-in-out infinite;
     opacity:0.98;
-  }
-  @media (prefers-reduced-motion:reduce){
-    .hero-brand-sub{animation:none;}
   }
   .hero-brand-desc{
     display:block;text-align:right;font-family:'Assistant',sans-serif;font-weight:300;
@@ -1667,15 +1653,15 @@ if("serviceWorker" in navigator){
   /* ===== CTA BAND ===== */
   .cta-band{
     text-align:center;padding:110px 24px;
-    background:var(--ink);color:var(--gold-pale);
+    background:var(--cream);color:var(--ink);
   }
-  .cta-band .eyebrow{justify-content:center;color:var(--gold-pale);margin-bottom:22px;}
-  .cta-band .eyebrow::before{background:var(--gold-pale);}
+  .cta-band .eyebrow{justify-content:center;color:var(--gold-dark);margin-bottom:22px;}
+  .cta-band .eyebrow::before{background:var(--gold-dark);}
   .cta-band h2{
-    color:var(--gold-pale);font-size:clamp(26px,4vw,40px);margin-bottom:30px;
-    background:linear-gradient(135deg, #F6E8BF 0%, var(--gold-pale) 40%, var(--gold-metal) 70%, var(--gold-pale) 100%);
-    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    color:var(--ink);font-size:clamp(26px,4vw,40px);margin-bottom:30px;
   }
+  .cta-band .btn.light{color:var(--ink);border-color:rgba(20,20,20,0.35);}
+  .cta-band .btn.light:hover{background:var(--ink);color:var(--ivory);border-color:var(--ink);}
 
   /* ===== FOOTER ===== */
   footer{
@@ -2990,10 +2976,6 @@ if("serviceWorker" in navigator){
       </div>
     </div>
   </section>
-
-  <div class="promo reveal-scale">
-    <p>כל סט נארז ידנית באריזת <span>רפאוז סטייל</span> · תשומת לב לכל פרט, מהבד ועד הקופסה</p>
-  </div>
 
   <div class="cta-band">
     <div class="eyebrow reveal">מוכנים לשדרג את חדר השינה?</div>
