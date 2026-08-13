@@ -976,7 +976,16 @@ if("serviceWorker" in navigator){
     --radius:999px;
   }
   *{box-sizing:border-box;}
-  html{scroll-behavior:smooth; overflow-anchor:none;}
+  /* scrollbar-gutter:stable reserves the scrollbar's width from the
+     very first frame, even on a short page with nothing to scroll
+     yet. Without it, a page that loads shorter than the viewport
+     (no scrollbar) and then grows taller as images/content settle
+     in (scrollbar appears) shifts the whole centered layout - the
+     nav bar included - sideways by the scrollbar's width for a
+     moment. Reserving the gutter up front means that shift never
+     happens, on every page, not just the ones tall enough to
+     scroll immediately. */
+  html{scroll-behavior:smooth; overflow-anchor:none; scrollbar-gutter:stable;}
   body{
     margin:0;
     background:
@@ -4567,6 +4576,34 @@ function renderViewNow(name, updateHistory, productId){
     renderAccountPage();
   }
   window.scrollTo({top:0, behavior:"instant"});
+  /* Kill the "elements slide/fade up into place" scroll-reveal effect
+     for anything that's already inside the viewport the instant a new
+     view appears - e.g. the "benefit" icon row near the top of the shop
+     page. Those elements were bound to the reveal IntersectionObserver
+     back when the page first loaded (while their view was still
+     display:none, so the observer never fired for them), and switching
+     to their view via a nav button/link is what first makes them
+     visible - which is exactly when the observer would fire and animate
+     them in a frame later, looking like the whole page "drops down" or
+     shifts on arrival. Marking them "in" immediately, in the same tick
+     as the view swap, means the browser only ever paints their final
+     state - nothing to animate. Content further down the page that's
+     still off-screen is left alone, so scrolling down still reveals it
+     normally, same as before. */
+  (function(){
+    const activeView = document.querySelector(".view.active");
+    if(!activeView) return;
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+    activeView.querySelectorAll(".reveal, .reveal-scale, .feature-row").forEach(el=>{
+      if(el.classList.contains("in")) return;
+      const rect = el.getBoundingClientRect();
+      if(rect.top < vh){
+        el.classList.add("in");
+        el.dataset.revealBound = "1";
+        if(typeof revealObserver !== "undefined" && revealObserver) revealObserver.unobserve(el);
+      }
+    });
+  })();
   document.dispatchEvent(new Event("app:view-changed"));
   const navHighlight = name.startsWith("shop") ? "shop" : name;
   document.querySelectorAll("nav.nav-links button, nav.nav-links a").forEach(b=>{
