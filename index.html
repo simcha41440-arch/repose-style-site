@@ -3192,9 +3192,8 @@ if("serviceWorker" in navigator){
         </div>
 
         <div id="pd-embroidery" style="display:none;margin:0 0 20px;padding:16px 18px;background:var(--ivory);border:1px solid var(--line);">
-          <label for="pd-embroidery-input" style="display:block;font-size:13px;letter-spacing:0.03em;font-weight:600;color:var(--gold-dark);margin-bottom:8px;">דגם זה ניתן להתאמה אישית - רקמת ראשי תיבות (בתוספת 200 ₪)</label>
+          <label for="pd-embroidery-input" id="pd-embroidery-label" style="display:block;font-size:13px;letter-spacing:0.03em;font-weight:600;color:var(--gold-dark);margin-bottom:8px;">דגם זה ניתן להתאמה אישית - רקמת ראשי תיבות (בתוספת 200 ₪)</label>
           <input type="text" id="pd-embroidery-input" maxlength="3" placeholder="לדוגמה: א.כ" style="width:100%;max-width:220px;padding:9px 12px;border:1px solid var(--line);font-family:inherit;font-size:14px;">
-          <div style="font-size:12px;color:var(--text-muted,#7a7a7a);margin-top:8px;">מי שמעוניין באותיות באנגלית - נא לציין אם רוצים אותיות קטנות או גדולות</div>
           <p style="font-size:12px;color:var(--taupe);margin:8px 0 0;">השאירו ריק אם אינכם מעוניינים ברקמה</p>
         </div>
 
@@ -4275,6 +4274,7 @@ const PRODUCTS = [
     id:"yahalom", name:"יהלום", nameEn:"YAHALOM", price:1490,
     bg:"linear-gradient(145deg,#F3ECDD,#D9C79A)",
     cotton:100, thread:400, bedType:"twin", tier:"premium", collection:"renaissance",
+    customizable:true, embroideryFree:true, embroideryMaxLetters:2,
     img:"/images/products/yahalom.jpg", desc:2,
     tag:"פרימיום"
   },
@@ -5342,10 +5342,17 @@ function renderProductDetail(){
 
   const embroideryBox = document.getElementById("pd-embroidery");
   const embroideryInput = document.getElementById("pd-embroidery-input");
+  const embroideryLabel = document.getElementById("pd-embroidery-label");
   if(embroideryBox && embroideryInput){
     embroideryBox.style.display = p.customizable ? "block" : "none";
     embroideryInput.value = "";
-    embroideryInput.placeholder = p.id === "london" ? "לדוגמא: R&S" : "לדוגמה: א.כ";
+    embroideryInput.placeholder = p.id === "london" ? "לדוגמא: R&S" : (p.embroideryMaxLetters === 2 ? "לדוגמה: RS" : "לדוגמה: א.כ");
+    embroideryInput.maxLength = p.embroideryMaxLetters ? p.embroideryMaxLetters : 3;
+    if(embroideryLabel){
+      embroideryLabel.textContent = p.embroideryFree
+        ? "דגם זה ניתן להתאמה אישית - רקמת ראשי תיבות (ללא תוספת מחיר)"
+        : "דגם זה ניתן להתאמה אישית - רקמת ראשי תיבות (בתוספת 200 ₪)";
+    }
   }
 
   const includesBox = document.getElementById("pd-includes");
@@ -5743,7 +5750,7 @@ function cartLineKey(c){
 function cartItemUnitPrice(c, p){
   if(!p) return 0;
   const variant = productForSize(p, c.size);
-  return variant.price + (p.customizable && c.embroidery ? EMBROIDERY_SURCHARGE : 0);
+  return variant.price + (p.customizable && c.embroidery && !p.embroideryFree ? EMBROIDERY_SURCHARGE : 0);
 }
 function addToCart(id, qty, embroidery, size){
   embroidery = embroidery || null;
@@ -5809,7 +5816,7 @@ function updateCartUI(){
         <img src="${p.img}" alt="${p.name}" loading="lazy" decoding="async">
         <div class="ci-info">
         <div class="ci-name serif">${displayName(p)}</div>
-          <div class="ci-spec">${specLabel(p, c.size)}${c.embroidery ? ` · רקמת ראשי תיבות: ${escapeHTML(c.embroidery)} (+${EMBROIDERY_SURCHARGE.toLocaleString('he-IL')} ₪)` : ""}</div>
+          <div class="ci-spec">${specLabel(p, c.size)}${c.embroidery ? ` · רקמת ראשי תיבות: ${escapeHTML(c.embroidery)}${p.embroideryFree ? "" : ` (+${EMBROIDERY_SURCHARGE.toLocaleString('he-IL')} ₪)`}` : ""}</div>
           <div class="ci-bottom">
             <span class="ci-priceline">${cartItemUnitPrice(c,p).toLocaleString('he-IL')} ₪ X <span class="ci-price">${(cartItemUnitPrice(c,p)*c.qty).toLocaleString('he-IL')} ₪</span></span>
             <div class="ci-qty">

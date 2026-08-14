@@ -28,7 +28,7 @@ const BASE_CATALOG = {
   prachim: { price: 1080 },
   simfonia: { price: 700 },
   rakefet: { price: 890 },
-  yahalom: { price: 1490 },
+  yahalom: { price: 1490, customizable: true, embroideryFree: true },
   london: { price: 690, customizable: true },
   royal: { price: 1190 },
   star: { price: 680 },
@@ -77,7 +77,7 @@ function unitPrice(priceMap, item) {
   if (item.size === 'single' && catalogEntry.category !== 'towel') {
     price = Math.round(price / 2);
   }
-  if (catalogEntry.customizable && item.embroidery) {
+  if (catalogEntry.customizable && item.embroidery && !catalogEntry.embroideryFree) {
     price += EMBROIDERY_SURCHARGE;
   }
   return { price, outOfStock: !!catalogEntry.outOfStock };
