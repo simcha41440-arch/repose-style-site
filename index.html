@@ -74,7 +74,7 @@
          its raw-markup "active" class, which isn't removed until the
          main script's deferred init runs a beat later. !important wins
          over that rule regardless of its own specificity. */
-      style.textContent = "#view-home{display:none !important;}#view-" + view + "{display:block !important;}header.site-nav{--nav-o:1 !important;}";
+      style.textContent = "#view-home{display:none !important;}#view-" + view + "{display:block !important;}header.site-nav{--nav-o:1 !important;--nav-f:1 !important;}";
       document.head.appendChild(style);
     }
   }catch(e){}
@@ -1029,30 +1029,58 @@ if("serviceWorker" in navigator){
   @media (max-width:640px){.container{padding:0 20px;}}
 
   /* ===== NAV =====
-     --nav-o (0→1) drives the whole "transparent over hero, fades to full
-     bar on scroll" effect. It defaults to 1 (normal, fully opaque header)
-     everywhere. On the homepage only, JS sets it inline on the header
-     element from 0 (at scrollY 0) up to 1 (after HERO_FADE_DISTANCE px of
-     scroll) — see the scroll script below. Every visual piece of the bar
-     (background, border, shadow, logo, pill, text/icon color) reads from
-     this single value so it all fades in "as one piece" and stays in
-     sync automatically. */
+     Two flags (both 0→1, both default to 1 = normal opaque header
+     everywhere) drive the whole "transparent over hero, then a
+     separate floating strip, then gold once the heading arrives"
+     effect. On the homepage only, JS sets them inline on the header
+     element — see the scroll script below:
+       --nav-f ("floating") turns on the moment the visitor scrolls
+         even a couple px — a colorless frosted-glass look (blur,
+         faint white tint, soft shadow) that reads as its own bar.
+       --nav-o ("gold") turns on once the "רפאוז סטייל / הקולקציות
+         שלנו" heading (#showcase-heading) scrolls up to meet the
+         bottom of the bar — this is what actually turns it gold.
+     Every visual piece of the bar (background, border, shadow, logo,
+     pill, text/icon color) reads from these two values so it all
+     changes "as one piece" and stays in sync automatically. */
   header.site-nav{
     position:sticky;top:0;z-index:500;
     --nav-o:1;
-    background:linear-gradient(180deg, rgb(248 236 201 / calc(var(--nav-o) * 0.94)) 0%, rgb(230 200 119 / calc(var(--nav-o) * 0.9)) 100%);
-    backdrop-filter:blur(calc(var(--nav-o) * 6px)) saturate(calc(100% + var(--nav-o) * 20%));
-    -webkit-backdrop-filter:blur(calc(var(--nav-o) * 6px)) saturate(calc(100% + var(--nav-o) * 20%));
-    border-bottom:1px solid rgb(138 108 46 / calc(var(--nav-o) * 0.3));
-    box-shadow:0 10px 30px -18px rgb(43 36 32 / calc(var(--nav-o) * 0.35));
-    transition:box-shadow .35s cubic-bezier(.4,0,.2,1), border-color .35s cubic-bezier(.4,0,.2,1), background .35s cubic-bezier(.4,0,.2,1), backdrop-filter .35s cubic-bezier(.4,0,.2,1);
+    /* --nav-f (0→1): the "floating" flag. Independent of --nav-o - it
+       turns on the moment the visitor scrolls even a few px, giving the
+       bar a distinct frosted-glass edge (blur + faint neutral tint +
+       shadow) while staying see-through and NOT yet gold. --nav-o only
+       flips to 1 once the "רפאוז סטייל / הקולקציות שלנו" heading further
+       down the page actually reaches the bar (see JS below) - that's
+       what triggers the gold color. The neutral (--nav-f) background/
+       border/shadow layers and the gold (--nav-o) ones are stacked
+       together below so that once --nav-o reaches 1 the gold simply
+       paints over/outweighs the neutral floating look - no extra class
+       needed to swap between them. */
+    --nav-f:1;
+    background:
+      linear-gradient(180deg, rgb(248 236 201 / calc(var(--nav-o) * 0.94)) 0%, rgb(230 200 119 / calc(var(--nav-o) * 0.9)) 100%),
+      linear-gradient(180deg, rgb(255 255 255 / calc(var(--nav-f) * 0.16)) 0%, rgb(255 255 255 / calc(var(--nav-f) * 0.05)) 100%);
+    backdrop-filter:blur(calc(max(var(--nav-o), var(--nav-f)) * 10px)) saturate(calc(100% + var(--nav-o) * 20%));
+    -webkit-backdrop-filter:blur(calc(max(var(--nav-o), var(--nav-f)) * 10px)) saturate(calc(100% + var(--nav-o) * 20%));
+    border-bottom:none;
+    box-shadow:
+      0 10px 30px -18px rgb(43 36 32 / calc(max(var(--nav-o), var(--nav-f) * 0.55) * 0.35)),
+      inset 0 -1px 0 0 rgb(138 108 46 / calc(var(--nav-o) * 0.3)),
+      inset 0 -1px 0 0 rgb(255 255 255 / calc(var(--nav-f) * (1 - var(--nav-o)) * 0.2));
+    transition:box-shadow .35s cubic-bezier(.4,0,.2,1), background .35s cubic-bezier(.4,0,.2,1), backdrop-filter .35s cubic-bezier(.4,0,.2,1);
     transform:translateZ(0);
     backface-visibility:hidden;
     will-change:background;
   }
   header.site-nav.scrolled{
-    background:linear-gradient(180deg, rgb(248 236 201 / calc(var(--nav-o) * 0.98)) 0%, rgb(214 177 94 / calc(var(--nav-o) * 0.96)) 100%);
-    border-bottom-color:rgb(138 108 46 / calc(var(--nav-o) * 0.4));
+    background:
+      linear-gradient(180deg, rgb(248 236 201 / calc(var(--nav-o) * 0.98)) 0%, rgb(214 177 94 / calc(var(--nav-o) * 0.96)) 100%),
+      linear-gradient(180deg, rgb(255 255 255 / calc(var(--nav-f) * 0.16)) 0%, rgb(255 255 255 / calc(var(--nav-f) * 0.05)) 100%);
+    box-shadow:
+      0 10px 30px -18px rgb(43 36 32 / calc(max(var(--nav-o), var(--nav-f) * 0.55) * 0.35)),
+      inset 0 -1px 0 0 rgb(138 108 46 / calc(var(--nav-o) * 0.4)),
+      inset 0 -1px 0 0 rgb(255 255 255 / calc(var(--nav-f) * (1 - var(--nav-o)) * 0.2));
   }
   /* Kills the one-frame flash of a solid header on the homepage.
      The JS below only sets --nav-o once it runs, so on a fresh load
@@ -1073,10 +1101,11 @@ if("serviceWorker" in navigator){
   @supports selector(:has(*)){
     body:has(#view-home.active) header.site-nav:not([style*="--nav-o"]){
       --nav-o:0;
+      --nav-f:0;
     }
   }
   @media (prefers-reduced-motion:reduce){
-    header.site-nav{transition:none;--nav-o:1 !important;}
+    header.site-nav{transition:none;--nav-o:1 !important;--nav-f:1 !important;}
   }
   .nav-inner{
     max-width:1240px;margin:0 auto;padding:0 32px;
@@ -1968,6 +1997,42 @@ if("serviceWorker" in navigator){
   .card-tag.out-of-stock{background:var(--taupe);left:auto;right:16px;top:16px;border-radius:6px;}
   .product-card.out-of-stock .imgwrap img{opacity:0.55;filter:grayscale(0.4);}
   .product-card.out-of-stock .cprice{opacity:0.55;}
+  /* "התאמה אישית" ribbon - a small classic corner ribbon across the
+     top-right corner of the product photo (inside .card-frame, which
+     clips its overflow), rather than a tall hanging strip - reads as a
+     normal, "in place" boutique corner badge. A diagonal sheen sweep on
+     hover adds a touch of shine without moving the ribbon itself. See
+     customizableRibbonHTML(). */
+  .customizable-ribbon{
+    position:absolute;top:18px;right:-40px;z-index:3;
+    width:150px;
+    transform:rotate(45deg);
+    transform-origin:center;
+    background:linear-gradient(90deg, var(--gold-light) 0%, var(--gold) 50%, var(--gold-dark) 100%);
+    box-shadow:0 3px 10px -2px rgba(43,36,32,0.45), inset 0 1px 0 rgba(255,255,255,0.35);
+    text-align:center;
+    padding:5px 0;
+    overflow:hidden;
+  }
+  .customizable-ribbon span{
+    position:relative;z-index:1;
+    display:inline-block;
+    direction:rtl;
+    color:#fff;font-family:'Rubik','Almoni Neue',sans-serif;
+    font-size:10.5px;font-weight:700;letter-spacing:0.03em;
+    text-shadow:0 1px 2px rgba(0,0,0,0.3);
+  }
+  .customizable-ribbon::after{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(100deg, transparent 35%, rgba(255,255,255,0.6) 50%, transparent 65%);
+    transform:translateX(-160%);
+    transition:transform .7s ease;
+  }
+  .product-card:hover .customizable-ribbon::after{transform:translateX(160%);}
+  @media (max-width:640px){
+    .customizable-ribbon{width:120px;top:14px;right:-36px;padding:4px 0;}
+    .customizable-ribbon span{font-size:9.5px;}
+  }
   .card-body{padding:20px 16px 6px;text-align:center;}
   .card-body .cname{font-size:19px;margin-bottom:8px;}
   .card-body .cspec{font-size:12px;color:var(--taupe);margin-bottom:12px;letter-spacing:0.02em;}
@@ -2762,6 +2827,133 @@ if("serviceWorker" in navigator){
     #collection-fab .fab-ring{animation:none;display:none;}
   }
 
+  /* ===== HERO "SIMPLE / WHITE" MODE =====
+     Toggled from the admin panel's "עמוד הבית" panel (a single on/off
+     button) via the site_content key hero_simple_mode - see
+     applyHeroSimpleMode() near applyContentOverrides() below, which adds
+     or removes this class on <body>. When it's on, the hero's photo
+     slides, ken-burns zoom, lamp glows and dark photo overlay are all
+     replaced with the site's normal off-white background, and every
+     hero-only animation/transition is switched off - the same "no
+     motion" treatment the prefers-reduced-motion:reduce rules above
+     already give the hero, just opt-in from the admin panel instead of
+     tied to the visitor's OS setting. Text that was tuned for white-on-
+     photo switches to the site's normal dark ink so it stays readable on
+     white, and the nav bar skips its transparent-over-photo phase and
+     stays solid gold throughout, since there's no photo left to float
+     over. */
+  body.hero-simple header.site-nav{--nav-o:1 !important;--nav-f:1 !important;}
+  body.hero-simple .hero{background:#FBF7EE;}
+  body.hero-simple .hero img.bg,
+  body.hero-simple .hero-lights{display:none !important;}
+  body.hero-simple .hero::after{display:none;}
+  body.hero-simple .hero-brand-main,
+  body.hero-simple .hero-brand-sub{
+    color:var(--text-gold);
+    filter:none;
+    text-shadow:none;
+  }
+  body.hero-simple .hero-brand-desc{
+    color:var(--taupe);
+    text-shadow:none;
+  }
+  body.hero-simple .hero-scroll-cue .hsc-ring{
+    border-color:rgb(138 108 46 / 0.3);
+    background:rgba(255,255,255,0.7);
+  }
+  body.hero-simple .hero-scroll-cue .hsc-chevron{stroke:var(--gold-dark);}
+  body.hero-simple .reveal,
+  body.hero-simple .reveal-scale,
+  body.hero-simple .feature-row,
+  body.hero-simple .hero-brand-logo,
+  body.hero-simple .hero-brand-main,
+  body.hero-simple .hero-brand-sub,
+  body.hero-simple .hero-scroll-cue,
+  body.hero-simple #collection-fab,
+  body.hero-simple .bedding-feature .bedding-img,
+  body.hero-simple .bedding-feature .bedding-copy{
+    transition:none !important;opacity:1 !important;transform:none !important;
+  }
+  body.hero-simple .hero img.bg,
+  body.hero-simple .light-glow,
+  body.hero-simple #collection-fab,
+  body.hero-simple #collection-fab .fab-ring{
+    animation:none !important;
+  }
+
+  /* ===== HERO BANNER IMAGE MODE =====
+     A different way to customize the hero, alongside "SIMPLE / WHITE"
+     above: instead of blanking the hero to plain white, the admin
+     uploads one ready-made promotional image (sale text/graphics baked
+     into the image itself, like a print ad) that fills the hero in
+     place of the photo slides/lamp glow/dark overlay/brand text/scroll
+     cue/collection button - see applyHeroBanner() near
+     applyContentOverrides() below, driven by the site_content keys
+     hero_banner_enabled/_image/_link_url. Takes priority over
+     hero-simple when both are somehow on (applyHeroBanner() clears the
+     hero-simple class). The "הקולקציות שלנו" curtain below still rises
+     over it exactly as before - only .hero's own content changes. The
+     nav bar also stays solid gold throughout, same reasoning as
+     hero-simple: the uploaded image already carries its own text/
+     branding, so there's no clean photo to float transparent nav text
+     over. */
+  body.hero-banner header.site-nav{--nav-o:1 !important;--nav-f:1 !important;}
+  body.hero-banner .hero img.bg,
+  body.hero-banner .hero-lights,
+  body.hero-banner .hero-brand,
+  body.hero-banner .hero-scroll-cue{
+    display:none !important;
+  }
+  body.hero-banner .hero::after{display:none;}
+  .hero-banner-link{
+    position:absolute;inset:0;z-index:2;display:block;
+  }
+  .hero-banner-link img{
+    position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;
+  }
+
+  /* ===== PROMO BANNER =====
+     A slim announcement strip above the header (sale, shipping promo,
+     etc.), fully optional. Populated from the admin panel's "עמוד הבית"
+     panel via the site_content keys promo_banner_enabled/_text/
+     _link_url/_link_text - see applyPromoBanner() near
+     applyContentOverrides() below. Hidden by default (inline
+     style="display:none" in the markup) until JS confirms it's enabled
+     and has text to show. Sits in normal document flow above the sticky
+     header, so it scrolls away with the first bit of scrolling rather
+     than permanently eating into the header's space. */
+  .promo-banner{
+    background:linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 50%, var(--gold-dark) 100%);
+    position:relative;z-index:600;
+  }
+  .promo-banner-inner{
+    max-width:1240px;margin:0 auto;
+    display:flex;align-items:center;justify-content:center;gap:6px 14px;flex-wrap:wrap;
+    padding:10px 46px;position:relative;
+  }
+  .promo-banner-text{
+    color:#fff;font-family:'Rubik','Almoni Neue',sans-serif;
+    font-size:13.5px;font-weight:600;letter-spacing:0.01em;text-align:center;
+  }
+  .promo-banner-link{
+    color:#fff;font-family:'Rubik','Almoni Neue',sans-serif;
+    font-size:13.5px;font-weight:700;text-decoration:underline;text-underline-offset:3px;
+    white-space:nowrap;
+  }
+  .promo-banner-link:hover{opacity:.82;}
+  .promo-banner-close{
+    position:absolute;inset-inline-end:12px;top:50%;transform:translateY(-50%);
+    background:none;border:none;color:#fff;opacity:.8;cursor:pointer;
+    width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:50%;
+    transition:background .2s ease, opacity .2s ease;
+  }
+  .promo-banner-close:hover{background:rgba(255,255,255,0.2);opacity:1;}
+  .promo-banner-close svg{width:13px;height:13px;stroke:currentColor;stroke-width:2;stroke-linecap:round;}
+  @media (max-width:640px){
+    .promo-banner-inner{padding:9px 40px;}
+    .promo-banner-text, .promo-banner-link{font-size:12.5px;}
+  }
+
   /* Accessibility widget */
   #a11y-toggle{
     position:fixed;bottom:26px;left:22px;z-index:980;
@@ -2870,6 +3062,16 @@ if("serviceWorker" in navigator){
 </div>
 <a href="#main-content" class="skip-link">דלג לתוכן הראשי</a>
 
+<div class="promo-banner" id="promo-banner" style="display:none;" role="region" aria-label="מודעת מבצע">
+  <div class="promo-banner-inner">
+    <span class="promo-banner-text" id="promo-banner-text"></span>
+    <a href="#" class="promo-banner-link" id="promo-banner-link" style="display:none;"></a>
+    <button type="button" class="promo-banner-close" id="promo-banner-close" aria-label="סגירת ההודעה">
+      <svg viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
+    </button>
+  </div>
+</div>
+
 <header class="site-nav" role="banner">
   <div class="nav-inner">
     <div class="nav-brand">
@@ -2924,6 +3126,10 @@ if("serviceWorker" in navigator){
     <img class="bg slide" data-content-key="hero_slide_3" src="/images/site/hero-new/hero-bg-3.jpg" alt="חדר שינה יוקרתי רפאוז סטייל - תאורה חמה ועיצוב עץ" loading="lazy">
     <img class="bg slide" data-content-key="hero_slide_4" src="/images/site/hero-new/hero-bg-4.jpg" alt="חדר שינה יוקרתי רפאוז סטייל - סוויטה מרווחת בגווני חום ושמנת" loading="lazy">
     <img class="bg slide" data-content-key="hero_slide_5" src="/images/site/hero-new/hero-bg-5.jpg" alt="חדר שינה יוקרתי רפאוז סטייל - עיצוב עדין בגווני עץ בהיר" loading="lazy">
+
+    <a id="hero-banner-link" class="hero-banner-link" style="display:none;" aria-label="באנר מבצע">
+      <img id="hero-banner-img" src="" alt="מבצע">
+    </a>
 
     <div class="hero-lights" aria-hidden="true">
       <span class="light-glow spot-1"></span>
@@ -4256,7 +4462,7 @@ const PRODUCTS = [
     bg:"linear-gradient(145deg,#F7E4E4,#EAC9C2)",
     cotton:100, thread:400, bedType:"twin", tier:"premium", collection:"bloom",
     img:"/images/products/prachim.jpg", desc:1,
-    tag:"רב מכר"
+    tag:"רב מכר", pillowsIncluded:true
   },
   {
     id:"simfonia", name:"סימפוניה", nameEn:"SIMFONIA", price:700,
@@ -4268,7 +4474,7 @@ const PRODUCTS = [
     id:"rakefet", name:"רקפת", nameEn:"RAKEFET", price:890,
     bg:"linear-gradient(145deg,#EBD8DD,#C9A9B0)",
     cotton:100, thread:400, bedType:"twin", tier:"premium", collection:"bloom",
-    img:"/images/products/rakefet.jpg", desc:1
+    img:"/images/products/rakefet.jpg", desc:1, pillowsIncluded:true
   },
   {
     id:"yahalom", name:"יהלום", nameEn:"YAHALOM", price:1490,
@@ -4276,19 +4482,19 @@ const PRODUCTS = [
     cotton:100, thread:400, bedType:"twin", tier:"premium", collection:"renaissance",
     customizable:true, embroideryFree:true, embroideryMaxLetters:2,
     img:"/images/products/yahalom.jpg", desc:2,
-    tag:"פרימיום"
+    tag:"פרימיום", pillowsIncluded:true
   },
   {
     id:"london", name:"לונדון", nameEn:"LONDON", price:690,
     bg:"linear-gradient(145deg,#F5EEDF,#E3D3AC)",
     cotton:100, thread:400, bedType:"twin", tier:"premium", collection:"renaissance", customizable:true,
-    img:"/images/products/london.jpg", desc:1
+    img:"/images/products/london.jpg", desc:1, pillowsIncluded:true
   },
   {
     id:"royal", name:"רויאל", nameEn:"ROYAL", price:1190,
     bg:"linear-gradient(145deg,#EDE1C2,#C9A968)",
     cotton:100, thread:400, bedType:"twin", tier:"premium", collection:"renaissance",
-    img:"/images/products/royal.jpg", desc:2
+    img:"/images/products/royal.jpg", desc:2, pillowsIncluded:true
   },
   {
     id:"star", name:"סטאר", nameEn:"STAR", price:680,
@@ -4312,13 +4518,13 @@ const PRODUCTS = [
     id:"aviv", name:"סימפוניה פרימיום", nameEn:"SIMFONIA PREMIUM", price:1080,
     bg:"linear-gradient(145deg,#F6E1E7,#E3B9C3)",
     cotton:100, thread:400, bedType:"twin", tier:"premium", collection:"renaissance",
-    img:"/images/products/aviv.jpg", desc:2
+    img:"/images/products/aviv.jpg", desc:2, pillowsIncluded:true
   },
   {
     id:"simfonia-premium", name:"פוקסיה", nameEn:"FUCHSIA", price:1000,
     bg:"linear-gradient(145deg,#F6F1EA,#D8C2A6)",
     cotton:100, thread:400, bedType:"twin", tier:"premium", collection:"bloom",
-    img:"/images/products/simfonia-premium.jpg", desc:1
+    img:"/images/products/simfonia-premium.jpg", desc:1, pillowsIncluded:true
   },
   {
     id:"elegantia", name:"מלודיה", nameEn:"MELODY", price:700,
@@ -4799,31 +5005,64 @@ if(siteNav){
   window.addEventListener("scroll", queueNavScrolledUpdate, {passive:true});
 
   /* ---- Transparent-over-hero nav (home page only) ----
-     At scrollY 0 on the homepage, the bar has no background, no border
-     and no logo - only the nav links and icon buttons float directly on
-     top of the hero, still fully clickable. As the visitor scrolls down,
-     --nav-o eases from 0 to 1 over HERO_FADE_DISTANCE px and every part
-     of the bar (background, border, shadow, logo, pill, text/icon color)
-     fades back in together, since they all read from --nav-o in the CSS
-     above. On every other page (and as a safe default) --nav-o simply
-     stays at its CSS default of 1, i.e. the normal full header. */
-  const HERO_FADE_DISTANCE = 140; // px of scroll to go from transparent to full
+     At scrollY 0 on the homepage the bar has no background, no border,
+     no blur and no logo - only the nav links and icon buttons float
+     directly on top of the hero, still fully clickable. That first
+     state is controlled by two independent flags, both read as CSS
+     custom properties (see header.site-nav in the CSS above):
+
+     --nav-f ("floating"): flips to 1 the moment the visitor scrolls
+     even a few px. It gives the bar a distinct frosted-glass edge -
+     blur, a faint neutral (colorless) tint and a soft shadow - so it
+     reads as its own separate strip, while staying see-through and
+     NOT yet gold.
+
+     --nav-o ("gold"): stays 0 until the "רפאוז סטייל / הקולקציות שלנו"
+     heading further down the page (#showcase-heading) actually
+     scrolls up to meet the bottom edge of the bar. Only then does the
+     bar turn the normal solid gold. Every part of the bar (background,
+     border, shadow, logo, pill, text/icon color) reads from these two
+     variables in the CSS above, so it all changes "as one piece".
+
+     On every other page (and as a safe default) both variables simply
+     stay at their CSS default of 1, i.e. the normal full gold header. */
+  const NAV_FLOAT_ON = 2;   // px of scroll before the bar turns "floating"
+  const NAV_FLOAT_OFF = 0;  // px of scroll before it turns back off
+  const NAV_GOLD_GAP_ON = 0;   // extra px past the bar before gold turns on
+  const NAV_GOLD_GAP_OFF = 28; // extra px of slack before gold turns back off
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const showcaseHeading = document.getElementById("showcase-heading");
 
   function isHomeViewActive(){
     const homeView = document.getElementById("view-home");
     return !!homeView && homeView.classList.contains("active");
   }
 
+  let navFloating = false;
+  let navGold = false;
   let navHeroRaf = false;
   function applyNavHeroProgress(){
     navHeroRaf = false;
     if(prefersReducedMotion || !isHomeViewActive()){
+      siteNav.style.removeProperty("--nav-f");
       siteNav.style.removeProperty("--nav-o");
       return;
     }
-    const o = Math.max(0, Math.min(1, window.scrollY / HERO_FADE_DISTANCE));
-    siteNav.style.setProperty("--nav-o", o);
+    const y = window.scrollY;
+    navFloating = navFloating ? y > NAV_FLOAT_OFF : y > NAV_FLOAT_ON;
+    siteNav.style.setProperty("--nav-f", navFloating ? 1 : 0);
+
+    // Has the heading's top edge reached the bottom of the bar yet?
+    let meetsBar = navGold; // no heading found (shouldn't happen) - hold state
+    if(showcaseHeading){
+      const navHeight = siteNav.offsetHeight;
+      const top = showcaseHeading.getBoundingClientRect().top;
+      meetsBar = navGold
+        ? top <= navHeight + NAV_GOLD_GAP_OFF
+        : top <= navHeight + NAV_GOLD_GAP_ON;
+    }
+    navGold = meetsBar;
+    siteNav.style.setProperty("--nav-o", navGold ? 1 : 0);
   }
   function queueNavHeroProgress(){
     if(navHeroRaf) return;
@@ -4892,6 +5131,15 @@ document.querySelectorAll("[data-nav]").forEach(el=>{
 /* ============================================================
    RENDER: PRODUCT CARD
    ============================================================ */
+/* "ניתן להתאמה אישית" ribbon shown on the product card's photo itself
+   (not the card body) for customizable models - a shopper should see
+   this before even opening the product. See .customizable-ribbon CSS. */
+function customizableRibbonHTML(p){
+  return p.customizable
+    ? '<div class="customizable-ribbon"><span>✦ התאמה אישית</span></div>'
+    : "";
+}
+
 function productCardHTML(p){
   if(p.hidden) return "";
   const isWished = wishlist.includes(p.id);
@@ -4899,6 +5147,7 @@ function productCardHTML(p){
   <div class="product-card ${p.outOfStock ? "out-of-stock" : ""}" data-id="${p.id}" tabindex="0" role="button" aria-label="לצפייה במוצר ${p.name}">
     <div class="card-frame" style="background:var(--ivory)">
       ${p.outOfStock ? `<span class="card-tag out-of-stock">אזל מהמלאי</span>` : (p.tag ? `<span class="card-tag">${p.tag}</span>` : "")}
+      ${customizableRibbonHTML(p)}
       <button class="wish-btn ${isWished ? "active" : ""}" data-id="${p.id}" aria-label="${isWished ? "הסרה מהמועדפים" : "הוספה למועדפים"}" aria-pressed="${isWished}">
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-4.35-9.5-8.8C.7 8.3 2.2 4.3 6.2 4.3c2 0 3.5 1 5.8 2.5 2.3-1.5 3.8-2.5 5.8-2.5 4 0 5.5 4 3.5 7.9C19 16.65 12 21 12 21z"/></svg>
       </button>
@@ -5069,7 +5318,92 @@ async function applyContentOverrides(){
         el.textContent = val;
       }
     });
+    applyHeroSimpleMode(content);
+    applyHeroBanner(content);
+    applyPromoBanner(content);
   }catch(e){ /* network error/timeout - keep the built-in defaults */ }
+}
+
+/* Admin panel "עמוד הבית" toggle: hero_simple_mode === "1" switches the
+   hero to the plain white/no-animation look - see the "HERO SIMPLE /
+   WHITE MODE" CSS above. Just a class toggle; everything else is CSS. */
+function applyHeroSimpleMode(content){
+  document.body.classList.toggle("hero-simple", content.hero_simple_mode === "1");
+}
+
+/* Admin panel "עמוד הבית" panel: hero_banner_enabled/_image/_link_url
+   swap the hero for one uploaded promotional image - see the "HERO
+   BANNER IMAGE MODE" CSS above. Takes priority over hero_simple_mode if
+   both are somehow on, since an uploaded banner is a stronger, more
+   deliberate choice than the plain-white fallback. */
+function applyHeroBanner(content){
+  const enabled = content.hero_banner_enabled === "1";
+  const imageUrl = (content.hero_banner_image || "").trim();
+  const active = enabled && !!imageUrl;
+  document.body.classList.toggle("hero-banner", active);
+  const linkEl = document.getElementById("hero-banner-link");
+  const imgEl = document.getElementById("hero-banner-img");
+  if(!linkEl || !imgEl) return;
+  if(!active){
+    linkEl.style.display = "none";
+    return;
+  }
+  document.body.classList.remove("hero-simple"); // banner image wins if both are on
+  imgEl.src = imageUrl;
+  const linkUrl = (content.hero_banner_link_url || "").trim();
+  if(linkUrl){
+    linkEl.href = linkUrl;
+    linkEl.style.pointerEvents = "";
+    linkEl.style.cursor = "pointer";
+  } else {
+    linkEl.removeAttribute("href");
+    linkEl.style.pointerEvents = "none";
+    linkEl.style.cursor = "default";
+  }
+  linkEl.style.display = "block";
+}
+
+/* Admin panel "עמוד הבית" panel: promo_banner_enabled/_text/_link_url/
+   _link_text drive the slim announcement strip above the header (see
+   the "PROMO BANNER" CSS above and the markup right before
+   header.site-nav). A visitor who closes it with the × won't see that
+   exact message again this browser session (sessionStorage) - if the
+   admin later changes the text, it's treated as a new message and
+   shows again. */
+function applyPromoBanner(content){
+  const banner = document.getElementById("promo-banner");
+  if(!banner) return;
+  const enabled = content.promo_banner_enabled === "1";
+  const text = (content.promo_banner_text || "").trim();
+  if(!enabled || !text){
+    banner.style.display = "none";
+    return;
+  }
+  const dismissKey = "rs-promo-dismissed:" + text;
+  if(sessionStorage.getItem(dismissKey) === "1"){
+    banner.style.display = "none";
+    return;
+  }
+  document.getElementById("promo-banner-text").textContent = text;
+  const linkEl = document.getElementById("promo-banner-link");
+  const linkUrl = (content.promo_banner_link_url || "").trim();
+  const linkText = (content.promo_banner_link_text || "").trim();
+  if(linkUrl && linkText){
+    linkEl.href = linkUrl;
+    linkEl.textContent = linkText;
+    linkEl.style.display = "";
+  } else {
+    linkEl.style.display = "none";
+  }
+  banner.style.display = "";
+  const closeBtn = document.getElementById("promo-banner-close");
+  if(closeBtn && !closeBtn.dataset.bound){
+    closeBtn.dataset.bound = "1";
+    closeBtn.addEventListener("click", function(){
+      banner.style.display = "none";
+      try{ sessionStorage.setItem(dismissKey, "1"); }catch(e){}
+    });
+  }
 }
 
 function renderTowels(){
@@ -5564,7 +5898,13 @@ document.getElementById("qty-plus").addEventListener("click", ()=>{
 function renderIncludesList(size){
   const includesList = document.getElementById("pd-includes-list");
   if(!includesList) return;
-  const items = size === "single" ? DESC_1_INCLUDES_SINGLE : DESC_1_INCLUDES;
+  const items = (size === "single" ? DESC_1_INCLUDES_SINGLE : DESC_1_INCLUDES).slice();
+  // Free decorative pillows are a fixed gift with the model, not something
+  // that scales with the "יחיד/זוג" size choice - see PRODUCTS' pillowsIncluded.
+  const p = PRODUCTS.find(x=>x.id===currentProductId);
+  if(p && p.pillowsIncluded){
+    items.push("2 כריות נוי מתנה");
+  }
   includesList.innerHTML = items.map(item=>`
     <li><svg class="icon" viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg>${item}</li>
   `).join("");
@@ -6251,9 +6591,20 @@ function renderAccountPage(){
    of falsely telling the customer the order went through. */
 async function saveOrder(paymentConfirmationCode){
   if(cart.length === 0) return null;
+  /* IMPORTANT: size and embroidery are sent as their own fields (not just
+     folded into the display `name` string) for two reasons:
+     1) /api/orders independently recomputes the price server-side from
+        these fields (see unitPrice() in api/_lib/pricing.js) - without
+        them it would price every item at plain full price, mismatching
+        the already-verified total from /api/checkout-total and failing
+        to save an order that was just successfully charged.
+     2) The admin panel's order detail view (renderOrderDetail() in
+        admin.html) reads them directly to show a clear "רקמה: א.כ" /
+        "חצי סט" field instead of the admin having to spot it inside a
+        sentence. `name` is kept too, purely as the human-readable label. */
   const items = cart.map(c=>{
     const p = PRODUCTS.find(x=>x.id===c.id);
-    return p ? { id:p.id, name:displayName(p) + (c.size === "single" ? ` (סט יחיד)` : "") + (c.embroidery ? ` (רקמת ראשי תיבות: ${escapeHTML(c.embroidery)})` : ""), qty:c.qty, price:cartItemUnitPrice(c, p) } : null;
+    return p ? { id:p.id, name:displayName(p) + (c.size === "single" ? ` (סט יחיד)` : "") + (c.embroidery ? ` (רקמת ראשי תיבות: ${escapeHTML(c.embroidery)})` : ""), qty:c.qty, price:cartItemUnitPrice(c, p), size:c.size || null, embroidery:c.embroidery || null } : null;
   }).filter(Boolean);
   /* Reuse the server-verified numbers from openPaymentModal() rather than
      recomputing from cartTotal() again - that keeps the saved order in

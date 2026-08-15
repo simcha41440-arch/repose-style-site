@@ -15,6 +15,7 @@
 //   POST /api/admin?action=logout
 //   GET  /api/admin?action=audit-log     - admin action log + failed logins
 //   POST /api/admin?action=upload-image  - { filename, dataUrl } -> { url }
+//   POST /api/admin?action=test-email    - { to? } -> sends a real test email
 
 const crypto = require('crypto');
 const { getSupabase, withFriendlyError } = require('./_lib/supabase');
@@ -32,6 +33,7 @@ const {
   recordLoginAttempt,
   logAdminAction,
 } = require('./_lib/security');
+const { sendEmail, sanitizeEnvValue } = require('./_lib/mailer');
 
 function timingSafeEqualStr(a, b) {
   const aBuf = Buffer.from(String(a ?? ''));
@@ -292,6 +294,63 @@ async function handleUploadImage(req, res) {
   return res.status(200).json({ url });
 }
 
+// Sends a real test email through the exact same api/_lib/mailer.js every
+// other flow on the site uses (order confirmations, contact form,
+// newsletter signup, password reset, Tranzila payment notifications) - so
+// a success here is a real, verified signal that all of those work too,
+// and a failure surfaces the exact Resend error (bad/missing API key,
+// unverified sending domain, etc.) directly in the admin panel instead of
+// only in Vercel's function logs. Always responds 200 (even on failure)
+// with { ok: false, error, ... } so the admin panel can show the specific
+// reason - a non-2xx here would just show a generic "שגיאה" instead.
+async function handleTestEmail(req, res) {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return res.status(405).json({ error: 'Method not allowed.' });
+  }
+  const session = requireAdmin(req, res);
+  if (!session) return;
+
+  let body;
+  try {
+    body = await parseJsonBody(req);
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+
+  const requestedTo = body && body.to ? String(body.to).trim() : '';
+  const to = requestedTo || sanitizeEnvValue(process.env.ORDER_NOTIFY_EMAIL) || 'simcha41440@gmail.com';
+
+  const missingEnv = [];
+  if (!sanitizeEnvValue(process.env.RESEND_API_KEY)) missingEnv.push('RESEND_API_KEY');
+  if (!sanitizeEnvValue(process.env.RESEND_FROM_EMAIL)) missingEnv.push('RESEND_FROM_EMAIL');
+
+  const result = await sendEmail({
+    to,
+    subject: 'מייל בדיקה - רפאוז סטייל',
+    html: `
+      <div dir="rtl" style="font-family:Arial,sans-serif;font-size:15px;color:#333;">
+        <h2 style="margin:0 0 10px;">מייל בדיקה מעמוד הניהול</h2>
+        <p>אם קיבלתם את המייל הזה - שליחת המיילים באתר מוגדרת נכון ועובדת (אישורי הזמנה, טופס יצירת קשר, הרשמה לדיוור, איפוס סיסמה ועדכוני תשלום עוברים כולם דרך אותה מערכת).</p>
+        <p style="color:#888;font-size:13px;">נשלח ${new Date().toLocaleString('he-IL')}.</p>
+      </div>`,
+  });
+
+  // Best-effort audit log entry - never let a logging problem affect the
+  // response the admin is waiting on to know if the email itself worked.
+  try {
+    const supabase = getSupabase();
+    await logAdminAction(supabase, session.user, 'test_email', to, { ok: result.ok, error: result.error || null }, getClientIp(req));
+  } catch (err) {
+    console.error('test-email: audit log failed (non-fatal):', err.message);
+  }
+
+  if (!result.ok) {
+    return res.status(200).json({ ok: false, error: result.error, missingEnv, to });
+  }
+  return res.status(200).json({ ok: true, to, missingEnv });
+}
+
 module.exports = async (req, res) => {
   const action = req.query && req.query.action;
   switch (action) {
@@ -305,6 +364,8 @@ module.exports = async (req, res) => {
       return handleAuditLog(req, res);
     case 'upload-image':
       return handleUploadImage(req, res);
+    case 'test-email':
+      return handleTestEmail(req, res);
     default:
       return res.status(400).json({ error: 'Unknown or missing action.' });
   }

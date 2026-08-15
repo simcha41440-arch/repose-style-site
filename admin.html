@@ -106,11 +106,33 @@
   .detail-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px 20px;}
   .detail-grid dt{font-size:11px; color:var(--taupe); margin-bottom:2px;}
   .detail-grid dd{font-size:13px; color:var(--ink); margin:0 0 10px 0; word-break:break-word;}
+  .detail-section-title{
+    grid-column:1 / -1; font-size:12.5px; font-weight:700; color:var(--gold-dark);
+    letter-spacing:0.02em; border-bottom:1px solid var(--line); padding-bottom:5px; margin:4px 0 -2px;
+  }
+  .detail-section-title:first-child{margin-top:0;}
   .detail-items{grid-column:1 / -1;}
   .detail-items table{min-width:0; font-size:12.5px;}
   .detail-items thead th{padding:6px 8px; border-bottom:1px solid var(--line);}
   .detail-items tbody td{padding:6px 8px; border-bottom:1px solid #EFE4C4;}
   .detail-notes{grid-column:1 / -1; white-space:pre-wrap;}
+  /* Embroidery / customization badges - shown both in the main orders
+     table (so it's visible without opening "פרטים מלאים") and in the
+     per-item breakdown inside the detail view. */
+  .embroidery-badge{
+    display:inline-flex; align-items:center; gap:4px;
+    background:rgba(173,138,78,0.16); color:var(--gold-dark);
+    font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px;
+    white-space:nowrap; margin-top:4px;
+  }
+  .items-cell .embroidery-badge{display:flex; width:fit-content;}
+  .size-tag{
+    display:inline-flex; align-items:center;
+    background:#F1E9D6; color:var(--taupe);
+    font-size:11px; font-weight:600; padding:3px 9px; border-radius:999px;
+    white-space:nowrap;
+  }
+  .no-customization{color:var(--taupe); opacity:.55;}
 
   /* ---------- Overview / dashboard ---------- */
   .stat-cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:16px; margin-bottom:24px;}
@@ -200,6 +222,20 @@
       <div class="panel">
         <h3>5 ההזמנות האחרונות</h3>
         <div id="recentOrdersWrap"><div class="empty">טוען...</div></div>
+      </div>
+
+      <div class="panel">
+        <h3>בדיקת שליחת מיילים</h3>
+        <p class="sub" style="margin:-6px 0 14px;">כל המיילים באתר (אישורי הזמנה, פניות מטופס יצירת קשר, הרשמה לדיוור, איפוס סיסמה, עדכוני תשלום) עוברים דרך אותה מערכת שליחה (Resend). כפתור זה שולח מייל בדיקה אמיתי, כדי לוודא שהחיבור מוגדר נכון - בלי צורך לבצע הזמנה מדומה.</p>
+        <div class="grid-form">
+          <div class="field">
+            <label for="testEmailTo">לאן לשלוח את מייל הבדיקה (ריק = תיבת ההתראות שהוגדרה בסביבה)</label>
+            <input type="text" id="testEmailTo" placeholder="you@example.com">
+          </div>
+        </div>
+        <button type="button" class="btn small" id="testEmailBtn" style="margin-top:12px;">שליחת מייל בדיקה</button>
+        <div class="err-msg" id="testEmailErr"></div>
+        <div class="ok-msg" id="testEmailOk"></div>
       </div>
     </section>
 
@@ -297,6 +333,64 @@
       <div class="panel">
         <h3>תמונות רקע בעמוד הבית</h3>
         <div id="contentImageFieldsHome"></div>
+      </div>
+
+      <div class="panel">
+        <h3>תצוגת עמוד הגיבור (Hero)</h3>
+        <p class="sub" style="margin:-6px 0 14px;">כפתור אחד שמכבה את כל האנימציות ותמונות הרקע בעמוד הגיבור (החלק הראשון שרואים בכניסה לאתר), ומחליף אותו ברקע לבן ונקי. לחיצה נוספת מחזירה את המצב הרגיל. אם מופעל גם "באנר תמונה" למטה, הבאנר גובר על התצוגה הלבנה.</p>
+        <button type="button" class="btn small" id="heroSimpleToggleBtn">טוען...</button>
+        <div class="err-msg" id="heroSimpleErr"></div>
+        <div class="ok-msg" id="heroSimpleOk"></div>
+      </div>
+
+      <div class="panel">
+        <h3>באנר תמונה בעמוד הגיבור</h3>
+        <p class="sub" style="margin:-6px 0 14px;">מעלים תמונה אחת מוכנה (עם הטקסט/המבצע כבר בתוך התמונה עצמה, בדיוק כמו פרסומת מוכנה) שמחליפה את תמונות הרקע, הכיתוב והאנימציות בעמוד הגיבור. אפשר גם להוסיף קישור, כדי שלחיצה על הבאנר תוביל לדף מבצע/קטגוריה.</p>
+        <div class="grid-form">
+          <div class="field" style="grid-column:1/-1;">
+            <label><input type="checkbox" id="heroBannerEnabled" style="width:auto;margin-inline-end:8px;vertical-align:middle;">הצגת באנר התמונה בעמוד הגיבור (במקום התצוגה הרגילה)</label>
+          </div>
+          <div class="field">
+            <label for="heroBannerFile">קובץ תמונה חדש (JPG / PNG / WEBP)</label>
+            <input type="file" id="heroBannerFile" accept="image/jpeg,image/png,image/webp,image/gif">
+          </div>
+          <div class="field">
+            <label for="heroBannerLinkUrl">קישור בלחיצה על הבאנר (אופציונלי)</label>
+            <input type="text" id="heroBannerLinkUrl" placeholder="/shop">
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:14px;">
+          <div id="heroBannerPreviewWrap"></div>
+          <button type="button" class="btn small" id="heroBannerUploadBtn">העלאה ושמירה</button>
+          <button type="button" class="btn outline small" id="heroBannerResetBtn" style="display:none;">מחיקת התמונה - חזרה לתצוגה הרגילה</button>
+        </div>
+        <div class="err-msg" id="heroBannerErr"></div>
+        <div class="ok-msg" id="heroBannerOk"></div>
+      </div>
+
+      <div class="panel">
+        <h3>מודעת מבצע (פס עליון)</h3>
+        <p class="sub" style="margin:-6px 0 14px;">פס הודעה דק שמופיע מעל התפריט העליון בכל האתר - טקסט בלבד (לתמונה מלאה בעמוד הגיבור עצמו, ראו "באנר תמונה" למעלה). אפשר להשאיר רק טקסט, או להוסיף גם קישור עם כפתור. משתמש שסוגר את ההודעה (כפתור ה-×) לא יראה אותה שוב באותו ביקור, אלא אם הטקסט משתנה.</p>
+        <div class="grid-form">
+          <div class="field" style="grid-column:1/-1;">
+            <label><input type="checkbox" id="promoEnabled" style="width:auto;margin-inline-end:8px;vertical-align:middle;">הצגת מודעת המבצע באתר</label>
+          </div>
+          <div class="field" style="grid-column:1/-1;">
+            <label for="promoText">טקסט ההודעה</label>
+            <input type="text" id="promoText" placeholder="לדוגמה: מבצע קיץ - 20% הנחה על כל האתר!">
+          </div>
+          <div class="field">
+            <label for="promoLinkUrl">קישור (אופציונלי)</label>
+            <input type="text" id="promoLinkUrl" placeholder="/shop">
+          </div>
+          <div class="field">
+            <label for="promoLinkText">טקסט הכפתור/הקישור (אופציונלי)</label>
+            <input type="text" id="promoLinkText" placeholder="לצפייה במבצע">
+          </div>
+        </div>
+        <button type="button" class="btn small" id="promoSaveBtn" style="margin-top:12px;">שמירת המודעה</button>
+        <div class="err-msg" id="promoErr"></div>
+        <div class="ok-msg" id="promoOk"></div>
       </div>
 
       <div class="panel">
@@ -985,6 +1079,154 @@
     saveContentTextFields(CONTENT_TEXT_FIELDS_ABOUT, 'contentAboutErr', 'contentAboutOk', this);
   });
 
+  /* "תצוגת עמוד הגיבור (Hero)" panel - a single on/off button that sets
+     the hero_simple_mode content key. The storefront reads it in
+     applyHeroSimpleMode() (see index.html) and swaps the hero for a
+     plain white, no-animation version when it's "1". */
+  function renderHeroSimpleToggle(){
+    const btn = document.getElementById('heroSimpleToggleBtn');
+    const isSimple = lastContent.hero_simple_mode === '1';
+    btn.textContent = isSimple
+      ? 'החזרת התמונות והאנימציות בעמוד הגיבור'
+      : 'מעבר לתצוגה לבנה ללא תמונות ואנימציות';
+    btn.className = isSimple ? 'btn outline small' : 'btn small';
+  }
+  document.getElementById('heroSimpleToggleBtn').addEventListener('click', async function(){
+    const btn = this;
+    const errEl = document.getElementById('heroSimpleErr');
+    const okEl = document.getElementById('heroSimpleOk');
+    errEl.textContent = '';
+    okEl.textContent = '';
+    const nextValue = lastContent.hero_simple_mode === '1' ? '0' : '1';
+    btn.disabled = true;
+    try {
+      await api('/api/content', { method:'POST', body: JSON.stringify({ key:'hero_simple_mode', value: nextValue }) });
+      lastContent.hero_simple_mode = nextValue;
+      renderHeroSimpleToggle();
+      okEl.textContent = nextValue === '1'
+        ? 'הופעל - עמוד הגיבור מוצג עכשיו לבן וללא אנימציות לכל הגולשים.'
+        : 'בוטל - עמוד הגיבור חזר לתצוגה הרגילה עם התמונות והאנימציות.';
+    } catch(e) {
+      errEl.textContent = e.message || 'שגיאה בשמירה.';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  /* "באנר תמונה בעמוד הגיבור" panel - hero_banner_enabled/_image/
+     _link_url content keys, read by applyHeroBanner() in index.html to
+     swap the hero for one uploaded image. Reuses uploadImageFile() from
+     the "תמונת מוצר" panel above. */
+  function renderHeroBannerPanel(){
+    const wrap = document.getElementById('heroBannerPreviewWrap');
+    const imgSrc = lastContent.hero_banner_image || '';
+    wrap.innerHTML = imgSrc
+      ? '<img src="' + imgSrc + '" alt="" style="width:120px;height:70px;object-fit:cover;border-radius:8px;border:1px solid var(--line);">'
+      : '<div style="width:120px;height:70px;border-radius:8px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:10.5px;color:var(--taupe);text-align:center;">אין<br>תמונה</div>';
+    document.getElementById('heroBannerEnabled').checked = lastContent.hero_banner_enabled === '1';
+    document.getElementById('heroBannerLinkUrl').value = lastContent.hero_banner_link_url || '';
+    document.getElementById('heroBannerResetBtn').style.display = imgSrc ? '' : 'none';
+  }
+  document.getElementById('heroBannerUploadBtn').addEventListener('click', async function(){
+    const btn = this;
+    const errEl = document.getElementById('heroBannerErr');
+    const okEl = document.getElementById('heroBannerOk');
+    errEl.textContent = '';
+    okEl.textContent = '';
+    const fileInput = document.getElementById('heroBannerFile');
+    const enabled = document.getElementById('heroBannerEnabled').checked ? '1' : '0';
+    const linkUrl = document.getElementById('heroBannerLinkUrl').value;
+    btn.disabled = true;
+    try {
+      let imageUrl = lastContent.hero_banner_image || '';
+      if (fileInput.files[0]) {
+        imageUrl = await uploadImageFile(fileInput.files[0]);
+      }
+      if (enabled === '1' && !imageUrl) {
+        errEl.textContent = 'צריך להעלות תמונה כדי להציג את הבאנר.';
+        return;
+      }
+      await api('/api/content', { method:'POST', body: JSON.stringify({ key:'hero_banner_image', value: imageUrl }) });
+      await api('/api/content', { method:'POST', body: JSON.stringify({ key:'hero_banner_enabled', value: enabled }) });
+      await api('/api/content', { method:'POST', body: JSON.stringify({ key:'hero_banner_link_url', value: linkUrl }) });
+      lastContent.hero_banner_image = imageUrl;
+      lastContent.hero_banner_enabled = enabled;
+      lastContent.hero_banner_link_url = linkUrl;
+      if (enabled === '1') lastContent.hero_simple_mode = '0'; // banner wins over the white mode - keep the panel above in sync
+      fileInput.value = '';
+      renderHeroBannerPanel();
+      renderHeroSimpleToggle();
+      okEl.textContent = 'נשמר בהצלחה - השינויים מוצגים עכשיו לכל הגולשים באתר.';
+    } catch(e) {
+      errEl.textContent = e.message || 'שגיאה בשמירה.';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+  document.getElementById('heroBannerResetBtn').addEventListener('click', async function(){
+    const btn = this;
+    const errEl = document.getElementById('heroBannerErr');
+    const okEl = document.getElementById('heroBannerOk');
+    errEl.textContent = '';
+    okEl.textContent = '';
+    if (!confirm('למחוק את תמונת הבאנר ולהחזיר את עמוד הגיבור לתצוגה הרגילה?')) return;
+    btn.disabled = true;
+    try {
+      await api('/api/content?key=' + encodeURIComponent('hero_banner_image'), { method:'DELETE' });
+      await api('/api/content', { method:'POST', body: JSON.stringify({ key:'hero_banner_enabled', value:'0' }) });
+      lastContent.hero_banner_image = '';
+      lastContent.hero_banner_enabled = '0';
+      renderHeroBannerPanel();
+      okEl.textContent = 'נמחק - עמוד הגיבור חזר לתצוגה הרגילה.';
+    } catch(e) {
+      errEl.textContent = e.message || 'שגיאה במחיקה.';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  /* "מודעת מבצע (פס עליון)" panel - promo_banner_enabled/_text/
+     _link_url/_link_text content keys, read by applyPromoBanner() in
+     index.html to show/hide and fill the announcement strip above the
+     header. */
+  function renderPromoFields(){
+    document.getElementById('promoEnabled').checked = lastContent.promo_banner_enabled === '1';
+    document.getElementById('promoText').value = lastContent.promo_banner_text || '';
+    document.getElementById('promoLinkUrl').value = lastContent.promo_banner_link_url || '';
+    document.getElementById('promoLinkText').value = lastContent.promo_banner_link_text || '';
+  }
+  document.getElementById('promoSaveBtn').addEventListener('click', async function(){
+    const btn = this;
+    const errEl = document.getElementById('promoErr');
+    const okEl = document.getElementById('promoOk');
+    errEl.textContent = '';
+    okEl.textContent = '';
+    const enabled = document.getElementById('promoEnabled').checked ? '1' : '0';
+    const text = document.getElementById('promoText').value;
+    const linkUrl = document.getElementById('promoLinkUrl').value;
+    const linkText = document.getElementById('promoLinkText').value;
+    if (enabled === '1' && !text.trim()) {
+      errEl.textContent = 'צריך להזין טקסט להודעה כדי להציג אותה.';
+      return;
+    }
+    btn.disabled = true;
+    try {
+      await api('/api/content', { method:'POST', body: JSON.stringify({ key:'promo_banner_enabled', value: enabled }) });
+      await api('/api/content', { method:'POST', body: JSON.stringify({ key:'promo_banner_text', value: text }) });
+      await api('/api/content', { method:'POST', body: JSON.stringify({ key:'promo_banner_link_url', value: linkUrl }) });
+      await api('/api/content', { method:'POST', body: JSON.stringify({ key:'promo_banner_link_text', value: linkText }) });
+      lastContent.promo_banner_enabled = enabled;
+      lastContent.promo_banner_text = text;
+      lastContent.promo_banner_link_url = linkUrl;
+      lastContent.promo_banner_link_text = linkText;
+      okEl.textContent = 'נשמר בהצלחה - השינויים מוצגים עכשיו לכל הגולשים באתר.';
+    } catch(e) {
+      errEl.textContent = e.message || 'שגיאה בשמירה.';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
   async function loadContent(){
     try {
       const data = await api('/api/content');
@@ -997,6 +1239,9 @@
     renderContentTextFields('contentTextFieldsAbout', CONTENT_TEXT_FIELDS_ABOUT);
     renderContentImageFields('contentImageFieldsHome', CONTENT_IMAGE_FIELDS_HOME);
     renderContentImageFields('contentImageFieldsAbout', CONTENT_IMAGE_FIELDS_ABOUT);
+    renderHeroSimpleToggle();
+    renderHeroBannerPanel();
+    renderPromoFields();
   }
 
   function renderProducts(products){
@@ -1298,6 +1543,45 @@
     }
   }
 
+  /* ---------- Test email (system health check) ----------
+     Sends a real email through the same api/_lib/mailer.js used by every
+     other flow on the site (order confirmations, contact form, newsletter,
+     password reset, payment notifications) - so a success here means all
+     of those are wired up correctly, and a failure here shows the exact
+     reason (e.g. missing RESEND_API_KEY) instead of that only showing up
+     buried in Vercel's function logs after a real customer hits it. */
+  document.getElementById('testEmailBtn').addEventListener('click', async function(){
+    const btn = this;
+    const errEl = document.getElementById('testEmailErr');
+    const okEl = document.getElementById('testEmailOk');
+    errEl.textContent = '';
+    okEl.textContent = '';
+    const to = document.getElementById('testEmailTo').value.trim();
+    btn.disabled = true;
+    btn.textContent = 'שולח...';
+    try {
+      const data = await api('/api/admin?action=test-email', {
+        method: 'POST',
+        body: JSON.stringify(to ? { to: to } : {})
+      });
+      if (data.ok) {
+        let msg = 'נשלח בהצלחה אל ' + data.to + '. אם לא מגיע תוך כמה דקות, בדקו גם בתיקיית ספאם.';
+        if (data.missingEnv && data.missingEnv.length) {
+          msg += ' שימו לב: ' + data.missingEnv.join(', ') + ' לא מוגדר/ים - המייל נשלח דרך ברירת המחדל הזמנית של Resend בינתיים.';
+        }
+        okEl.textContent = msg;
+      } else {
+        errEl.textContent = 'השליחה נכשלה: ' + (data.error || 'שגיאה לא ידועה') +
+          (data.missingEnv && data.missingEnv.length ? ' (חסר בסביבה: ' + data.missingEnv.join(', ') + ')' : '');
+      }
+    } catch(e) {
+      errEl.textContent = e.message || 'שגיאה בשליחת מייל הבדיקה.';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'שליחת מייל בדיקה';
+    }
+  });
+
   /* ---------- Orders ---------- */
   const STATUS_LABELS = {
     new: 'חדשה',
@@ -1307,6 +1591,9 @@
     cancelled: 'בוטלה'
   };
 
+  /* CSS colors are variables (--gold-dark etc.) defined in the page's own
+     <style> block above - reused here for a small "יש רקמה" badge so it
+     lines up with the rest of the panel style instead of looking bolted on. */
   function renderOrders(orders){
     const wrap = document.getElementById('ordersTableWrap');
     if (!orders || !orders.length) {
@@ -1318,12 +1605,20 @@
       '</tr></thead><tbody>';
     orders.forEach(function(o, idx){
       const customer = o.customer || {};
+      const orderItems = Array.isArray(o.items) ? o.items : [];
       let itemsText = '';
       try {
-        itemsText = (o.items || []).map(function(it){
+        itemsText = orderItems.map(function(it){
           return (it.name || it.id || 'פריט') + (it.qty ? (' x' + it.qty) : '');
         }).join('\n');
       } catch(e) { itemsText = ''; }
+      // Surface embroidery at a glance in the main table, without having
+      // to open "פרטים מלאים" for every row just to check.
+      const embroideredItems = orderItems.filter(function(it){ return it.embroidery; });
+      const embroideryBadge = embroideredItems.length
+        ? '<div class="embroidery-badge" title="' + escapeHtml(embroideredItems.map(function(it){ return (it.name || it.id) + ': ' + it.embroidery; }).join(', ')) + '">✂️ רקמה: ' +
+          escapeHtml(embroideredItems.map(function(it){ return it.embroidery; }).join(', ')) + '</div>'
+        : '';
 
       const statusOptions = Object.keys(STATUS_LABELS).map(function(key){
         return '<option value="' + key + '"' + (o.status === key ? ' selected' : '') + '>' +
@@ -1336,7 +1631,7 @@
         '<td>' + escapeHtml(o.order_id) + '</td>' +
         '<td>' + escapeHtml(customer.name) + '</td>' +
         '<td>' + escapeHtml(customer.phone) + '</td>' +
-        '<td class="items-cell">' + escapeHtml(itemsText) + '</td>' +
+        '<td class="items-cell">' + escapeHtml(itemsText) + embroideryBadge + '</td>' +
         '<td>' + (o.total != null ? '₪' + escapeHtml(o.total) : '-') + '</td>' +
         '<td>' + (o.created_at ? new Date(o.created_at).toLocaleString('he-IL') : '-') + '</td>' +
         '<td><select class="status-select" data-order-id="' + escapeHtml(o.id) + '">' + statusOptions + '</select></td>' +
@@ -1398,43 +1693,63 @@
 
   /* Builds the full-detail block for one order: every field saved on the
      order (customer info, address, shipping, marketing opt-in, item prices,
-     notes, internal id, last update) - not just what fits in the table. */
+     notes, internal id, last update) - not just what fits in the table.
+     Grouped into labelled sections (לקוח / משלוח / הזמנה) instead of one
+     long flat list, and the items table gets its own "התאמה אישית" column
+     so embroidery letters and set size are their own clearly-labelled
+     field per item, instead of being folded into the item's name text. */
   function renderOrderDetail(o, customer){
     const SHIPPING_LABELS = { pickup: 'איסוף עצמי', delivery: 'משלוח עד הבית', courier: 'שליח' };
+    const SIZE_LABELS = { single: 'חצי סט', pair: 'סט מלא' };
     function row(label, value){
       if (value === undefined || value === null || value === '') return '';
       return '<dt>' + escapeHtml(label) + '</dt><dd>' + escapeHtml(value) + '</dd>';
     }
+    function sectionTitle(label){
+      return '<div class="detail-section-title">' + escapeHtml(label) + '</div>';
+    }
 
+    const orderItems = Array.isArray(o.items) ? o.items : [];
     let itemsRows = '';
     try {
-      (o.items || []).forEach(function(it){
-        itemsRows += '<tr>' +
+      itemsRows = orderItems.map(function(it){
+        const badges = [];
+        if (it.embroidery) badges.push('<span class="embroidery-badge">✂️ רקמה: ' + escapeHtml(it.embroidery) + '</span>');
+        if (it.size === 'single') badges.push('<span class="size-tag">' + escapeHtml(SIZE_LABELS.single) + '</span>');
+        const customizationCell = badges.length ? badges.join(' ') : '<span class="no-customization">—</span>';
+        return '<tr>' +
           '<td>' + escapeHtml(it.name || it.id || 'פריט') + '</td>' +
           '<td>' + escapeHtml(it.qty != null ? it.qty : '-') + '</td>' +
           '<td>' + (it.price != null ? '₪' + escapeHtml(it.price) : '-') + '</td>' +
+          '<td>' + customizationCell + '</td>' +
           '</tr>';
-      });
+      }).join('');
     } catch(e) { /* ignore */ }
 
     let html = '<div class="detail-grid">';
+
+    html += sectionTitle('פרטי לקוח');
     html += row('שם מלא', customer.name);
     html += row('שם פרטי', customer.first_name);
     html += row('שם משפחה', customer.last_name);
     html += row('טלפון', customer.phone);
     html += row('טלפון נוסף', customer.phone2);
     html += row('אימייל', customer.email);
+    html += row('הרשמה לדיוור', customer.marketing_opt_in === true ? 'כן' : (customer.marketing_opt_in === false ? 'לא' : ''));
+
+    html += sectionTitle('משלוח');
     html += row('כתובת', customer.address);
     html += row('עיר', customer.city);
     html += row('מיקוד', customer.zip);
     html += row('אופן משלוח', SHIPPING_LABELS[customer.shipping_method] || customer.shipping_method);
-    html += row('הרשמה לדיוור', customer.marketing_opt_in === true ? 'כן' : (customer.marketing_opt_in === false ? 'לא' : ''));
+
+    html += sectionTitle('הזמנה');
     html += row('מזהה פנימי', o.id);
     html += row('עודכן לאחרונה', o.updated_at ? new Date(o.updated_at).toLocaleString('he-IL') : '');
 
     if (itemsRows) {
-      html += '<div class="detail-items"><dt style="margin-bottom:6px;">פירוט פריטים ומחירים</dt>' +
-        '<table><thead><tr><th>פריט</th><th>כמות</th><th>מחיר</th></tr></thead><tbody>' + itemsRows + '</tbody></table>' +
+      html += '<div class="detail-items"><dt style="margin-bottom:6px;">פירוט פריטים, מחירים והתאמה אישית</dt>' +
+        '<table><thead><tr><th>פריט</th><th>כמות</th><th>מחיר</th><th>התאמה אישית</th></tr></thead><tbody>' + itemsRows + '</tbody></table>' +
         '</div>';
     }
 
@@ -1489,7 +1804,7 @@
 
     if (!rows.length) { alert('אין הזמנות לייצוא.'); return; }
 
-    const headers = ['מס׳ הזמנה', 'שם', 'טלפון', 'אימייל', 'כתובת', 'עיר', 'מיקוד', 'סה"כ', 'סטטוס', 'תאריך', 'הערות'];
+    const headers = ['מס׳ הזמנה', 'שם', 'טלפון', 'אימייל', 'כתובת', 'עיר', 'מיקוד', 'פריטים', 'רקמה', 'סה"כ', 'סטטוס', 'תאריך', 'הערות'];
     function csvCell(v){
       const s = (v === undefined || v === null) ? '' : String(v);
       return '"' + s.replace(/"/g, '""') + '"';
@@ -1497,8 +1812,13 @@
     const lines = [headers.map(csvCell).join(',')];
     rows.forEach(function(o){
       const c = o.customer || {};
+      const orderItems = Array.isArray(o.items) ? o.items : [];
+      const itemsSummary = orderItems.map(function(it){ return (it.name || it.id || 'פריט') + (it.qty ? (' x' + it.qty) : ''); }).join(' | ');
+      const embroiderySummary = orderItems.filter(function(it){ return it.embroidery; })
+        .map(function(it){ return (it.name || it.id) + ': ' + it.embroidery; }).join(' | ');
       lines.push([
         o.order_id, c.name, c.phone, c.email, c.address, c.city, c.zip,
+        itemsSummary, embroiderySummary,
         o.total, STATUS_LABELS[o.status] || o.status,
         o.created_at ? new Date(o.created_at).toLocaleString('he-IL') : '',
         o.notes

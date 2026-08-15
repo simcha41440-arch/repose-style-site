@@ -47,7 +47,7 @@ function escapeHtml(str) {
 // saved/handled before this runs).
 async function sendEmail({ to, subject, html, text, replyTo }) {
   const apiKey = sanitizeEnvValue(process.env.RESEND_API_KEY);
-  const from = sanitizeEnvValue(process.env.RESEND_FROM_EMAIL) || 'Repoz Style <onboarding@resend.dev>';
+  const from = sanitizeEnvValue(process.env.RESEND_FROM_EMAIL) || 'רפאוז סטייל <onboarding@resend.dev>';
 
   if (!apiKey) {
     const msg = 'RESEND_API_KEY is not set in Vercel - email was NOT sent.';

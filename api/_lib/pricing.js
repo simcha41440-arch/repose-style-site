@@ -126,6 +126,15 @@ function couponDiscount(subtotal, coupon) {
 // Rebuilds the items array for storage using server-verified unit prices,
 // keeping whatever display `name` the client sent (purely cosmetic - size/
 // embroidery labels baked into the string) but never trusting its `price`.
+// Also carries through the structured `size` and `embroidery` fields
+// as-is (not just baked into `name`) so admin can show them as their own
+// clearly-labelled fields instead of having to parse them back out of a
+// sentence - see renderOrderDetail() in admin.html. These two fields are
+// also what unitPrice() above needs to compute the right price (half-price
+// for size:"single", +EMBROIDERY_SURCHARGE for a non-free embroidered
+// product) - if the caller's `items` don't carry them, the order is
+// priced as a plain full-price item, so keep this in sync with whatever
+// the client actually submits.
 // Assumes every id in `items` already passed computeSubtotal() with no
 // unknownIds - callers should validate that first.
 function verifyItems(priceMap, items) {
@@ -136,6 +145,8 @@ function verifyItems(priceMap, items) {
       name: item.name || item.id,
       qty: Number(item.qty),
       price: result ? result.price : null,
+      size: item.size || null,
+      embroidery: item.embroidery || null,
     };
   });
 }

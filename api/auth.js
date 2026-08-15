@@ -177,9 +177,18 @@ async function handleForgot(req, res, supabase) {
         <p style="font-size:32px;font-weight:700;letter-spacing:6px;background:#f6efdc;color:#8A6C2E;padding:14px 20px;border-radius:6px;text-align:center;">${code}</p>
         <p style="color:#888;font-size:13px;">אם לא ביקשתם לאפס סיסמה, אפשר להתעלם מהמייל הזה - הסיסמה הנוכחית שלכם תישאר בתוקף.</p>
       </div>`;
-    // Never await-fail the request on an email hiccup - the code is
-    // already saved, so a retry (asking again) still works.
-    sendEmail({ to: row.email, subject: 'קוד לאיפוס סיסמה - רפאוז סטייל', html }).catch(() => {});
+    // Await the send (rather than "fire and forget") - Vercel can freeze/
+    // terminate a serverless function right after it returns its response,
+    // which can silently kill an un-awaited fetch before it ever reaches
+    // Resend. The code is already saved either way, so awaiting here just
+    // means the response waits for the email attempt to finish - it never
+    // turns a send failure into an error response for the visitor (same
+    // best-effort pattern used in orders.js/inquiries.js), but a failure
+    // IS now logged instead of vanishing silently.
+    const emailResult = await sendEmail({ to: row.email, subject: 'קוד לאיפוס סיסמה - רפאוז סטייל', html });
+    if (!emailResult.ok) {
+      console.error('auth(forgot): password reset email FAILED:', emailResult.error);
+    }
   }
 
   return res.status(200).json({ ok: true });
