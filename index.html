@@ -3139,8 +3139,8 @@ if("serviceWorker" in navigator){
     <div class="hero-brand" dir="rtl">
       <span class="hero-brand-main" aria-hidden="true">קולקציית קיץ 2026</span>
       <span class="hero-brand-sub-wrap">
-        <span class="hero-brand-sub" aria-hidden="true">יוקרה שתעצב לכם את הבית</span>
-        <span class="hero-brand-desc" aria-hidden="true">מצעים ומוצרי טקסטיל ברמה הגבוהה ביותר,<br>עם בדים מובחרים ועיצוב מושלם לכל חדר בבית</span>
+        <span class="hero-brand-sub" aria-hidden="true" data-content-key="hero_tagline">יוקרה שתעצב לכם את הבית</span>
+        <span class="hero-brand-desc" aria-hidden="true" data-content-key="hero_subtagline">מצעים ומוצרי טקסטיל ברמה הגבוהה ביותר,<br>עם בדים מובחרים ועיצוב מושלם לכל חדר בבית</span>
         <button type="button" id="collection-fab" data-nav="shop" dir="rtl">
           <span class="fab-ring" aria-hidden="true"></span>
           <svg class="fab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/></svg>
@@ -3437,6 +3437,11 @@ if("serviceWorker" in navigator){
     <div class="related">
       <h3>עוד מהקולקציה</h3>
       <div class="product-grid" id="related-grid"></div>
+    </div>
+
+    <div class="related" id="recently-viewed-section" style="display:none;">
+      <h3>נצפה לאחרונה</h3>
+      <div class="product-grid" id="recently-viewed-grid"></div>
     </div>
   </div>
 </section>
@@ -4538,6 +4543,7 @@ const DESC_TOWEL = `מגבות כותנה איכותיות ורכות במיוח
 מיוצרות מכותנה מובחרת בצפיפות גבוהה, לתחושה מפנקת של ספא בכל שימוש.
 עמידות לכביסות חוזרות תוך שמירה על רכות ואיכות הבד לאורך זמן.`;
 function getDesc(p){
+  if(p.customDesc) return p.customDesc;
   if(p.category === "towel") return DESC_TOWEL;
   if(p.id === "okeanos") return DESC_OKEANOS;
   if(p.desc === 1) return DESC_1;
@@ -4599,6 +4605,11 @@ function lsSave(key, value){
 
 let cart = lsLoad("rstyle_cart", []); // {id, qty}
 let wishlist = lsLoad("rstyle_wishlist", []); // [id]
+// Product ids the shopper has opened, most-recent-first - powers the
+// "נצפה לאחרונה" row at the bottom of the product page (see
+// trackRecentlyViewed/renderRecentlyViewed below). Purely a per-browser
+// localStorage list, same as cart/wishlist - never sent to the server.
+let recentlyViewed = lsLoad("rstyle_recently_viewed", []); // [id, ...]
 let orders = lsLoad("rstyle_orders", []); // [{id, date, items:[{id,name,qty,price}], total, status}]
 let currentProductId = null;
 let currentQty = 1;
@@ -5239,6 +5250,42 @@ async function applyAdminOverrides(){
     const data = await res.json();
     const overrides = {};
     (Array.isArray(data.products) ? data.products : []).forEach(function(o){ overrides[o.id] = o; });
+
+    /* Admin-added brand-new products (ids that don't exist anywhere in the
+       built-in catalog above) - built from the saved override row plus its
+       "details" JSON (see the admin panel's "הוספת מוצר חדש" form and
+       api/products.js), then pushed into PRODUCTS so they render in the
+       shop/towel grids, search, and product page exactly like a built-in
+       product. Existing-product overrides (price/name/image changes) are
+       still applied by the PRODUCTS.forEach below, same as always. */
+    Object.keys(overrides).forEach(function(id){
+      const o = overrides[id];
+      if(PRODUCTS.some(function(p){ return p.id === id; })) return; // existing product, not a new one
+      if(o.active === false) return; // saved but turned off
+      if(!o.name || o.price === undefined || o.price === null || o.price === "") return; // incomplete row - skip rather than show a broken card
+      const d = (o.details && typeof o.details === "object") ? o.details : {};
+      const isTowel = o.category === "towel";
+      PRODUCTS.push({
+        id: id,
+        name: o.name,
+        price: Number(o.price),
+        compareAtPrice: (o.compare_at_price !== undefined && o.compare_at_price !== null && o.compare_at_price !== "") ? Number(o.compare_at_price) : null,
+        img: o.image || "/images/site/logo-shop.png",
+        category: isTowel ? "towel" : undefined,
+        cotton: d.cotton != null && d.cotton !== "" ? Number(d.cotton) : 100,
+        thread: d.thread != null && d.thread !== "" ? Number(d.thread) : 300,
+        weight: d.weight != null && d.weight !== "" ? Number(d.weight) : 600,
+        bedType: d.bedType === "double" ? "double" : "twin",
+        tier: d.tier === "premium" ? "premium" : "classic",
+        collection: !isTowel ? (d.collection || "heritage") : undefined,
+        tag: d.tag || undefined,
+        customDesc: d.desc || "",
+        pillowsIncluded: !!d.pillowsIncluded,
+        outOfStock: !!o.out_of_stock,
+        isCustom: true
+      });
+    });
+
     PRODUCTS.forEach(function(p){
       const o = overrides[p.id];
       if(!o) return;
@@ -5307,13 +5354,6 @@ async function applyContentOverrides(){
       if(val === undefined || val === null || val === "") return;
       if(el.tagName === "IMG"){
         el.src = val;
-      } else if(key === "hero_tagline"){
-        /* Rebuild the word-by-word spans the hero's reveal animation
-           relies on (see CSS .rw), instead of just swapping textContent
-           and losing the animation. */
-        el.innerHTML = String(val).split(" ").map(function(w){
-          return `<span class="rw"><span>${escapeHTML(w)}</span></span>`;
-        }).join(" ");
       } else {
         el.textContent = val;
       }
@@ -5625,9 +5665,42 @@ document.getElementById("sort-select").addEventListener("change", (e)=>{
 /* ============================================================
    RENDER: PRODUCT DETAIL
    ============================================================ */
+/* Records that the shopper opened this product (most-recent-first, no
+   duplicates, capped so the localStorage list doesn't grow forever) -
+   called once per product-page view, right before rendering it. */
+function trackRecentlyViewed(id){
+  recentlyViewed = recentlyViewed.filter(function(x){ return x !== id; });
+  recentlyViewed.unshift(id);
+  if(recentlyViewed.length > 12) recentlyViewed = recentlyViewed.slice(0, 12);
+  lsSave("rstyle_recently_viewed", recentlyViewed);
+}
+
+/* Renders the "נצפה לאחרונה" row - up to 8 previously-viewed products,
+   excluding whichever product page is currently open, most-recent-first.
+   Hides the whole section when there's nothing to show yet (first-ever
+   visit, or only the current product has been viewed so far). */
+function renderRecentlyViewed(currentId){
+  const section = document.getElementById("recently-viewed-section");
+  const grid = document.getElementById("recently-viewed-grid");
+  if(!section || !grid) return;
+  const items = recentlyViewed
+    .filter(function(id){ return id !== currentId; })
+    .map(function(id){ return PRODUCTS.find(function(p){ return p.id === id; }); })
+    .filter(Boolean)
+    .slice(0, 8);
+  if(!items.length){
+    section.style.display = "none";
+    return;
+  }
+  section.style.display = "block";
+  grid.innerHTML = items.map(productCardHTML).join("");
+  attachCardClicks(grid);
+}
+
 function renderProductDetail(){
   const p = PRODUCTS.find(x=>x.id===currentProductId);
   if(!p) return;
+  trackRecentlyViewed(p.id);
   document.getElementById("pd-breadcrumb-name").textContent = displayName(p);
   const pdCatalogBtn = document.getElementById("pd-breadcrumb-catalog");
   if(pdCatalogBtn){
@@ -5710,6 +5783,8 @@ function renderProductDetail(){
   const relGrid = document.getElementById("related-grid");
   relGrid.innerHTML = relatedFill.map(productCardHTML).join("");
   attachCardClicks(relGrid);
+
+  renderRecentlyViewed(p.id);
 
   initMagnifier();
 }

@@ -34,6 +34,10 @@ const {
   logAdminAction,
 } = require('./_lib/security');
 const { sendEmail, sanitizeEnvValue } = require('./_lib/mailer');
+// Reusing the same scrypt-based hashPassword/verifyPassword the customer
+// account system already uses (see api/_lib/customerSession.js) - it's a
+// generic password-hashing helper, not actually tied to customer sessions.
+const { hashPassword, verifyPassword } = require('./_lib/customerSession');
 
 function timingSafeEqualStr(a, b) {
   const aBuf = Buffer.from(String(a ?? ''));
@@ -57,6 +61,43 @@ async function handleSession(req, res) {
   return res.status(200).json({ authenticated: false });
 }
 
+// Looks up a saved admin_credentials row (see NEW-ADMIN-FEATURES-SETUP.sql).
+// Returns null if the table doesn't exist yet, is empty, or on any DB
+// error - every caller treats null as "fall back to the environment
+// variables", so this never turns a DB hiccup into a lockout.
+async function getSavedCredentials(supabase) {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase.from('admin_credentials').select('username, password_hash').eq('id', 1).maybeSingle();
+    if (error || !data) return null;
+    return data;
+  } catch (err) {
+    return null;
+  }
+}
+
+// Checks a username/password against whichever credential source is
+// currently active: the admin_credentials DB row if one has been saved
+// (i.e. the admin used "שינוי פרטי התחברות" at least once), otherwise the
+// ADMIN_USERNAME/ADMIN_PASSWORD environment variables - same as before
+// this feature existed.
+async function checkCredentials(supabase, username, password) {
+  const saved = await getSavedCredentials(supabase);
+  if (saved) {
+    const userOk = timingSafeEqualStr(username, saved.username);
+    const passOk = userOk && verifyPassword(password, saved.password_hash);
+    return { success: userOk && passOk, usingSaved: true };
+  }
+  const expectedUser = process.env.ADMIN_USERNAME;
+  const expectedPass = process.env.ADMIN_PASSWORD;
+  if (!expectedUser || !expectedPass) {
+    return { success: false, notConfigured: true, usingSaved: false };
+  }
+  const userOk = timingSafeEqualStr(username, expectedUser);
+  const passOk = timingSafeEqualStr(password, expectedPass);
+  return { success: userOk && passOk, usingSaved: false };
+}
+
 async function handleLogin(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -71,12 +112,6 @@ async function handleLogin(req, res) {
   }
 
   const { username, password } = body || {};
-  const expectedUser = process.env.ADMIN_USERNAME;
-  const expectedPass = process.env.ADMIN_PASSWORD;
-
-  if (!expectedUser || !expectedPass) {
-    return res.status(500).json({ error: 'Admin credentials are not configured on the server.' });
-  }
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password are required.' });
   }
@@ -101,9 +136,11 @@ async function handleLogin(req, res) {
     }
   }
 
-  const userOk = timingSafeEqualStr(username, expectedUser);
-  const passOk = timingSafeEqualStr(password, expectedPass);
-  const success = userOk && passOk;
+  const result = await checkCredentials(supabase, username, password);
+  if (result.notConfigured) {
+    return res.status(500).json({ error: 'Admin credentials are not configured on the server.' });
+  }
+  const success = result.success;
 
   if (supabase) {
     await recordLoginAttempt(supabase, ip, username, success);
@@ -143,6 +180,80 @@ async function handleLogout(req, res) {
     // ignore - logging out must always succeed regardless of DB state
   }
 
+  res.setHeader('Set-Cookie', clearSessionCookie());
+  return res.status(200).json({ ok: true });
+}
+
+// Lets the logged-in admin change their own username/password from inside
+// the admin panel ("הגדרות התחברות"). Requires the CURRENT password as
+// confirmation (checked against whichever source - saved DB row or env
+// vars - is currently active), then saves the new username + a freshly
+// hashed password into admin_credentials. From that point on, login always
+// uses this saved row and the ADMIN_USERNAME/ADMIN_PASSWORD environment
+// variables are ignored (see checkCredentials above) - so it's worth
+// picking a password you'll remember, since there's no "forgot password"
+// flow for the admin account the way there is for customers.
+async function handleChangeCredentials(req, res) {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return res.status(405).json({ error: 'Method not allowed.' });
+  }
+  const session = requireAdmin(req, res);
+  if (!session) return;
+
+  let supabase;
+  try {
+    supabase = getSupabase();
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+
+  let body;
+  try {
+    body = await parseJsonBody(req);
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+
+  const currentPassword = (body && body.currentPassword) || '';
+  const newUsername = ((body && body.newUsername) || '').trim();
+  const newPassword = (body && body.newPassword) || '';
+
+  if (!currentPassword) {
+    return res.status(400).json({ error: 'יש להזין את הסיסמה הנוכחית לאימות.' });
+  }
+  if (!newUsername) {
+    return res.status(400).json({ error: 'יש להזין שם משתמש חדש.' });
+  }
+  if (!newPassword || newPassword.length < 8) {
+    return res.status(400).json({ error: 'הסיסמה החדשה חייבת להכיל לפחות 8 תווים.' });
+  }
+
+  // Verify the current password against whichever credential source is
+  // currently active, using the CURRENT username (session.user) - not
+  // newUsername, since the caller is proving they know the password for
+  // the account they're already logged in as.
+  const check = await checkCredentials(supabase, session.user, currentPassword);
+  if (!check.success) {
+    return res.status(401).json({ error: 'הסיסמה הנוכחית שגויה.' });
+  }
+
+  const password_hash = hashPassword(newPassword);
+  const { error: upsertErr } = await withFriendlyError(
+    supabase.from('admin_credentials')
+      .upsert({ id: 1, username: newUsername, password_hash, updated_at: new Date().toISOString() }, { onConflict: 'id' })
+  );
+  if (upsertErr) {
+    const hint = /relation .* does not exist/i.test(upsertErr.message || '')
+      ? ' (הריצו קודם את NEW-ADMIN-FEATURES-SETUP.sql ב-Supabase)'
+      : '';
+    return res.status(500).json({ error: 'שגיאה בשמירת פרטי ההתחברות: ' + upsertErr.message + hint });
+  }
+
+  await logAdminAction(supabase, session.user, 'admin_credentials_changed', newUsername, null, getClientIp(req));
+
+  // Force a fresh login with the new credentials, rather than silently
+  // keeping the old session alive under a username that no longer exists.
   res.setHeader('Set-Cookie', clearSessionCookie());
   return res.status(200).json({ ok: true });
 }
@@ -360,6 +471,8 @@ module.exports = async (req, res) => {
       return handleLogin(req, res);
     case 'logout':
       return handleLogout(req, res);
+    case 'change-credentials':
+      return handleChangeCredentials(req, res);
     case 'audit-log':
       return handleAuditLog(req, res);
     case 'upload-image':

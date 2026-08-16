@@ -40,9 +40,16 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: err.message });
     }
 
-    const { id, name, price, compareAtPrice, image, outOfStock, active } = body || {};
+    const { id, name, price, compareAtPrice, image, outOfStock, active, category, details } = body || {};
     if (!id) {
       return res.status(400).json({ error: 'Product id is required.' });
+    }
+    // Keeps ids URL/DOM-safe (used as a query param in product links, and
+    // as a DOM id/data attribute all over index.html) - applies to both
+    // overrides of existing catalog ids (which already match this) and
+    // brand-new ids typed in the admin panel's "הוספת מוצר חדש" form.
+    if (!/^[a-z0-9-]+$/.test(id)) {
+      return res.status(400).json({ error: 'מזהה מוצר יכול להכיל רק אותיות אנגליות קטנות, מספרים ומקף (-).' });
     }
     let compareAtPriceNum;
     if (compareAtPrice === undefined) {
@@ -75,6 +82,15 @@ module.exports = async (req, res) => {
       image: image !== undefined ? (image || null) : (existing ? existing.image : null),
       out_of_stock: outOfStock !== undefined ? !!outOfStock : (existing ? !!existing.out_of_stock : false),
       active: active !== undefined ? !!active : (existing ? existing.active : true),
+      // category/details only apply to brand-new products added from the
+      // admin panel's "הוספת מוצר חדש" form (see index.html's
+      // applyAdminOverrides, which pushes a full new product into
+      // PRODUCTS for any override row whose id isn't already in the
+      // built-in catalog). Left untouched on plain price/name overrides
+      // of existing catalog products, same merge-onto-existing pattern as
+      // every other field here.
+      category: category !== undefined ? (category || null) : (existing ? existing.category : null),
+      details: details !== undefined ? (details || null) : (existing ? existing.details : null),
       updated_at: new Date().toISOString(),
     };
 
@@ -88,7 +104,7 @@ module.exports = async (req, res) => {
     if (error) {
       return res.status(500).json({ error: error.message });
     }
-    await logAdminAction(supabase, session.user, 'product_upsert', id, { name, price, compareAtPrice, image, outOfStock, active }, getClientIp(req));
+    await logAdminAction(supabase, session.user, 'product_upsert', id, { name, price, compareAtPrice, image, outOfStock, active, category }, getClientIp(req));
     return res.status(200).json({ product: data && data[0] });
   }
 

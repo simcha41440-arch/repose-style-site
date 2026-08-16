@@ -103,19 +103,21 @@
 
   /* ---------- Order details (expand) ---------- */
   .detail-row td{background:#FFFDF7; padding:16px 18px; border-bottom:1px solid #EFE4C4;}
-  .detail-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px 20px;}
-  .detail-grid dt{font-size:11px; color:var(--taupe); margin-bottom:2px;}
-  .detail-grid dd{font-size:13px; color:var(--ink); margin:0 0 10px 0; word-break:break-word;}
+  .detail-sections{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px 20px;}
+  .detail-section{min-width:0;}
+  .detail-items-section{grid-column:1 / -1;}
+  .detail-section-full{grid-column:1 / -1;}
   .detail-section-title{
-    grid-column:1 / -1; font-size:12.5px; font-weight:700; color:var(--gold-dark);
-    letter-spacing:0.02em; border-bottom:1px solid var(--line); padding-bottom:5px; margin:4px 0 -2px;
+    font-size:12.5px; font-weight:700; color:var(--gold-dark);
+    letter-spacing:0.02em; border-bottom:1px solid var(--line); padding-bottom:5px; margin-bottom:8px;
   }
-  .detail-section-title:first-child{margin-top:0;}
-  .detail-items{grid-column:1 / -1;}
-  .detail-items table{min-width:0; font-size:12.5px;}
-  .detail-items thead th{padding:6px 8px; border-bottom:1px solid var(--line);}
-  .detail-items tbody td{padding:6px 8px; border-bottom:1px solid #EFE4C4;}
-  .detail-notes{grid-column:1 / -1; white-space:pre-wrap;}
+  .detail-fields-table{width:100%; border-collapse:collapse; font-size:12.5px; min-width:0;}
+  .detail-fields-table th{text-align:right; color:var(--taupe); font-weight:600; padding:5px 8px 5px 10px; white-space:nowrap; width:1%; border-bottom:1px solid #EFE4C4; vertical-align:top;}
+  .detail-fields-table td{padding:5px 8px; color:var(--ink); border-bottom:1px solid #EFE4C4; word-break:break-word;}
+  .detail-notes-cell{white-space:pre-wrap;}
+  .detail-items-section table{min-width:0; font-size:12.5px;}
+  .detail-items-section thead th{padding:6px 8px; border-bottom:1px solid var(--line); text-align:right; color:var(--taupe);}
+  .detail-items-section tbody td{padding:6px 8px; border-bottom:1px solid #EFE4C4;}
   /* Embroidery / customization badges - shown both in the main orders
      table (so it's visible without opening "פרטים מלאים") and in the
      per-item breakdown inside the detail view. */
@@ -143,6 +145,14 @@
   .mini-table th{text-align:right; padding:6px 8px; color:var(--taupe); font-weight:600; border-bottom:1px solid var(--line);}
   .mini-table td{padding:6px 8px; border-bottom:1px solid #EFE4C4;}
   .search-field{padding:9px 12px; border:1px solid var(--line); border-radius:8px; font-family:inherit; font-size:13px; background:#FFFDF7; min-width:220px;}
+  .tag.vip{background:#F3E3C4; color:#8A6C2E;}
+  .tag.urgent{background:#F9DCD6; color:#B65B4A;}
+  .tag.review{background:#DDEAF6; color:#2E6DA4;}
+  .bars{display:flex; align-items:flex-end; gap:6px; height:120px; padding-top:10px;}
+  .bars .bar-col{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; gap:4px;}
+  .bars .bar{width:100%; background:var(--gold); border-radius:4px 4px 0 0; min-height:2px;}
+  .bars .bar-label{font-size:10px; color:var(--taupe); white-space:nowrap;}
+  .bars .bar-value{font-size:10px; color:var(--text-gold); font-weight:600;}
 </style>
 </head>
 <body>
@@ -212,6 +222,19 @@
           <div class="stat-label">פניות חדשות שלא טופלו</div>
           <div class="stat-value" id="statInquiriesNew">-</div>
         </div>
+        <div class="stat-card">
+          <div class="stat-label">ערך הזמנה ממוצע</div>
+          <div class="stat-value" id="statAOV">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">יחס המרה (ביקורים ← הזמנות)</div>
+          <div class="stat-value" id="statConversion">-</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>הכנסות ב-14 הימים האחרונים</h3>
+        <div id="revenueChartWrap"><div class="empty">טוען...</div></div>
       </div>
 
       <div class="panel">
@@ -236,6 +259,28 @@
         <button type="button" class="btn small" id="testEmailBtn" style="margin-top:12px;">שליחת מייל בדיקה</button>
         <div class="err-msg" id="testEmailErr"></div>
         <div class="ok-msg" id="testEmailOk"></div>
+      </div>
+
+      <div class="panel">
+        <h3>הגדרות התחברות</h3>
+        <p class="sub" style="margin:-6px 0 14px;">שינוי שם המשתמש והסיסמה להתחברות לעמוד הניהול. לאחר השמירה תנותקו אוטומטית ותצטרכו להתחבר מחדש עם הפרטים החדשים - שמרו אותם במקום בטוח, אין כאן "שכחתי סיסמה".</p>
+        <form id="credentialsForm" class="grid-form">
+          <div class="field">
+            <label for="credCurrentPassword">סיסמה נוכחית (לאימות)</label>
+            <input type="password" id="credCurrentPassword" required autocomplete="current-password">
+          </div>
+          <div class="field">
+            <label for="credNewUsername">שם משתמש חדש</label>
+            <input type="text" id="credNewUsername" required autocomplete="username">
+          </div>
+          <div class="field">
+            <label for="credNewPassword">סיסמה חדשה (לפחות 8 תווים)</label>
+            <input type="password" id="credNewPassword" required minlength="8" autocomplete="new-password">
+          </div>
+          <button type="submit" class="btn small" id="credentialsSaveBtn">עדכון פרטי התחברות</button>
+        </form>
+        <div class="err-msg" id="credentialsErr"></div>
+        <div class="ok-msg" id="credentialsOk"></div>
       </div>
     </section>
 
@@ -295,6 +340,88 @@
         </div>
         <p class="sub" style="margin:-6px 0 14px;">לחיצה על "איפוס למקור" מוחקת את השינוי ומחזירה את המוצר למחיר/שם המקוריים באתר.</p>
         <div id="productsTableWrap"><div class="empty">טוען...</div></div>
+      </div>
+
+      <div class="panel">
+        <h3 id="newProductPanelTitle">הוספת מוצר חדש</h3>
+        <p class="sub" style="margin:-6px 0 14px;">מוסיף מוצר חדש לגמרי לעמוד המצעים או המגבות באתר (לא רק שינוי מוצר קיים). המוצר יופיע בקטלוג, בחיפוש ובעמוד המוצר שלו מיד לאחר השמירה, אצל כל הגולשים.</p>
+        <form id="newProductForm" class="grid-form">
+          <input type="hidden" id="npEditingId" value="">
+          <input type="hidden" id="npExistingImage" value="">
+          <div class="field">
+            <label for="npCategory">קטגוריה</label>
+            <select id="npCategory" required>
+              <option value="bedding">מצעים</option>
+              <option value="towel">מגבות</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="npId">מזהה מוצר (id) - אנגלית ומקפים בלבד</label>
+            <input type="text" id="npId" placeholder="לדוגמה: satin-royal-blue" required pattern="[a-z0-9\-]+" title="אותיות אנגליות קטנות, מספרים ומקף (-) בלבד">
+          </div>
+          <div class="field">
+            <label for="npName">שם המוצר</label>
+            <input type="text" id="npName" placeholder="לדוגמה: סאטן רויאל כחול" required>
+          </div>
+          <div class="field">
+            <label for="npPrice">מחיר (₪)</label>
+            <input type="number" id="npPrice" min="0" step="1" required>
+          </div>
+          <div class="field">
+            <label for="npCompareAt">מחיר לפני מבצע (₪, אופציונלי)</label>
+            <input type="number" id="npCompareAt" min="0" step="1" placeholder="השאירו ריק אם אין מבצע">
+          </div>
+          <div class="field">
+            <label for="npTag">תגית על התמונה (אופציונלי)</label>
+            <input type="text" id="npTag" placeholder="לדוגמה: חדש / רב מכר">
+          </div>
+          <div class="field">
+            <label for="npImageFile">תמונת מוצר <span id="npImageHint" style="font-weight:400;"></span></label>
+            <input type="file" id="npImageFile" accept="image/jpeg,image/png,image/webp,image/gif">
+          </div>
+          <div class="field">
+            <label for="npCotton">אחוז כותנה</label>
+            <input type="number" id="npCotton" min="0" max="100" step="1" placeholder="לדוגמה: 100">
+          </div>
+          <div class="field np-bedding-field">
+            <label for="npThread">מספר חוטים (Thread Count)</label>
+            <input type="number" id="npThread" min="0" step="1" placeholder="לדוגמה: 400">
+          </div>
+          <div class="field np-towel-field" style="display:none;">
+            <label for="npWeight">משקל בד (גרם למ"ר)</label>
+            <input type="number" id="npWeight" min="0" step="1" placeholder="לדוגמה: 600">
+          </div>
+          <div class="field np-bedding-field">
+            <label for="npBedType">סוג מיטה</label>
+            <select id="npBedType">
+              <option value="twin">2 סט מצעים יחיד (twin)</option>
+              <option value="double">זוגי</option>
+            </select>
+          </div>
+          <div class="field np-bedding-field">
+            <label for="npTier">רמה</label>
+            <select id="npTier">
+              <option value="classic">קלאסיק</option>
+              <option value="premium">פרימיום</option>
+            </select>
+          </div>
+          <div class="field np-bedding-field">
+            <label for="npCollection">קולקציה</label>
+            <select id="npCollection">
+              <option value="renaissance">Renaissance</option>
+              <option value="bloom">Bloom</option>
+              <option value="heritage">Heritage</option>
+            </select>
+          </div>
+          <div class="field" style="grid-column:1/-1;">
+            <label for="npDesc">תיאור מוצר</label>
+            <textarea id="npDesc" rows="3" style="width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:8px; font-size:14px; font-family:inherit; background:#FFFDF7;" placeholder="תיאור חופשי שיוצג בעמוד המוצר"></textarea>
+          </div>
+          <button type="submit" class="btn small" id="newProductSaveBtn">הוספת המוצר</button>
+          <button type="button" class="btn outline small" id="npCancelEditBtn" style="display:none;">ביטול עריכה</button>
+        </form>
+        <div class="err-msg" id="newProductErr"></div>
+        <div class="ok-msg" id="newProductOk"></div>
       </div>
     </section>
 
@@ -405,6 +532,20 @@
         <h3>תמונת עמוד "אודות"</h3>
         <div id="contentImageFieldsAbout"></div>
       </div>
+
+      <div class="panel">
+        <h3>טקסטים בעמוד "תכשיטים לכלה" (kalot.html)</h3>
+        <p class="sub" style="margin:-6px 0 14px;">עמוד נפרד מהאתר הראשי - הכיתוב והתמונות שלו נערכים כאן.</p>
+        <div id="contentTextFieldsKalot"></div>
+        <button type="button" class="btn small" id="contentSaveKalotBtn" style="margin-top:12px;">שמירת טקסטים</button>
+        <div class="err-msg" id="contentKalotErr"></div>
+        <div class="ok-msg" id="contentKalotOk"></div>
+      </div>
+
+      <div class="panel">
+        <h3>תמונת רקע בעמוד "תכשיטים לכלה"</h3>
+        <div id="contentImageFieldsKalot"></div>
+      </div>
     </section>
 
     <!-- Orders tab -->
@@ -416,6 +557,26 @@
         <div class="top-row">
           <h3 style="margin:0">כל ההזמנות</h3>
           <input type="text" class="search-field" id="ordersSearch" placeholder="חיפוש לפי שם, טלפון, אימייל או מס׳ הזמנה">
+          <select class="search-field" id="ordersStatusFilter" style="min-width:120px;">
+            <option value="">כל הסטטוסים</option>
+            <option value="new">חדשה</option>
+            <option value="confirmed">אושרה</option>
+            <option value="shipped">נשלחה</option>
+            <option value="done">הושלמה</option>
+            <option value="cancelled">בוטלה</option>
+          </select>
+          <select class="search-field" id="ordersDateFilter" style="min-width:120px;">
+            <option value="">כל הזמן</option>
+            <option value="today">היום</option>
+            <option value="7">7 ימים אחרונים</option>
+            <option value="30">30 יום אחרונים</option>
+          </select>
+          <select class="search-field" id="ordersTagFilter" style="min-width:120px;">
+            <option value="">כל התגיות</option>
+            <option value="vip">⭐ VIP</option>
+            <option value="urgent">🔥 דחוף</option>
+            <option value="review">👀 לבדיקה</option>
+          </select>
           <span class="refresh" id="ordersRefreshed"></span>
           <button class="btn outline small" id="ordersExportBtn" type="button">ייצוא ל-CSV</button>
           <button class="btn outline small" id="ordersRefreshBtn" type="button">רענון</button>
@@ -635,6 +796,43 @@
   document.getElementById('logoutBtn').addEventListener('click', async function(){
     try { await api('/api/admin?action=logout', { method:'POST' }); } catch(e) {}
     showGate();
+  });
+
+  /* ---------- Change admin login credentials ---------- */
+  const credentialsForm = document.getElementById('credentialsForm');
+  const credentialsErr = document.getElementById('credentialsErr');
+  const credentialsOk = document.getElementById('credentialsOk');
+  const credentialsSaveBtn = document.getElementById('credentialsSaveBtn');
+
+  credentialsForm.addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    credentialsErr.textContent = '';
+    credentialsOk.textContent = '';
+
+    const currentPassword = document.getElementById('credCurrentPassword').value;
+    const newUsername = document.getElementById('credNewUsername').value.trim();
+    const newPassword = document.getElementById('credNewPassword').value;
+
+    if (newPassword.length < 8) {
+      credentialsErr.textContent = 'הסיסמה החדשה חייבת להכיל לפחות 8 תווים.';
+      return;
+    }
+    if (!confirm('לשנות את פרטי ההתחברות? תנותקו מיד ותצטרכו להתחבר מחדש עם שם המשתמש והסיסמה החדשים.')) return;
+
+    credentialsSaveBtn.disabled = true;
+    try {
+      await api('/api/admin?action=change-credentials', {
+        method: 'POST',
+        body: JSON.stringify({ currentPassword: currentPassword, newUsername: newUsername, newPassword: newPassword })
+      });
+      credentialsForm.reset();
+      alert('פרטי ההתחברות עודכנו בהצלחה. יש להתחבר מחדש עם שם המשתמש והסיסמה החדשים.');
+      showGate();
+    } catch (e) {
+      credentialsErr.textContent = e.message || 'שגיאה בעדכון פרטי ההתחברות.';
+    } finally {
+      credentialsSaveBtn.disabled = false;
+    }
   });
 
   /* ---------- Tabs ---------- */
@@ -969,6 +1167,17 @@
   const CONTENT_IMAGE_FIELDS_ABOUT = [
     { key:'about_image', label:'תמונת עמוד אודות' }
   ];
+  const CONTENT_TEXT_FIELDS_KALOT = [
+    { key:'kalot_eyebrow', label:'כיתוב עליון (עמוד תכשיטים לכלה)', multiline:false },
+    { key:'kalot_headline', label:'כותרת ראשית', multiline:false },
+    { key:'kalot_subline', label:'תת-כותרת', multiline:true },
+    { key:'kalot_quote', label:'משפט ציטוט (הפס האמצעי)', multiline:true },
+    { key:'kalot_final_title', label:'כותרת סיום', multiline:false },
+    { key:'kalot_final_text', label:'טקסט סיום', multiline:true }
+  ];
+  const CONTENT_IMAGE_FIELDS_KALOT = [
+    { key:'kalot_hero_bg', label:'תמונת רקע (עמוד תכשיטים לכלה)' }
+  ];
 
   let lastContent = {};
 
@@ -1077,6 +1286,9 @@
   });
   document.getElementById('contentSaveAboutBtn').addEventListener('click', function(){
     saveContentTextFields(CONTENT_TEXT_FIELDS_ABOUT, 'contentAboutErr', 'contentAboutOk', this);
+  });
+  document.getElementById('contentSaveKalotBtn').addEventListener('click', function(){
+    saveContentTextFields(CONTENT_TEXT_FIELDS_KALOT, 'contentKalotErr', 'contentKalotOk', this);
   });
 
   /* "תצוגת עמוד הגיבור (Hero)" panel - a single on/off button that sets
@@ -1237,8 +1449,10 @@
     }
     renderContentTextFields('contentTextFieldsHome', CONTENT_TEXT_FIELDS_HOME);
     renderContentTextFields('contentTextFieldsAbout', CONTENT_TEXT_FIELDS_ABOUT);
+    renderContentTextFields('contentTextFieldsKalot', CONTENT_TEXT_FIELDS_KALOT);
     renderContentImageFields('contentImageFieldsHome', CONTENT_IMAGE_FIELDS_HOME);
     renderContentImageFields('contentImageFieldsAbout', CONTENT_IMAGE_FIELDS_ABOUT);
+    renderContentImageFields('contentImageFieldsKalot', CONTENT_IMAGE_FIELDS_KALOT);
     renderHeroSimpleToggle();
     renderHeroBannerPanel();
     renderPromoFields();
@@ -1255,8 +1469,16 @@
       '</tr></thead><tbody>';
     products.forEach(function(p){
       const catalogEntry = CATALOG_BY_ID[p.id];
-      const displayName = (catalogEntry ? catalogEntry.name : p.id) + ' (' + escapeHtml(p.id) + ')';
+      const isCustom = !!p.category; // added via "הוספת מוצר חדש" - not an override of a built-in catalog product
+      const displayName = isCustom ? (p.name + ' (' + escapeHtml(p.id) + ') - מוצר שנוסף')
+        : (catalogEntry ? catalogEntry.name : p.id) + ' (' + escapeHtml(p.id) + ')';
       const onSale = p.compare_at_price != null && Number(p.compare_at_price) > Number(p.price != null ? p.price : (catalogEntry ? catalogEntry.price : 0));
+      const actions = isCustom
+        ? ('<button type="button" class="btn outline small" data-edit-product="' + escapeHtml(p.id) + '">עריכה מלאה</button> ' +
+           '<button type="button" class="btn outline small" data-duplicate-product="' + escapeHtml(p.id) + '">שכפול</button> ' +
+           '<button type="button" class="btn danger small" data-delete-product="' + escapeHtml(p.id) + '">מחיקת מוצר</button>')
+        : ('<button type="button" class="btn outline small" data-duplicate-product="' + escapeHtml(p.id) + '">שכפול</button> ' +
+           '<button type="button" class="btn outline small" data-delete-product="' + escapeHtml(p.id) + '">איפוס למקור</button>');
       html += '<tr>' +
         '<td>' + escapeHtml(displayName) + '</td>' +
         '<td>' + escapeHtml(p.name || '-') + '</td>' +
@@ -1266,7 +1488,7 @@
         '<td>' + (p.out_of_stock ? '<span class="tag inactive">אזל מהמלאי</span>' : '<span class="tag active">במלאי</span>') + '</td>' +
         '<td><span class="tag active">פעיל</span></td>' +
         '<td>' + (p.updated_at ? new Date(p.updated_at).toLocaleString('he-IL') : '-') + '</td>' +
-        '<td><button type="button" class="btn outline small" data-delete-product="' + escapeHtml(p.id) + '">איפוס למקור</button></td>' +
+        '<td>' + actions + '</td>' +
         '</tr>';
     });
     html += '</tbody></table>';
@@ -1275,13 +1497,35 @@
     wrap.querySelectorAll('[data-delete-product]').forEach(function(btn){
       btn.addEventListener('click', async function(){
         const id = btn.getAttribute('data-delete-product');
-        if (!confirm('לאפס את המחיר/שם עבור "' + id + '" ולהחזיר למקור?')) return;
+        const p = lastProductOverrides[id];
+        const isCustom = p && !!p.category;
+        const msg = isCustom
+          ? 'למחוק את המוצר "' + (p.name || id) + '" לצמיתות? הוא יוסר מהאתר.'
+          : 'לאפס את המחיר/שם עבור "' + id + '" ולהחזיר למקור?';
+        if (!confirm(msg)) return;
         try {
           await api('/api/products?id=' + encodeURIComponent(id), { method:'DELETE' });
           loadProducts();
         } catch(e) {
-          alert(e.message || 'שגיאה באיפוס.');
+          alert(e.message || 'שגיאה במחיקה.');
         }
+      });
+    });
+
+    wrap.querySelectorAll('[data-edit-product]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        const id = btn.getAttribute('data-edit-product');
+        const p = lastProductOverrides[id];
+        if (p) startEditProduct(p);
+      });
+    });
+
+    wrap.querySelectorAll('[data-duplicate-product]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        const id = btn.getAttribute('data-duplicate-product');
+        const p = lastProductOverrides[id];
+        const catalogEntry = CATALOG_BY_ID[id];
+        if (p || catalogEntry) startDuplicateProduct(p, catalogEntry, id);
       });
     });
   }
@@ -1349,6 +1593,197 @@
       productErr.textContent = e.message || 'שגיאה בשמירה.';
     } finally {
       productSaveBtn.disabled = false;
+    }
+  });
+
+  /* ---------- Add new product (מצעים / מגבות) ---------- */
+  const newProductForm = document.getElementById('newProductForm');
+  const newProductErr = document.getElementById('newProductErr');
+  const newProductOk = document.getElementById('newProductOk');
+  const newProductSaveBtn = document.getElementById('newProductSaveBtn');
+  const npCategory = document.getElementById('npCategory');
+  const npIdField = document.getElementById('npId');
+  const npEditingIdField = document.getElementById('npEditingId');
+  const npExistingImageField = document.getElementById('npExistingImage');
+  const npImageHint = document.getElementById('npImageHint');
+  const npPanelTitle = document.getElementById('newProductPanelTitle');
+  const npCancelEditBtn = document.getElementById('npCancelEditBtn');
+
+  function updateNewProductFieldsVisibility(){
+    const isTowel = npCategory.value === 'towel';
+    document.querySelectorAll('.np-bedding-field').forEach(function(el){ el.style.display = isTowel ? 'none' : ''; });
+    document.querySelectorAll('.np-towel-field').forEach(function(el){ el.style.display = isTowel ? '' : 'none'; });
+  }
+  npCategory.addEventListener('change', updateNewProductFieldsVisibility);
+  updateNewProductFieldsVisibility();
+
+  /* Resets the panel back to plain "add a new product" mode - used both
+     on load and after a successful save/cancel of an edit or duplicate. */
+  function resetToAddMode(){
+    newProductForm.reset();
+    npEditingIdField.value = '';
+    npExistingImageField.value = '';
+    npIdField.disabled = false;
+    npImageHint.textContent = '';
+    npPanelTitle.textContent = 'הוספת מוצר חדש';
+    newProductSaveBtn.textContent = 'הוספת המוצר';
+    npCancelEditBtn.style.display = 'none';
+    updateNewProductFieldsVisibility();
+  }
+
+  /* Fills the form from a saved product_overrides row (see api/products.js -
+     category/details are only present on admin-added products, which is
+     the only kind "עריכה מלאה"/full edit applies to; see renderProducts). */
+  function fillFormFromProduct(p){
+    const d = (p.details && typeof p.details === 'object') ? p.details : {};
+    npCategory.value = p.category === 'towel' ? 'towel' : 'bedding';
+    document.getElementById('npName').value = p.name || '';
+    document.getElementById('npPrice').value = p.price != null ? p.price : '';
+    document.getElementById('npCompareAt').value = p.compare_at_price != null ? p.compare_at_price : '';
+    document.getElementById('npTag').value = d.tag || '';
+    document.getElementById('npCotton').value = d.cotton != null ? d.cotton : '';
+    document.getElementById('npThread').value = d.thread != null ? d.thread : '';
+    document.getElementById('npWeight').value = d.weight != null ? d.weight : '';
+    document.getElementById('npBedType').value = d.bedType === 'double' ? 'double' : 'twin';
+    document.getElementById('npTier').value = d.tier === 'premium' ? 'premium' : 'classic';
+    document.getElementById('npCollection').value = d.collection || 'renaissance';
+    document.getElementById('npDesc').value = d.desc || '';
+    npExistingImageField.value = p.image || '';
+    updateNewProductFieldsVisibility();
+  }
+
+  /* "עריכה מלאה" - loads a product the admin already added into the form
+     for editing. The id field is locked (editing doesn't rename the
+     product's id) and saving re-upserts the same row. */
+  function startEditProduct(p){
+    fillFormFromProduct(p);
+    npIdField.value = p.id;
+    npIdField.disabled = true;
+    npEditingIdField.value = p.id;
+    npImageHint.textContent = '(השאירו ריק כדי לשמור על התמונה הקיימת)';
+    npPanelTitle.textContent = 'עריכת מוצר: ' + (p.name || p.id);
+    newProductSaveBtn.textContent = 'עדכון מוצר';
+    npCancelEditBtn.style.display = '';
+    newProductForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  /* "שכפול" - prefills the form from an existing row (custom product or a
+     built-in catalog item that has an override), but leaves the id empty
+     so it saves as a brand new product once the admin picks a unique id.
+     Duplicating a built-in catalog item only carries over name/price/
+     image (that's all admin.html has locally for it) - the spec fields
+     land on their defaults and are editable before saving. */
+  function startDuplicateProduct(p, catalogEntry, sourceId){
+    if (p) {
+      fillFormFromProduct(p);
+      document.getElementById('npName').value = (p.name || catalogEntry && catalogEntry.name || sourceId) + ' (עותק)';
+    } else {
+      npCategory.value = 'bedding';
+      document.getElementById('npName').value = (catalogEntry ? catalogEntry.name : sourceId) + ' (עותק)';
+      document.getElementById('npPrice').value = catalogEntry ? catalogEntry.price : '';
+      npExistingImageField.value = '';
+      updateNewProductFieldsVisibility();
+    }
+    npIdField.value = '';
+    npIdField.disabled = false;
+    npEditingIdField.value = '';
+    npImageHint.textContent = npExistingImageField.value ? '(השאירו ריק כדי להשתמש באותה תמונה)' : '';
+    npPanelTitle.textContent = 'שכפול מוצר - בחרו מזהה חדש';
+    newProductSaveBtn.textContent = 'הוספת המוצר המשוכפל';
+    npCancelEditBtn.style.display = '';
+    newProductForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    npIdField.focus();
+  }
+
+  npCancelEditBtn.addEventListener('click', function(){
+    newProductErr.textContent = '';
+    newProductOk.textContent = '';
+    resetToAddMode();
+  });
+
+  newProductForm.addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    newProductErr.textContent = '';
+    newProductOk.textContent = '';
+
+    const editingId = npEditingIdField.value;
+    const isEditing = !!editingId;
+    const id = isEditing ? editingId : npIdField.value.trim().toLowerCase();
+    const name = document.getElementById('npName').value.trim();
+    const priceRaw = document.getElementById('npPrice').value;
+    const compareAtRaw = document.getElementById('npCompareAt').value;
+    const category = npCategory.value;
+    const fileInput = document.getElementById('npImageFile');
+
+    if (!isEditing) {
+      if (!/^[a-z0-9-]+$/.test(id)) {
+        newProductErr.textContent = 'מזהה מוצר יכול להכיל רק אותיות אנגליות קטנות, מספרים ומקף (-).';
+        return;
+      }
+      if (CATALOG_BY_ID[id] || lastProductOverrides[id]) {
+        newProductErr.textContent = 'כבר קיים מוצר עם המזהה הזה. בחרו מזהה אחר.';
+        return;
+      }
+    }
+    if (!name || priceRaw === '') {
+      newProductErr.textContent = 'יש למלא שם ומחיר.';
+      return;
+    }
+    if (compareAtRaw !== '' && Number(compareAtRaw) <= Number(priceRaw)) {
+      newProductErr.textContent = 'מחיר לפני מבצע חייב להיות גבוה מהמחיר, אחרת המבצע לא יוצג.';
+      return;
+    }
+    if (!fileInput.files[0] && !npExistingImageField.value) {
+      newProductErr.textContent = 'יש לבחור תמונת מוצר.';
+      return;
+    }
+
+    newProductSaveBtn.disabled = true;
+    try {
+      let imageUrl = npExistingImageField.value || '';
+      if (fileInput.files[0]) {
+        newProductSaveBtn.textContent = 'מעלה תמונה...';
+        imageUrl = await uploadImageFile(fileInput.files[0]);
+      }
+      newProductSaveBtn.textContent = isEditing ? 'מעדכן מוצר...' : 'שומר מוצר...';
+
+      const details = category === 'towel'
+        ? { weight: document.getElementById('npWeight').value || undefined }
+        : {
+            thread: document.getElementById('npThread').value || undefined,
+            bedType: document.getElementById('npBedType').value,
+            tier: document.getElementById('npTier').value,
+            collection: document.getElementById('npCollection').value
+          };
+      details.cotton = document.getElementById('npCotton').value || undefined;
+      details.tag = document.getElementById('npTag').value.trim() || undefined;
+      details.desc = document.getElementById('npDesc').value.trim() || undefined;
+
+      await api('/api/products', {
+        method: 'POST',
+        body: JSON.stringify({
+          id: id,
+          name: name,
+          price: Number(priceRaw),
+          compareAtPrice: compareAtRaw !== '' ? Number(compareAtRaw) : undefined,
+          image: imageUrl || undefined,
+          category: category,
+          details: details,
+          active: true,
+          outOfStock: false
+        })
+      });
+
+      newProductOk.textContent = isEditing
+        ? 'המוצר "' + name + '" עודכן בהצלחה.'
+        : 'המוצר "' + name + '" נוסף בהצלחה ומוצג עכשיו באתר.';
+      resetToAddMode();
+      loadProducts();
+    } catch (e) {
+      newProductErr.textContent = e.message || 'שגיאה בשמירת המוצר.';
+    } finally {
+      newProductSaveBtn.disabled = false;
+      newProductSaveBtn.textContent = isEditing ? 'עדכון מוצר' : 'הוספת המוצר';
     }
   });
 
@@ -1480,6 +1915,8 @@
      just needs to summarize data the admin panel already has. */
   let lastOrders = [];
   let lastInquiries = [];
+  let lastAttemptsCount = null;
+  let lastVisitsTotal = null;
 
   function renderOverview(){
     const orders = lastOrders || [];
@@ -1541,6 +1978,62 @@
         }).join('') +
         '</tbody></table>';
     }
+
+    /* Average order value - same "not cancelled" set as the revenue card
+       above, so the two numbers stay consistent with each other. */
+    const revenueOrders = orders.filter(function(o){ return o.status !== 'cancelled'; });
+    const aov = revenueOrders.length ? Math.round(revenue / revenueOrders.length) : 0;
+    document.getElementById('statAOV').textContent = revenueOrders.length ? ('₪' + aov.toLocaleString('he-IL')) : '-';
+
+    /* Rough conversion funnel: total tracked site visits -> completed
+       orders. Uses totals already fetched by the visits/attempts tabs
+       (see loadVisits/loadOrderAttempts) - only shown once both have
+       loaded at least once, so it never displays a misleading 0%. */
+    const convEl = document.getElementById('statConversion');
+    if (lastVisitsTotal && lastVisitsTotal > 0) {
+      const pct = (orders.length / lastVisitsTotal) * 100;
+      convEl.textContent = pct.toFixed(1) + '%';
+      convEl.title = orders.length + ' הזמנות מתוך ' + lastVisitsTotal + ' ביקורים נרשמים' +
+        (lastAttemptsCount != null ? (' (ו-' + lastAttemptsCount + ' ניסיונות תשלום)') : '');
+    } else {
+      convEl.textContent = '-';
+    }
+
+    /* Revenue-by-day bar chart, last 14 days (today included), same
+       "not cancelled" order set as the revenue stat card. Pure CSS bars -
+       no charting library needed for 14 columns. */
+    const chartWrap = document.getElementById('revenueChartWrap');
+    const days = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - i);
+      days.push(d);
+    }
+    const dayTotals = days.map(function(d){
+      const sum = revenueOrders.reduce(function(acc, o){
+        if (!o.created_at) return acc;
+        const od = new Date(o.created_at);
+        return (od.getFullYear() === d.getFullYear() && od.getMonth() === d.getMonth() && od.getDate() === d.getDate())
+          ? acc + (Number(o.total) || 0) : acc;
+      }, 0);
+      return sum;
+    });
+    const maxDay = Math.max(1, ...dayTotals);
+    if (!revenueOrders.length) {
+      chartWrap.innerHTML = '<div class="empty">אין עדיין מספיק נתוני הזמנות.</div>';
+    } else {
+      chartWrap.innerHTML = '<div class="bars">' + days.map(function(d, i){
+        const val = dayTotals[i];
+        const heightPct = Math.max(2, Math.round((val / maxDay) * 100));
+        const label = d.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' });
+        return '<div class="bar-col" title="' + label + ': ₪' + val.toLocaleString('he-IL') + '">' +
+          '<span class="bar-value">' + (val ? Math.round(val / 100) / 10 + 'K' : '') + '</span>' +
+          '<div class="bar" style="height:' + heightPct + '%;"></div>' +
+          '<span class="bar-label">' + label + '</span>' +
+          '</div>';
+      }).join('') + '</div>';
+    }
   }
 
   /* ---------- Test email (system health check) ----------
@@ -1594,10 +2087,17 @@
   /* CSS colors are variables (--gold-dark etc.) defined in the page's own
      <style> block above - reused here for a small "יש רקמה" badge so it
      lines up with the rest of the panel style instead of looking bolted on. */
+  const ADMIN_TAG_LABELS = { vip: '⭐ VIP', urgent: '🔥 דחוף', review: '👀 לבדיקה' };
+  const ADMIN_TAG_CLASS = { vip: 'vip', urgent: 'urgent', review: 'review' };
+  function adminTagBadge(tag){
+    if (!tag || !ADMIN_TAG_LABELS[tag]) return '';
+    return '<span class="tag ' + ADMIN_TAG_CLASS[tag] + '" style="display:block;width:fit-content;margin-top:4px;">' + ADMIN_TAG_LABELS[tag] + '</span>';
+  }
+
   function renderOrders(orders){
     const wrap = document.getElementById('ordersTableWrap');
     if (!orders || !orders.length) {
-      wrap.innerHTML = '<div class="empty">עדיין לא התקבלו הזמנות.</div>';
+      wrap.innerHTML = '<div class="empty">לא נמצאו הזמנות התואמות לסינון.</div>';
       return;
     }
     let html = '<table><thead><tr>' +
@@ -1628,7 +2128,7 @@
       const detailId = 'orderDetail' + idx;
 
       html += '<tr>' +
-        '<td>' + escapeHtml(o.order_id) + '</td>' +
+        '<td>' + escapeHtml(o.order_id) + adminTagBadge(o.admin_tag) + '</td>' +
         '<td>' + escapeHtml(customer.name) + '</td>' +
         '<td>' + escapeHtml(customer.phone) + '</td>' +
         '<td class="items-cell">' + escapeHtml(itemsText) + embroideryBadge + '</td>' +
@@ -1689,6 +2189,50 @@
         }
       });
     });
+
+    /* Admin-only tag: saves immediately on change (no separate button),
+       same instant-save pattern as the status dropdown above. */
+    wrap.querySelectorAll('.admin-tag-select').forEach(function(sel){
+      sel.addEventListener('change', async function(){
+        const id = sel.getAttribute('data-order-id');
+        sel.disabled = true;
+        try {
+          await api('/api/orders', { method:'PUT', body: JSON.stringify({ id: id, admin_tag: sel.value }) });
+          const o = lastOrders.find(function(x){ return x.id === id; });
+          if (o) o.admin_tag = sel.value || null;
+          applyOrdersFilter();
+        } catch(e) {
+          alert(e.message || 'שגיאה בשמירת התגית.');
+        } finally {
+          sel.disabled = false;
+        }
+      });
+    });
+
+    /* Internal note: explicit "שמירה" button (free text, so saving on
+       every keystroke would be wasteful and could race itself). */
+    wrap.querySelectorAll('.save-admin-note-btn').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        const id = btn.getAttribute('data-order-id');
+        const textarea = wrap.querySelector('.admin-note-input[data-order-id="' + id + '"]');
+        if (!textarea) return;
+        btn.disabled = true;
+        const originalText = btn.textContent;
+        btn.textContent = 'שומר...';
+        try {
+          await api('/api/orders', { method:'PUT', body: JSON.stringify({ id: id, internal_note: textarea.value }) });
+          const o = lastOrders.find(function(x){ return x.id === id; });
+          if (o) o.internal_note = textarea.value || null;
+          btn.textContent = 'נשמר ✓';
+          setTimeout(function(){ btn.textContent = originalText; }, 1500);
+        } catch(e) {
+          alert(e.message || 'שגיאה בשמירת ההערה.');
+          btn.textContent = originalText;
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    });
   }
 
   /* Builds the full-detail block for one order: every field saved on the
@@ -1698,15 +2242,23 @@
      long flat list, and the items table gets its own "התאמה אישית" column
      so embroidery letters and set size are their own clearly-labelled
      field per item, instead of being folded into the item's name text. */
+  /* Full order details, laid out as proper tables (one small key/value
+     table per section, plus the items breakdown table) instead of the
+     old CSS-grid definition list - so it reads cleanly whether there are
+     2 fields filled in or 12, and lines up the same way every time. */
   function renderOrderDetail(o, customer){
     const SHIPPING_LABELS = { pickup: 'איסוף עצמי', delivery: 'משלוח עד הבית', courier: 'שליח' };
     const SIZE_LABELS = { single: 'חצי סט', pair: 'סט מלא' };
-    function row(label, value){
+    function fieldRow(label, value){
       if (value === undefined || value === null || value === '') return '';
-      return '<dt>' + escapeHtml(label) + '</dt><dd>' + escapeHtml(value) + '</dd>';
+      return '<tr><th>' + escapeHtml(label) + '</th><td>' + escapeHtml(value) + '</td></tr>';
     }
-    function sectionTitle(label){
-      return '<div class="detail-section-title">' + escapeHtml(label) + '</div>';
+    function section(title, rowsHtml){
+      if (!rowsHtml) return '';
+      return '<div class="detail-section">' +
+        '<div class="detail-section-title">' + escapeHtml(title) + '</div>' +
+        '<table class="detail-fields-table"><tbody>' + rowsHtml + '</tbody></table>' +
+        '</div>';
     }
 
     const orderItems = Array.isArray(o.items) ? o.items : [];
@@ -1726,36 +2278,66 @@
       }).join('');
     } catch(e) { /* ignore */ }
 
-    let html = '<div class="detail-grid">';
+    let html = '<div class="detail-sections">';
 
-    html += sectionTitle('פרטי לקוח');
-    html += row('שם מלא', customer.name);
-    html += row('שם פרטי', customer.first_name);
-    html += row('שם משפחה', customer.last_name);
-    html += row('טלפון', customer.phone);
-    html += row('טלפון נוסף', customer.phone2);
-    html += row('אימייל', customer.email);
-    html += row('הרשמה לדיוור', customer.marketing_opt_in === true ? 'כן' : (customer.marketing_opt_in === false ? 'לא' : ''));
+    html += section('פרטי לקוח',
+      fieldRow('שם מלא', customer.name) +
+      fieldRow('שם פרטי', customer.first_name) +
+      fieldRow('שם משפחה', customer.last_name) +
+      fieldRow('טלפון', customer.phone) +
+      fieldRow('טלפון נוסף', customer.phone2) +
+      fieldRow('אימייל', customer.email) +
+      fieldRow('הרשמה לדיוור', customer.marketing_opt_in === true ? 'כן' : (customer.marketing_opt_in === false ? 'לא' : ''))
+    );
 
-    html += sectionTitle('משלוח');
-    html += row('כתובת', customer.address);
-    html += row('עיר', customer.city);
-    html += row('מיקוד', customer.zip);
-    html += row('אופן משלוח', SHIPPING_LABELS[customer.shipping_method] || customer.shipping_method);
+    html += section('משלוח',
+      fieldRow('כתובת', customer.address) +
+      fieldRow('עיר', customer.city) +
+      fieldRow('מיקוד', customer.zip) +
+      fieldRow('אופן משלוח', SHIPPING_LABELS[customer.shipping_method] || customer.shipping_method)
+    );
 
-    html += sectionTitle('הזמנה');
-    html += row('מזהה פנימי', o.id);
-    html += row('עודכן לאחרונה', o.updated_at ? new Date(o.updated_at).toLocaleString('he-IL') : '');
+    html += section('הזמנה',
+      fieldRow('מזהה פנימי', o.id) +
+      fieldRow('עודכן לאחרונה', o.updated_at ? new Date(o.updated_at).toLocaleString('he-IL') : '')
+    );
 
     if (itemsRows) {
-      html += '<div class="detail-items"><dt style="margin-bottom:6px;">פירוט פריטים, מחירים והתאמה אישית</dt>' +
+      html += '<div class="detail-section detail-items-section">' +
+        '<div class="detail-section-title">פירוט פריטים, מחירים והתאמה אישית</div>' +
         '<table><thead><tr><th>פריט</th><th>כמות</th><th>מחיר</th><th>התאמה אישית</th></tr></thead><tbody>' + itemsRows + '</tbody></table>' +
         '</div>';
     }
 
     if (o.notes) {
-      html += '<div class="detail-notes"><dt>הערות</dt><dd>' + escapeHtml(o.notes) + '</dd></div>';
+      html += '<div class="detail-section detail-section-full">' +
+        '<div class="detail-section-title">הערות מהלקוח</div>' +
+        '<table class="detail-fields-table"><tbody><tr><td colspan="2" class="detail-notes-cell">' + escapeHtml(o.notes) + '</td></tr></tbody></table>' +
+        '</div>';
     }
+
+    /* Admin-only tag + internal note - never shown to the customer,
+       saved via PUT /api/orders (see the data-save-admin-note handler
+       right after renderOrders below). */
+    html += '<div class="detail-section detail-section-full">' +
+      '<div class="detail-section-title">ניהול פנימי (לא מוצג ללקוח)</div>' +
+      '<div class="grid-form" style="align-items:end;">' +
+        '<div class="field">' +
+          '<label>תגית</label>' +
+          '<select class="search-field admin-tag-select" data-order-id="' + escapeHtml(o.id) + '" style="width:100%;">' +
+            '<option value="">ללא תגית</option>' +
+            '<option value="vip"' + (o.admin_tag === 'vip' ? ' selected' : '') + '>⭐ VIP</option>' +
+            '<option value="urgent"' + (o.admin_tag === 'urgent' ? ' selected' : '') + '>🔥 דחוף</option>' +
+            '<option value="review"' + (o.admin_tag === 'review' ? ' selected' : '') + '>👀 לבדיקה</option>' +
+          '</select>' +
+        '</div>' +
+        '<div class="field" style="grid-column:1/-1;">' +
+          '<label>הערה פנימית</label>' +
+          '<textarea class="admin-note-input" data-order-id="' + escapeHtml(o.id) + '" rows="2" style="width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:8px; font-family:inherit; font-size:13px; background:#FFFDF7;">' + escapeHtml(o.internal_note || '') + '</textarea>' +
+        '</div>' +
+        '<button type="button" class="btn small save-admin-note-btn" data-order-id="' + escapeHtml(o.id) + '">שמירה</button>' +
+      '</div>' +
+    '</div>';
 
     html += '</div>';
     return html;
@@ -1777,34 +2359,52 @@
 
   document.getElementById('ordersRefreshBtn').addEventListener('click', loadOrders);
 
-  /* Client-side search across name/phone/email/order id - the admin
-     already has every order loaded in lastOrders, so filtering it here
-     is instant and needs no extra server round-trip. */
-  function applyOrdersFilter(){
+  /* Client-side search/filter across name/phone/email/order id/status/
+     date range/tag - the admin already has every order loaded in
+     lastOrders, so filtering it here is instant and needs no extra
+     server round-trip. Shared by the table render and the CSV export
+     below, so exporting always matches exactly what's on screen. */
+  function getFilteredOrders(){
     const q = (document.getElementById('ordersSearch').value || '').trim().toLowerCase();
-    if (!q) { renderOrders(lastOrders); return; }
-    const filtered = lastOrders.filter(function(o){
-      const c = o.customer || {};
-      const haystack = [o.order_id, c.name, c.phone, c.phone2, c.email, c.city].filter(Boolean).join(' ').toLowerCase();
-      return haystack.indexOf(q) !== -1;
+    const statusFilter = document.getElementById('ordersStatusFilter').value;
+    const dateFilter = document.getElementById('ordersDateFilter').value;
+    const tagFilter = document.getElementById('ordersTagFilter').value;
+
+    let cutoff = null;
+    if (dateFilter === 'today') {
+      cutoff = new Date(); cutoff.setHours(0, 0, 0, 0);
+    } else if (dateFilter === '7' || dateFilter === '30') {
+      cutoff = new Date(); cutoff.setDate(cutoff.getDate() - Number(dateFilter)); cutoff.setHours(0, 0, 0, 0);
+    }
+
+    return lastOrders.filter(function(o){
+      if (q) {
+        const c = o.customer || {};
+        const haystack = [o.order_id, c.name, c.phone, c.phone2, c.email, c.city].filter(Boolean).join(' ').toLowerCase();
+        if (haystack.indexOf(q) === -1) return false;
+      }
+      if (statusFilter && o.status !== statusFilter) return false;
+      if (tagFilter && o.admin_tag !== tagFilter) return false;
+      if (cutoff && (!o.created_at || new Date(o.created_at) < cutoff)) return false;
+      return true;
     });
-    renderOrders(filtered);
+  }
+  function applyOrdersFilter(){
+    renderOrders(getFilteredOrders());
   }
   document.getElementById('ordersSearch').addEventListener('input', applyOrdersFilter);
+  document.getElementById('ordersStatusFilter').addEventListener('change', applyOrdersFilter);
+  document.getElementById('ordersDateFilter').addEventListener('change', applyOrdersFilter);
+  document.getElementById('ordersTagFilter').addEventListener('change', applyOrdersFilter);
 
-  /* CSV export of everything currently in view (respects the active
-     search filter), so the admin can open it in Excel/Sheets. */
+  /* CSV export of everything currently in view (respects every active
+     filter above), so the admin can open it in Excel/Sheets. */
   document.getElementById('ordersExportBtn').addEventListener('click', function(){
-    const q = (document.getElementById('ordersSearch').value || '').trim().toLowerCase();
-    const rows = q ? lastOrders.filter(function(o){
-      const c = o.customer || {};
-      const haystack = [o.order_id, c.name, c.phone, c.phone2, c.email, c.city].filter(Boolean).join(' ').toLowerCase();
-      return haystack.indexOf(q) !== -1;
-    }) : lastOrders;
+    const rows = getFilteredOrders();
 
     if (!rows.length) { alert('אין הזמנות לייצוא.'); return; }
 
-    const headers = ['מס׳ הזמנה', 'שם', 'טלפון', 'אימייל', 'כתובת', 'עיר', 'מיקוד', 'פריטים', 'רקמה', 'סה"כ', 'סטטוס', 'תאריך', 'הערות'];
+    const headers = ['מס׳ הזמנה', 'שם', 'טלפון', 'אימייל', 'כתובת', 'עיר', 'מיקוד', 'פריטים', 'רקמה', 'סה"כ', 'סטטוס', 'תאריך', 'הערות', 'תגית פנימית', 'הערה פנימית'];
     function csvCell(v){
       const s = (v === undefined || v === null) ? '' : String(v);
       return '"' + s.replace(/"/g, '""') + '"';
@@ -1821,7 +2421,7 @@
         itemsSummary, embroiderySummary,
         o.total, STATUS_LABELS[o.status] || o.status,
         o.created_at ? new Date(o.created_at).toLocaleString('he-IL') : '',
-        o.notes
+        o.notes, ADMIN_TAG_LABELS[o.admin_tag] || '', o.internal_note
       ].map(csvCell).join(','));
     });
     const csvContent = '\uFEFF' + lines.join('\r\n'); // BOM so Excel opens Hebrew correctly
@@ -1878,6 +2478,8 @@
     try {
       const data = await api('/api/order-attempts');
       renderOrderAttempts(data.attempts);
+      lastAttemptsCount = (data.attempts || []).length;
+      renderOverview();
       document.getElementById('attemptsRefreshed').textContent =
         'עודכן: ' + new Date().toLocaleTimeString('he-IL');
     } catch (e) {
@@ -1931,7 +2533,10 @@
     try {
       const data = await api('/api/track-visit');
       renderVisits(data.visits);
-      document.getElementById('visitsTotalCount').textContent = data.total != null ? data.total : (data.visits ? data.visits.length : 0);
+      const total = data.total != null ? data.total : (data.visits ? data.visits.length : 0);
+      document.getElementById('visitsTotalCount').textContent = total;
+      lastVisitsTotal = total;
+      renderOverview();
       document.getElementById('visitsRefreshed').textContent =
         'עודכן: ' + new Date().toLocaleTimeString('he-IL');
     } catch (e) {

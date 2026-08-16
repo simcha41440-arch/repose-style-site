@@ -173,11 +173,11 @@
 <body>
 
 <div class="hero">
-  <div class="hero-bg"></div>
+  <div class="hero-bg" data-content-key="kalot_hero_bg"></div>
   <div class="hero-content">
-    <div class="eyebrow fadeup">רפאוז סטייל · קולקציית כלות</div>
-    <h1 class="headline fadeup">ליום החתונה שלך<br><span class="shine">מגיע להיות מושלם</span></h1>
-    <p class="subline fadeup">תכשיטים יוקרתיים שנבחרו בקפידה עבור הכלה שרוצה להרגיש הכי יפה ביום הכי חשוב בחייה.</p>
+    <div class="eyebrow fadeup" data-content-key="kalot_eyebrow">רפאוז סטייל · קולקציית כלות</div>
+    <h1 class="headline fadeup"><span data-content-key="kalot_headline">ליום החתונה שלך<br></span><span class="shine">מגיע להיות מושלם</span></h1>
+    <p class="subline fadeup" data-content-key="kalot_subline">תכשיטים יוקרתיים שנבחרו בקפידה עבור הכלה שרוצה להרגיש הכי יפה ביום הכי חשוב בחייה.</p>
     <div class="cta fadeup">
       <a href="https://reposestyle.com" target="_blank" rel="noopener">לצפייה בקולקציה המלאה ←</a>
     </div>
@@ -217,12 +217,12 @@
 </section>
 
 <div class="quote-strip">
-  <p>"היום הזה קורה פעם אחת. תבחרי להיראות בו בדיוק כמו שתמיד חלמת."</p>
+  <p data-content-key="kalot_quote">"היום הזה קורה פעם אחת. תבחרי להיראות בו בדיוק כמו שתמיד חלמת."</p>
 </div>
 
 <div class="final-cta">
-  <h2>מוכנה להשלים את המראה?</h2>
-  <p>הקולקציה המלאה מחכה לך - משלוח מהיר, אריזה מהודרת, ותמיכה אישית לאורך כל הדרך.</p>
+  <h2 data-content-key="kalot_final_title">מוכנה להשלים את המראה?</h2>
+  <p data-content-key="kalot_final_text">הקולקציה המלאה מחכה לך - משלוח מהיר, אריזה מהודרת, ותמיכה אישית לאורך כל הדרך.</p>
   <div class="cta">
     <a href="https://reposestyle.com" target="_blank" rel="noopener">כניסה לחנות ←</a>
   </div>
@@ -258,6 +258,39 @@
     });
   }, {threshold:0.2});
   cards.forEach(c=>io.observe(c));
+
+  /* Applies text/image overrides saved from the admin panel's "עריכת
+     תוכן" tab (see api/content.js and the "טקסטים בעמוד הכלות" panel) -
+     same key/value store index.html uses, just a "kalot_" key prefix so
+     the two pages never collide. Same network-error tolerance as the
+     main site: if the API is slow/down, the page just keeps showing the
+     text/image already baked into this file. */
+  (async function applyKalotContentOverrides(){
+    try{
+      const controller = new AbortController();
+      const timeout = setTimeout(()=>controller.abort(), 4000);
+      let res;
+      try{
+        res = await fetch("/api/content", { signal: controller.signal });
+      } finally {
+        clearTimeout(timeout);
+      }
+      if(!res.ok) return;
+      const data = await res.json();
+      const content = {};
+      (Array.isArray(data.content) ? data.content : []).forEach(function(row){ content[row.key] = row.value; });
+      document.querySelectorAll("[data-content-key]").forEach(function(el){
+        const key = el.dataset.contentKey;
+        const val = content[key];
+        if(val === undefined || val === null || val === "") return;
+        if(key === "kalot_hero_bg"){
+          el.style.backgroundImage = "url('" + val.replace(/'/g, "\\'") + "')";
+        } else {
+          el.textContent = val;
+        }
+      });
+    }catch(e){ /* network error/timeout - keep the built-in defaults */ }
+  })();
 </script>
 
 </body>

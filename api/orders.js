@@ -224,15 +224,27 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: err.message });
     }
 
-    const { id, status } = body || {};
-    if (!id || !status) {
-      return res.status(400).json({ error: 'Order id and status are required.' });
+    const { id, status, internal_note, admin_tag } = body || {};
+    if (!id) {
+      return res.status(400).json({ error: 'Order id is required.' });
     }
+    // At least one of status/internal_note/admin_tag must be present -
+    // this endpoint now covers three independent admin-panel actions
+    // (status dropdown, internal note textarea, tag select) that can each
+    // be saved on their own without touching the other two fields.
+    if (status === undefined && internal_note === undefined && admin_tag === undefined) {
+      return res.status(400).json({ error: 'Nothing to update.' });
+    }
+
+    const updateRow = { updated_at: new Date().toISOString() };
+    if (status !== undefined) updateRow.status = status;
+    if (internal_note !== undefined) updateRow.internal_note = internal_note || null;
+    if (admin_tag !== undefined) updateRow.admin_tag = admin_tag || null;
 
     const { data, error } = await withFriendlyError(
       supabase
         .from('orders')
-        .update({ status, updated_at: new Date().toISOString() })
+        .update(updateRow)
         .eq('id', id)
         .select()
     );
@@ -240,7 +252,7 @@ module.exports = async (req, res) => {
     if (error) {
       return res.status(500).json({ error: error.message });
     }
-    await logAdminAction(supabase, session.user, 'order_status_update', id, { status }, getClientIp(req));
+    await logAdminAction(supabase, session.user, 'order_update', id, { status, internal_note, admin_tag }, getClientIp(req));
     return res.status(200).json({ order: data && data[0] });
   }
 
