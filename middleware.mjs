@@ -109,6 +109,34 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;");
 }
 
+/* ------------------------------------------------------------------
+ * BASE-HTML CACHE
+ * ------------------------------------------------------------------
+ * Rewriting the SEO tags means this middleware needs the raw index.html
+ * text, which it gets via a self-fetch to /index.html - a real network
+ * round-trip on Vercel's Edge Network, on top of the visitor's own
+ * request, adding to the time before the browser sees its first byte
+ * of HTML (and, in turn, before it can even start fetching the hero
+ * image). Edge Function instances stay warm across multiple requests,
+ * so caching that fetched text at module scope means only the first
+ * request handled by a given warm instance pays for the extra
+ * round-trip - every request after that reuses the cached text
+ * instantly. A fresh deploy spins up fresh instances (fresh module
+ * state), so this can never serve stale content from a previous
+ * deploy. Falls back to a normal per-request fetch if the cached
+ * fetch ever fails, same as before this cache existed. */
+let cachedBaseHtmlPromise = null;
+function getBaseHtml(request) {
+  if (!cachedBaseHtmlPromise) {
+    cachedBaseHtmlPromise = fetch(new URL("/index.html", request.url)).then((res) => {
+      if (!res.ok) throw new Error("origin fetch failed: " + res.status);
+      return res.text();
+    });
+    cachedBaseHtmlPromise.catch(() => { cachedBaseHtmlPromise = null; }); // don't cache a failure
+  }
+  return cachedBaseHtmlPromise;
+}
+
 export default async function middleware(request) {
   await delay(PAGE_LOAD_DELAY_MS);
 
@@ -120,10 +148,12 @@ export default async function middleware(request) {
   const meta = ROUTE_SEO[path];
   if (!meta) return; // Not a static SEO route - pass through untouched (still delayed above).
 
-  const origin = await fetch(new URL("/index.html", request.url));
-  if (!origin.ok) return; // Fall back to normal handling if index.html can't be fetched.
-
-  let html = await origin.text();
+  let html;
+  try {
+    html = await getBaseHtml(request);
+  } catch (e) {
+    return; // Fall back to normal handling if index.html can't be fetched.
+  }
   const fullUrl = SITE_ORIGIN + path;
   const title = escapeHtml(meta.title);
   const desc = escapeHtml(meta.desc);
