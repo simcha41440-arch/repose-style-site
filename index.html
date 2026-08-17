@@ -5108,26 +5108,53 @@ function goToProduct(id){
   window.location.href = productPath(id);
 }
 
-/* גלגל טעינה זהוב שמופיע לרגע (1.25 שניות) בכל לחיצה על כפתורי
-   הקולקציות בעמוד המצעים (Renaissance / Bloom / Heritage), לפני
-   שהניווט בפועל קורה - נותן תחושת "טעינה" מפנקת. */
+/* גלגל טעינה זהוב שמופיע לרגע (כ-1.5 שניות) לפני שהניווט האמיתי
+   בדפדפן מתבצע בפועל - על כפתורי הקולקציות (Renaissance/Bloom/
+   Heritage) ובכניסה לעמוד המגבות. הניווט עצמו הוא רענון דף אמיתי
+   (ראו למעלה) שכבר לוקח כ-1.25 שניות בצד השרת (middleware.mjs) -
+   השכבה הזו לא מוסיפה שום השהיה נוספת משלה, היא רק "מלבישה" את
+   הזמן שהדפדפן ממילא מחכה בעיצוב זהוב ומרשים במקום שהדף הישן פשוט
+   יישאר תקוע כמו שהוא. היא נשארת גלויה עד שהדף בפועל מוחלף. */
+const collectionLoadingOverlay = document.getElementById("collection-loading-overlay");
+function showGoldLoader(){
+  if(!collectionLoadingOverlay) return;
+  collectionLoadingOverlay.classList.add("active");
+  collectionLoadingOverlay.setAttribute("aria-hidden","false");
+}
+/* אם מטיילים לאחור לדף שהיה שמור ב-bfcache באמצע ניווט כזה, לוודא
+   שהשכבה לא נשארת תקועה גלויה. */
+window.addEventListener("pageshow", ()=>{
+  if(!collectionLoadingOverlay) return;
+  collectionLoadingOverlay.classList.remove("active");
+  collectionLoadingOverlay.setAttribute("aria-hidden","true");
+});
+
 /* כל ניווט = ניווט אמיתי בדפדפן, בכוונה (לא SPA) - כך שגלגל הטעינה
    המובנה של הדפדפן בטאב אכן רץ בכל מעבר עמוד, בדיוק כמו באתר רב-עמודי
    רגיל. ה-middleware (middleware.mjs) מוסיף השהיה מכוונת של כ-1.25
    שניות בצד השרת כדי שהספינר יספיק להיראות. אלמנטים שהם <a href>
    אמיתיים (רוב פריטי התפריט) לא נוגעים בהם כלל - הדפדפן מנווט אליהם
-   בעצמו, כולל תמיכה טבעית ב-Ctrl/Cmd/קליק אמצעי לפתיחה בלשונית חדשה.
+   בעצמו, כולל תמיכה טבעית ב-Ctrl/Cmd/קליק אמצעי לפתיחה בלשונית חדשה
+   - חוץ מקישור "מגבות", שמקבל מאזין נוסף (בלי preventDefault) רק
+   כדי להציג את השכבה הזהובה, בלי לשנות את הניווט הטבעי שלו בכלום.
    רק כפתורים בלי href אמיתי (למשל כפתורי הקולקציות) מקבלים ניווט
    דרך JS, לאותה כתובת בדיוק שהיו מקבלים כ-<a>. */
 document.querySelectorAll("[data-nav]").forEach(el=>{
-  if(el.tagName === "A" && el.getAttribute("href")) return; // קישור אמיתי - הדפדפן כבר מטפל בזה
+  if(el.tagName === "A" && el.getAttribute("href")){
+    if(el.dataset.nav === "towels"){
+      el.addEventListener("click", ()=> showGoldLoader());
+    }
+    return; // קישור אמיתי - הדפדפן כבר מטפל בניווט עצמו
+  }
   el.addEventListener("click", (e)=>{
     e.preventDefault();
+    if(el.classList.contains("collection-btn")) showGoldLoader();
     window.location.href = pathForView(el.dataset.nav);
   });
   el.addEventListener("keydown", (e)=>{
     if(e.key !== "Enter" && e.key !== " ") return;
     e.preventDefault();
+    if(el.classList.contains("collection-btn")) showGoldLoader();
     window.location.href = pathForView(el.dataset.nav);
   });
 });
