@@ -29,22 +29,20 @@
 const SITE_ORIGIN = "https://reposestyle.com";
 
 /* ------------------------------------------------------------------
- * DELIBERATE PAGE-LOAD DELAY
+ * (formerly) DELIBERATE PAGE-LOAD DELAY - REMOVED
  * ------------------------------------------------------------------
- * By design, clicking a top-level nav link, a collection card, or a
- * product (see goToProduct()/the [data-nav] handler in index.html)
- * does a REAL browser navigation - not a client-side route swap - so
- * the browser's own tab spinner runs, the same way it would on a
- * traditional multi-page site. On Vercel this response is normally
- * near-instant, so that spinner barely has time to show. This adds a
- * deliberate wait here on the server before responding, so the tab
- * spinner is visibly running for about 1.25 seconds on every page
- * navigation - a one-line, one-place knob (PAGE_LOAD_DELAY_MS) rather
- * than something scattered across every route.
+ * This used to add an artificial ~1.25s wait here before every real
+ * navigation responded, so the browser's tab spinner had time to show.
+ * Removed: it was stacking on top of the golden collection-loading
+ * spinner (see navigateWithGoldLoader in index.html) and making every
+ * page - including ones with no spinner at all, like /towels - feel
+ * slow for no reason. Real navigation now responds as fast as Vercel
+ * can serve it; the only intentional "wait" left anywhere on the site
+ * is the golden spinner's own 1.5s timer on the collection buttons.
  * ------------------------------------------------------------------ */
-const PAGE_LOAD_DELAY_MS = 1250;
+const PAGE_LOAD_DELAY_MS = 0;
 function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return ms > 0 ? new Promise((resolve) => setTimeout(resolve, ms)) : Promise.resolve();
 }
 
 // Keep this in sync with VIEW_SEO in index.html for these specific routes.
