@@ -4722,103 +4722,10 @@ function viewForPath(path){
    ============================================================ */
 let _hasRenderedFirstView = false;
 
-/* ===== favicon "loading spinner" - shows a small rotating arc (canvas-
-   drawn, thin neutral gray - matching the color of Chrome's own real tab
-   throbber, not the site's gold) in the browser tab for the duration of
-   each page transition, then restores the real favicon. Mimics the
-   browser's own native tab-loading spinner, which never shows here on its
-   own since navigation is client-side (no real page reload - see the
-   "nav-instant" comment above). Runs ONE clean, smooth rotation over
-   ~1.25s (matching how long a real navigation takes on most sites) rather
-   than several fast spins, so it reads as genuine rather than gimmicky.
-   Started from playPageTransitionBar below, so it fires on the same
-   triggers as the gold progress bar.
-
-   IMPORTANT: just mutating the href of the existing <link rel="icon">
-   tags does NOT reliably repaint Chrome's tab icon - it very often just
-   keeps showing the old one. The technique that actually works is to
-   remove the <link> and insert a brand-new element with the new href on
-   every frame, which is what this does. */
-var stopFaviconSpinner = (function(){
-  var SIZE = 32, FRAMES = 36, FRAME_MS = 35;
-  var canvas = document.createElement("canvas");
-  canvas.width = SIZE; canvas.height = SIZE;
-  var ctx = canvas.getContext("2d");
-  var frames = [];
-  var MIN_SWEEP = Math.PI * 0.18;   // shortest arc (near a dot)
-  var MAX_SWEEP = Math.PI * 1.62;   // longest arc (almost a full ring)
-  var BASE_SPINS = 3;               // full base rotations across the run
-  var ARC_PULSES = 2;               // how many grow/shrink cycles across the run
-  // eases the arc length in/out instead of a straight line, so growing and
-  // shrinking each start slow, speed through the middle, and settle -
-  // that easing (not a constant-speed rotation) is what actually reads as
-  // "it starts, speeds up, then slows down" rather than a mechanical spin.
-  function easeInOut(t){ return 0.5 - 0.5*Math.cos(t*Math.PI); }
-  for(var i=0;i<FRAMES;i++){
-    var t = i/(FRAMES-1);
-    ctx.clearRect(0,0,SIZE,SIZE);
-    var pulseT = (t*ARC_PULSES) % 1;
-    var sweep = MIN_SWEEP + (MAX_SWEEP-MIN_SWEEP) * easeInOut(pulseT < 0.5 ? pulseT*2 : (1-pulseT)*2);
-    var baseAngle = t * Math.PI*2 * BASE_SPINS;
-    // extra rotation while the arc is shrinking keeps its tail moving
-    // forward instead of visibly retreating, matching the real spinner
-    var catchUp = t * Math.PI*2 * (BASE_SPINS*0.35);
-    var start = baseAngle + catchUp;
-    ctx.beginPath();
-    ctx.arc(SIZE/2, SIZE/2, SIZE/2 - 3.5, start, start + sweep);
-    ctx.strokeStyle = "#20242A";
-    ctx.lineWidth = 4;
-    ctx.lineCap = "round";
-    ctx.stroke();
-    frames.push(canvas.toDataURL("image/png"));
-  }
-
-  // The real favicon <link> tags, exactly as shipped in <head> - hidden
-  // (not removed from the DOM permanently) while the spinner plays, then
-  // put back verbatim.
-  var originalLinks = Array.prototype.slice.call(document.querySelectorAll('link[rel="icon"]'));
-  var spinTimer = null, stopTimer = null, frameIdx = 0, spinLink = null, spinning = false;
-
-  function showFrame(idx){
-    var next = document.createElement("link");
-    next.rel = "icon";
-    next.href = frames[idx];
-    document.head.appendChild(next);
-    if(spinLink) document.head.removeChild(spinLink);
-    spinLink = next;
-  }
-  function restore(){
-    clearInterval(spinTimer); spinTimer = null;
-    spinning = false;
-    if(spinLink){ document.head.removeChild(spinLink); spinLink = null; }
-    originalLinks.forEach(function(l){ document.head.appendChild(l); });
-  }
-  window.__startFaviconSpinner = function(durationMs){
-    if(!originalLinks.length) return;
-    clearInterval(spinTimer);
-    clearTimeout(stopTimer);
-    if(!spinning){
-      spinning = true;
-      originalLinks.forEach(function(l){ if(l.parentNode) l.parentNode.removeChild(l); });
-      frameIdx = 0;
-      showFrame(frameIdx);
-    }
-    spinTimer = setInterval(function(){
-      frameIdx = (frameIdx + 1) % FRAMES;
-      showFrame(frameIdx);
-    }, FRAME_MS);
-    stopTimer = setTimeout(restore, durationMs);
-  };
-  return restore;
-})();
-
 /* ===== gold top progress bar - fires on every navigation: forward
    clicks AND browser back/forward (popstate), since both paths run
    through showView(). See click-delegation script near end of <body>
-   for the additional "any button click" trigger. Stays in its "loading"
-   state for the same ~1.25s that showView now actually waits before
-   swapping the view (see showView below), so the bar, the favicon
-   spinner, and the real page change all finish together. */
+   for the additional "any button click" trigger. */
 var __transitionBarHideTimer, __transitionBarFinishTimer;
 function playPageTransitionBar(){
   var bar = document.getElementById('page-transition-bar');
@@ -4829,7 +4736,6 @@ function playPageTransitionBar(){
   // force reflow so the animation restarts even on rapid clicks
   void bar.offsetWidth;
   bar.classList.add('loading');
-  if(window.__startFaviconSpinner) window.__startFaviconSpinner(1250);
 
   __transitionBarFinishTimer = setTimeout(function(){
     bar.classList.remove('loading');
@@ -4837,31 +4743,19 @@ function playPageTransitionBar(){
     __transitionBarHideTimer = setTimeout(function(){
       bar.classList.remove('finishing');
     }, 450);
-  }, 1250);
+  }, 260);
 }
 
-var __viewSwitchTimer;
 function showView(name, updateHistory, productId){
-  /* Every navigation - forward clicks, browser back/forward, all of it -
-     now genuinely takes ~1.25s before the new page appears, matching how
-     long a real page load feels on most sites (see the gold progress bar
-     and favicon spinner above, both timed to finish at the same moment).
-     This is a deliberate artificial wait, not real loading time - the
-     content itself is ready instantly, same as always.
-     Exception: the very first view on initial page load renders
-     immediately (no one should stare at a blank page for 1.25s right
-     after opening the site) - see _hasRenderedFirstView below. */
+  /* Navigation is instant - no artificial wait, no fade. The page swap
+     happens the moment you click, exactly like the very first paint on
+     load (see the "nav-instant" class below, which keeps the .fadeIn
+     entrance animation from playing on any page after the first one).
+     The gold progress bar still flashes briefly on every navigation,
+     including browser back/forward, since this runs on every call. */
   document.documentElement.classList.add("nav-instant");
   playPageTransitionBar();
-  clearTimeout(__viewSwitchTimer);
-  if(!_hasRenderedFirstView){
-    _hasRenderedFirstView = true;
-    renderViewNow(name, updateHistory, productId);
-    return;
-  }
-  __viewSwitchTimer = setTimeout(function(){
-    renderViewNow(name, updateHistory, productId);
-  }, 1250);
+  renderViewNow(name, updateHistory, productId);
 }
 
 function renderViewNow(name, updateHistory, productId){
@@ -5206,18 +5100,17 @@ function goToProduct(id){
 }
 
 /* גלגל טעינה זהוב שמופיע לרגע (1.25 שניות) בכל לחיצה על כפתורי
-   הקולקציות בעמוד המצעים (Renaissance / Bloom / Heritage) - קורא
-   ל-showView מיד, שכעת ממילא ממתין ~1.25 שניות בעצמו לפני שהעמוד
-   מתחלף (ראו showView), כך שהחפיפה מדויקת ולא כפולה. */
+   הקולקציות בעמוד המצעים (Renaissance / Bloom / Heritage), לפני
+   שהניווט בפועל קורה - נותן תחושת "טעינה" מפנקת. */
 const collectionLoadingOverlay = document.getElementById("collection-loading-overlay");
 function navigateWithCollectionLoader(navTarget){
   if(!collectionLoadingOverlay){ showView(navTarget); return; }
   collectionLoadingOverlay.classList.add("active");
   collectionLoadingOverlay.setAttribute("aria-hidden","false");
-  showView(navTarget);
   setTimeout(()=>{
     collectionLoadingOverlay.classList.remove("active");
     collectionLoadingOverlay.setAttribute("aria-hidden","true");
+    showView(navTarget);
   }, 1250);
 }
 
