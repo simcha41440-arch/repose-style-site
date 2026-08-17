@@ -3183,7 +3183,7 @@ if("serviceWorker" in navigator){
   <div class="bedding-feature">
     <div class="container bedding-feature-inner">
       <div class="bedding-img" id="bedding-img">
-        <img src="/images/site/bedding-only.png" alt="רפאוז סטייל - כלי מיטה בלבד, מצעי סאטן יוקרתיים" loading="lazy" width="1400" height="1400">
+        <img src="/images/site/bedding-only.png" alt="רפאוז סטייל - כלי מיטה בלבד, מצעי סאטן יוקרתיים" loading="lazy">
       </div>
       <div class="bedding-copy" id="bedding-copy">
         <div class="eyebrow">רפאוז סטייל · קולקציית מצעים יוקרתית</div>
@@ -3485,7 +3485,7 @@ if("serviceWorker" in navigator){
   <div class="container">
     <div class="feature-row about-feature">
       <div class="feature-frame">
-        <img data-content-key="about_image" src="https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&w=1000&h=1200&q=80" alt="מצעי רפאוז סטייל - איכות הבד" loading="lazy" width="1000" height="1200">
+        <img data-content-key="about_image" src="https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&w=1000&h=1200&q=80" alt="מצעי רפאוז סטייל - איכות הבד" loading="lazy">
       </div>
       <div class="feature-text">
         <div class="eyebrow">איך הכל התחיל</div>
@@ -4058,7 +4058,7 @@ if("serviceWorker" in navigator){
     <div class="footer-grid">
       <div class="footer-col">
         <div class="footer-brand">
-          <img src="/images/site/logo-shop.png" alt="רפאוז סטייל" width="220" height="195">
+          <img src="/images/site/logo-shop.png" alt="רפאוז סטייל">
           <span>רפאוז סטייל</span>
         </div>
         <p>רפאוז סטייל — יוקרה שתעצב לכם את הבית. מצעי כותנה פרימיום בעיצוב אלגנטי, לחדר שינה שמרגיש כמו סוויטה במלון בוטיק.</p>
@@ -5181,7 +5181,7 @@ function productCardHTML(p){
       <button class="wish-btn ${isWished ? "active" : ""}" data-id="${p.id}" aria-label="${isWished ? "הסרה מהמועדפים" : "הוספה למועדפים"}" aria-pressed="${isWished}">
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-4.35-9.5-8.8C.7 8.3 2.2 4.3 6.2 4.3c2 0 3.5 1 5.8 2.5 2.3-1.5 3.8-2.5 5.8-2.5 4 0 5.5 4 3.5 7.9C19 16.65 12 21 12 21z"/></svg>
       </button>
-      <div class="imgwrap"><img src="${p.img}" alt="${p.name}" loading="lazy"></div>
+      <div class="imgwrap"><img src="${p.img}" alt="${p.name}" loading="eager" decoding="async"></div>
     </div>
     <div class="card-body">
       ${p.category !== "towel" && p.bedType === "twin" ? `<div class="cspec">2 סט מצעים יחיד 90/200</div>` : ""}
@@ -5190,40 +5190,6 @@ function productCardHTML(p){
       <span class="clink">${p.outOfStock ? "אזל מהמלאי" : "לצפייה במוצר"}</span>
     </div>
   </div>`;
-}
-
-/* ============================================================
-   FLICKER FIX: skip a DOM rewrite when a grid's markup hasn't
-   actually changed.
-   ------------------------------------------------------------
-   Every render*() function below rebuilds a whole section by
-   setting innerHTML, which destroys and recreates every <img>
-   inside it - even when nothing actually changed (e.g. clicking
-   back into a collection/towels page you already visited, or the
-   admin-overrides/popular-products network calls resolving with
-   the exact same data that was already shown). A freshly created
-   <img> always restarts at opacity:0 behind its shimmer
-   placeholder (see the .imgwrap CSS) and only fades back in once
-   its 'load' event fires - so on an unchanged re-render, photos
-   that were already loaded and visible visibly blink out and back
-   in for no reason. Comparing the newly generated HTML string to
-   what's already sitting in the container and skipping the write
-   whenever they're identical keeps the existing, already-loaded
-   <img> elements untouched (no flicker, no redundant network
-   activity) while still rendering normally the first time a
-   section is shown, or the instant its content genuinely changes
-   (a price/name override, a wishlist toggle, a filter/sort change,
-   etc. - all of which change the generated HTML string, so they
-   still trigger a normal re-render). Returns true when it wrote
-   new content (so callers know whether they need to re-attach
-   click handlers / re-init anything tied to the new nodes), false
-   when it skipped because nothing changed. */
-function setGridHTML(container, html){
-  if(!container) return false;
-  if(container.__lastRenderedHTML === html) return false;
-  container.__lastRenderedHTML = html;
-  container.innerHTML = html;
-  return true;
 }
 
 function attachCardClicks(container){
@@ -5241,6 +5207,26 @@ function attachCardClicks(container){
       e.stopPropagation();
       toggleWishlist(btn.dataset.id);
     });
+  });
+  /* Product photos start at opacity:0 and fade in on the image's
+     "load" event (see the shimmer placeholder CSS on .imgwrap and the
+     global load/error listener below). That event always fires on the
+     next tick at the earliest - even for an image the browser already
+     has fully cached - so on a page like /towels or a collection page,
+     where every card's photo is typically already cached from a
+     previous visit, every photo on the grid would still blank out for
+     an instant and then pop in together right after render, reading as
+     a one-time "flicker" across the whole page. Catching the
+     already-cached case here, synchronously, right when the cards are
+     inserted (before the browser paints), marks those images visible
+     immediately with no transition - only a genuinely new/uncached
+     image still uses the async load event and its fade-in. */
+  container.querySelectorAll(".imgwrap img").forEach(img=>{
+    if(img.complete && img.naturalWidth > 0){
+      img.classList.add("img-loaded");
+      const wrap = img.closest(".imgwrap");
+      if(wrap) wrap.classList.add("img-ready");
+    }
   });
 }
 
@@ -5515,8 +5501,8 @@ function renderTowels(){
   const grid = document.getElementById("towel-grid");
   if(!grid) return;
   const towelProducts = PRODUCTS.filter(p => p.category === "towel");
-  const html = towelProducts.map(productCardHTML).join("");
-  if(setGridHTML(grid, html)) attachCardClicks(grid);
+  grid.innerHTML = towelProducts.map(productCardHTML).join("");
+  attachCardClicks(grid);
 }
 
 /* ============================================================
@@ -5534,34 +5520,17 @@ const FEATURE_EYEBROW_LABELS = {
   okeanos: "Heritage"
 };
 
-/* Real pixel dimensions of each featured product's photo file, used only
-   to set width/height attributes on the <img> below so the browser can
-   reserve the correct box (via its intrinsic aspect ratio) before the
-   image has loaded - the CSS (width:100%;height:auto) already renders
-   each photo at its own natural ratio, so this doesn't change how any of
-   them look, it just lets the browser know that ratio in advance instead
-   of finding out only once the image arrives, which is what was causing
-   the page content below each featured photo to jump down the moment it
-   loaded. */
-const FEATURE_IMAGE_DIMENSIONS = {
-  yahalom: {w:1100, h:821},
-  prachim: {w:1189, h:862},
-  okeanos: {w:770, h:698}
-};
-
 function renderFeatured(){
   const featuredIds = ["yahalom","prachim","okeanos"];
   const wrap = document.getElementById("featured-container");
-  const html = featuredIds.map((id, i)=>{
+  wrap.innerHTML = featuredIds.map((id, i)=>{
     const p = PRODUCTS.find(x=>x.id===id);
     const reverseClass = i % 2 === 1 ? "reverse" : "";
     const bedLabel = p.bedType === "twin" ? "זוג יחידים" : "זוגי";
-    const dim = FEATURE_IMAGE_DIMENSIONS[id];
-    const dimAttrs = dim ? ` width="${dim.w}" height="${dim.h}"` : "";
     return `
     <div class="feature-row ${reverseClass}" data-id="${p.id}">
       <div class="feature-frame" style="cursor:pointer;">
-        <img src="${p.img}" alt="${p.name}" loading="lazy" decoding="async"${dimAttrs}>
+        <img src="${p.img}" alt="${p.name}" loading="lazy" decoding="async">
         <div class="feature-plaque">
           <span class="fname serif">דגם ${p.name}</span>
           <span class="fprice">${priceHTML(p)}</span>
@@ -5575,8 +5544,6 @@ function renderFeatured(){
       </div>
     </div>`;
   }).join("");
-
-  if(!setGridHTML(wrap, html)) return;
 
   wrap.querySelectorAll(".feature-frame, .view-product-btn").forEach(el=>{
     el.addEventListener("click", (e)=>{
@@ -5614,17 +5581,7 @@ function renderCircleStrip(){
   /* THREE identical copies back-to-back (extra safety margin for very wide/
      ultrawide screens — see the JS-driven loop below for why this is now
      immune to gaps regardless of screen width or page text direction). */
-  const html = items + items + items;
-  /* Skip re-rendering (and re-initializing the marquee below) when the
-     strip's content hasn't actually changed - this function now runs both
-     immediately on load and again once admin overrides resolve (see INIT),
-     and without this guard a second identical run would tear down and
-     rebuild every circle image (causing a visible flicker) AND start a
-     second, competing requestAnimationFrame scroll loop on top of the
-     first one. */
-  if(track.__lastRenderedHTML === html) return;
-  track.__lastRenderedHTML = html;
-  track.innerHTML = html;
+  track.innerHTML = items + items + items;
 
   const nodes = track.querySelectorAll(".circle-item");
   nodes.forEach((el, i)=>{
@@ -5718,15 +5675,16 @@ function renderShop(){
   const beddingTotal = PRODUCTS.filter(p => p.category !== "towel").length;
   document.getElementById("result-count").textContent = `מציג ${list.length} מתוך ${beddingTotal} מוצרים`;
   if(list.length === 0){
-    setGridHTML(wrap, `<div class="empty-state">
+    wrap.innerHTML = `<div class="empty-state">
       <h3 class="serif">לא נמצאו מוצרים התואמים לסינון</h3>
       <p>נסו לשנות את גודל המיטה שנבחר.</p>
-    </div>`);
+    </div>`;
     return;
   }
 
-  const html = `<div class="product-grid">${list.map(productCardHTML).join("")}</div>`;
-  if(setGridHTML(wrap, html)) attachCardClicks(wrap);
+  wrap.innerHTML = `<div class="product-grid">${list.map(productCardHTML).join("")}</div>`;
+
+  attachCardClicks(wrap);
 }
 
 /* ============================================================
@@ -5738,8 +5696,8 @@ function renderCollectionPage(key){
   if(!grid) return;
   const items = PRODUCTS.filter(p => p.collection === key);
   countEl.textContent = `מציג ${items.length} דגמים בקולקציית ${CATEGORY_ORDER.find(c=>c.key===key)?.title || ""}`;
-  const html = items.map(productCardHTML).join("");
-  if(setGridHTML(grid, html)) attachCardClicks(grid);
+  grid.innerHTML = items.map(productCardHTML).join("");
+  attachCardClicks(grid);
 }
 
 document.querySelectorAll("[data-filter-size]").forEach(btn=>{
@@ -5799,8 +5757,8 @@ function renderPopularProducts(currentId){
     return;
   }
   section.style.display = "block";
-  const html = items.map(productCardHTML).join("");
-  if(setGridHTML(grid, html)) attachCardClicks(grid);
+  grid.innerHTML = items.map(productCardHTML).join("");
+  attachCardClicks(grid);
 }
 
 function renderProductDetail(){
@@ -5886,8 +5844,8 @@ function renderProductDetail(){
     ? related.concat(PRODUCTS.filter(x=>x.id!==p.id && !related.includes(x) && sameTopCategory(x)).slice(0, 3-related.length))
     : related;
   const relGrid = document.getElementById("related-grid");
-  const relatedHTML = relatedFill.map(productCardHTML).join("");
-  if(setGridHTML(relGrid, relatedHTML)) attachCardClicks(relGrid);
+  relGrid.innerHTML = relatedFill.map(productCardHTML).join("");
+  attachCardClicks(relGrid);
 
   renderPopularProducts(p.id);
 
@@ -7569,66 +7527,18 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
 /* ============================================================
    INIT
    ============================================================ */
-/* Renders whichever page the current URL points at, and sets up
-   scroll position + browser history exactly like a normal first
-   load always has (this is the exact body of what used to run
-   directly inside the Promise.all().finally() below). Pulled into
-   its own function so it can run immediately, synchronously, using
-   the built-in product catalog already baked into this file -
-   instead of only after the admin-overrides/popular-products
-   network round trip resolves. Previously every collection/towel/
-   shop grid stayed completely empty until that fetch finished
-   (which is what made images "take a long time to load" on a
-   fresh visit) even though the page had everything it needed to
-   paint immediately. */
-function renderInitialRoute(){
-  const currentPath = window.location.pathname;
-  const productMatch = currentPath.match(PRODUCT_PATH_RE);
-  const productId = productMatch ? decodeURIComponent(productMatch[1]) : null;
-
-  if(productId && PRODUCTS.some(p=>p.id === productId)){
-    showView("product", false, productId);
-    window.history.replaceState({view:"product", productId}, "", currentPath);
-  } else {
-    const viewName = viewForPath(currentPath);
-    showView(viewName, false);
-    window.history.replaceState({view: viewName}, "", currentPath);
-  }
-}
-
-/* Re-renders just the currently-active page's product content -
-   without touching scroll position, browser history, or which
-   view is active - so that once the admin-overrides/popular-
-   products network calls resolve, any real change they bring (an
-   overridden price/name, the "popular" row) still gets picked up,
-   without repeating the "first load" side effects above a second
-   time (which would otherwise yank the page back to the top if the
-   visitor had already started scrolling while that fetch was in
-   flight). Every render function this can call is guarded by
-   setGridHTML (see above), so when nothing actually changed - the
-   overwhelmingly common case - this is a complete no-op: no
-   flicker, no image re-fetch, no wasted work. */
-function refreshCurrentRouteContent(){
-  const activeView = document.querySelector(".view.active");
-  if(!activeView) return;
-  switch(activeView.id){
-    case "view-shop": renderShop(); break;
-    case "view-shop-renaissance": renderCollectionPage("renaissance"); break;
-    case "view-shop-bloom": renderCollectionPage("bloom"); break;
-    case "view-shop-heritage": renderCollectionPage("heritage"); break;
-    case "view-towels": renderTowels(); break;
-    case "view-product": renderProductDetail(); break;
-  }
-}
-
-renderFeatured();
-renderCircleStrip();
-renderInitialRoute();
-
-Promise.all([applyAdminOverrides(), loadPopularProducts()]).finally(function(){
+/* Renders the current page (whichever view/product/collection the URL
+   points at) using whatever is in PRODUCTS right now. Runs once
+   immediately below - using the built-in catalog baked into this file -
+   so the first paint never waits on a network round-trip, and runs again
+   once applyAdminOverrides()/loadPopularProducts() resolve so any
+   admin-panel changes (price/image overrides, brand-new products, the
+   "popular" row) still get picked up. Safe to call twice: showView/
+   renderViewNow, history.replaceState and initScrollReveal are all
+   idempotent. */
+function renderCurrentView(){
   renderFeatured();
   renderCircleStrip();
-  refreshCurrentRouteContent();
 
   /* Close the dead space between the circle showcase and the section
      after it (see the .bedding-feature CSS comment for why that gap
@@ -7658,6 +7568,18 @@ Promise.all([applyAdminOverrides(), loadPopularProducts()]).finally(function(){
   updateCartUI();
   updateWishlistUI();
 
+  const currentPath = window.location.pathname;
+  const productMatch = currentPath.match(PRODUCT_PATH_RE);
+  const productId = productMatch ? decodeURIComponent(productMatch[1]) : null;
+
+  if(productId && PRODUCTS.some(p=>p.id === productId)){
+    showView("product", false, productId);
+    window.history.replaceState({view:"product", productId}, "", currentPath);
+  } else {
+    const viewName = viewForPath(currentPath);
+    showView(viewName, false);
+    window.history.replaceState({view: viewName}, "", currentPath);
+  }
   /* The main app is now driving which page is shown (via the .view/.active
      classes) - remove the early anti-flash style from <head> so it doesn't
      interfere with later in-app transitions (e.g. returning to the home
@@ -7665,7 +7587,9 @@ Promise.all([applyAdminOverrides(), loadPopularProducts()]).finally(function(){
   const initStyle = document.getElementById("rs-initial-view-style");
   if(initStyle) initStyle.remove();
   if(window.initScrollReveal){ window.initScrollReveal(); }
-});
+}
+renderCurrentView();
+Promise.all([applyAdminOverrides(), loadPopularProducts()]).finally(renderCurrentView);
 applyContentOverrides();
 </script>
 
