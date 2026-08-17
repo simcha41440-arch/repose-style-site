@@ -5144,23 +5144,49 @@ function navigateWithGoldLoader(url, collectionKey){
   if(!collectionLoadingOverlay){ window.location.href = url; return; }
   collectionLoadingOverlay.classList.add("active");
   collectionLoadingOverlay.setAttribute("aria-hidden","false");
-  /* The spinner's 1.5s wait was previously just dead time - the
-     destination collection page's own product photos only started
-     downloading once the real navigation kicked in a beat AFTER that,
-     which is exactly why they'd still fade in on arrival even after the
-     img-loaded fix above (that fix removes the flash for photos already
-     in cache - it can't do anything for photos that aren't). Warming
-     the browser's image cache for this collection's photos during the
-     spinner's own wait means that by the time the new page actually
-     loads, those photos are typically already cached, so they land in
-     the "already loaded" branch of the fix above and appear instantly
-     with no fade at all. */
-  if(collectionKey){
-    PRODUCTS.filter(p=>p.collection===collectionKey).forEach(p=>{
-      if(p.img){ new Image().src = p.img; }
-    });
+  /* Earlier version of this just started warming the browser's image
+     cache during the spinner's fixed 1.5s wait and navigated regardless
+     of whether that finished - but the moment window.location.href
+     actually runs, the browser tears down this document and cancels any
+     of ITS still-in-flight requests, including these warm-up downloads.
+     On a slow connection, or with several photos in one collection, that
+     1.5s isn't always enough, so some photos would lose their head start
+     and still arrive uncached on the new page - which is exactly the
+     still-flickering photos being reported. Now the navigation itself
+     waits on the photos actually finishing (up to a safety cap so a
+     single stuck image can never leave someone stuck on the spinner),
+     so every photo is either fully cached or the page waits for it -
+     never a race that can be lost. */
+  const MIN_MS = GOLD_LOADER_MS;   // spinner always shows at least this long, even if photos are already cached
+  const MAX_MS = 5000;             // never make anyone wait longer than this - navigate anyway past this point
+  const startedAt = Date.now();
+  let navigated = false;
+  function go(){
+    if(navigated) return;
+    navigated = true;
+    window.location.href = url;
   }
-  setTimeout(()=>{ window.location.href = url; }, GOLD_LOADER_MS);
+  function goAfterMinimum(){
+    const waited = Date.now() - startedAt;
+    setTimeout(go, Math.max(0, MIN_MS - waited));
+  }
+  const imgUrls = collectionKey
+    ? PRODUCTS.filter(p=>p.collection===collectionKey).map(p=>p.img).filter(Boolean)
+    : [];
+  if(imgUrls.length === 0){
+    goAfterMinimum();
+  } else {
+    let remaining = imgUrls.length;
+    imgUrls.forEach(src=>{
+      const warmer = new Image();
+      warmer.onload = warmer.onerror = ()=>{
+        remaining--;
+        if(remaining <= 0) goAfterMinimum();
+      };
+      warmer.src = src;
+    });
+    setTimeout(go, MAX_MS); // safety net if a photo never finishes loading/erroring
+  }
 }
 /* אם מטיילים לאחור לדף שהיה שמור ב-bfcache באמצע ניווט כזה, לוודא
    שהשכבה לא נשארת תקועה גלויה. */
