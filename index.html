@@ -946,13 +946,6 @@ if("serviceWorker" in navigator){
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- Speeds up the towel photos (hosted on Unsplash's CDN) by opening the
-     connection to that domain ahead of time, instead of waiting for the
-     DNS/TLS handshake to happen only once the browser hits the first
-     <img src="https://images.unsplash.com/..."> tag. Pure network
-     optimization - no visual/behavioral change. -->
-<link rel="preconnect" href="https://images.unsplash.com" crossorigin>
-<link rel="dns-prefetch" href="https://images.unsplash.com">
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@200;300;400;500;600;700&family=Rubik:wght@300;400;500;600;700&family=Jost:wght@200;300;400;500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Poppins:wght@200;300;400&family=Montserrat:wght@100;200;300;400&display=swap" rel="stylesheet">
 <!-- Preloaded with high priority so the first hero photo is already
      downloading (in parallel with everything else) before the browser
@@ -5171,7 +5164,7 @@ function productCardHTML(p){
       <button class="wish-btn ${isWished ? "active" : ""}" data-id="${p.id}" aria-label="${isWished ? "הסרה מהמועדפים" : "הוספה למועדפים"}" aria-pressed="${isWished}">
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-4.35-9.5-8.8C.7 8.3 2.2 4.3 6.2 4.3c2 0 3.5 1 5.8 2.5 2.3-1.5 3.8-2.5 5.8-2.5 4 0 5.5 4 3.5 7.9C19 16.65 12 21 12 21z"/></svg>
       </button>
-      <div class="imgwrap"><img src="${p.img}" alt="${p.name}" loading="eager" decoding="async"></div>
+      <div class="imgwrap"><img src="${p.img}" alt="${p.name}" loading="lazy"></div>
     </div>
     <div class="card-body">
       ${p.category !== "towel" && p.bedType === "twin" ? `<div class="cspec">2 סט מצעים יחיד 90/200</div>` : ""}
@@ -5236,39 +5229,6 @@ const TOWELS_DATA = [
   }
 ];
 PRODUCTS.push(...TOWELS_DATA);
-
-/* ============================================================
-   IMAGE PRELOADING
-   ------------------------------------------------------------
-   Fixes the flicker/delay reported when opening the collection
-   pages (Renaissance/Bloom/Heritage) or the towels page: those
-   <img> tags didn't exist in the DOM until the moment their view
-   was rendered, so the browser only started fetching each photo
-   at that exact instant - the shimmer placeholder (see the
-   .imgwrap CSS) sat there for as long as that fetch took, and the
-   real photo "popped in" once it arrived, which reads as a
-   flicker. This is most noticeable on the towels grid, where most
-   images are hosted on Unsplash's CDN rather than locally.
-
-   This warms the browser's own HTTP cache for every product photo
-   (all collections + towels) in the background, during idle time,
-   well before the user ever clicks a collection button or the
-   towels link. It never touches the DOM, never renders anything,
-   and doesn't change what appears on screen - by the time a grid
-   actually renders, the browser already has the bytes and paints
-   instantly instead of waiting on the network. */
-function preloadProductImages(){
-  PRODUCTS.forEach(p=>{
-    if(!p.img) return;
-    const img = new Image();
-    img.src = p.img;
-  });
-}
-if("requestIdleCallback" in window){
-  requestIdleCallback(preloadProductImages, {timeout:3000});
-} else {
-  setTimeout(preloadProductImages, 1200);
-}
 
 /* Applies admin-panel product overrides (price/name), fetched live from the
    server via GET /api/products (see api/products.js) - NOT from localStorage.
