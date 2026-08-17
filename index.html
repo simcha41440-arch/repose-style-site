@@ -946,6 +946,13 @@ if("serviceWorker" in navigator){
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Speeds up the towel photos (hosted on Unsplash's CDN) by opening the
+     connection to that domain ahead of time, instead of waiting for the
+     DNS/TLS handshake to happen only once the browser hits the first
+     <img src="https://images.unsplash.com/..."> tag. Pure network
+     optimization - no visual/behavioral change. -->
+<link rel="preconnect" href="https://images.unsplash.com" crossorigin>
+<link rel="dns-prefetch" href="https://images.unsplash.com">
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@200;300;400;500;600;700&family=Rubik:wght@300;400;500;600;700&family=Jost:wght@200;300;400;500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Poppins:wght@200;300;400&family=Montserrat:wght@100;200;300;400&display=swap" rel="stylesheet">
 <!-- Preloaded with high priority so the first hero photo is already
      downloading (in parallel with everything else) before the browser
@@ -993,17 +1000,7 @@ if("serviceWorker" in navigator){
       radial-gradient(900px 520px at 100% 15%, rgba(238,220,166,0.28), transparent 58%),
       radial-gradient(900px 600px at 0% 85%, rgba(216,185,108,0.22), transparent 60%),
       linear-gradient(180deg, #FFFDF8 0%, #FBF7EE 38%, #F6F0E1 72%, #F1E9D6 100%);
-    /* background-attachment:fixed removed - it was the main cause of the
-       scroll feeling heavy/janky. A "fixed" background can't be handled
-       by the compositor: because it has to stay pinned to the viewport
-       while everything else moves, the browser has to repaint this
-       four-layer gradient (which covers the ENTIRE page) on the main
-       thread on every single scroll frame, on every page, the whole
-       time you scroll. With it removed the background scrolls normally
-       with the page like everything else and is composited once, so
-       scrolling no longer fights with it. Visually the difference is
-       negligible - these are soft, large-radius glows, not a sharp
-       pattern where a fixed vs. scrolling difference would be obvious. */
+    background-attachment:fixed;
     color:var(--text-gold);
     font-family:'Rubik','Almoni Neue',sans-serif;
     font-weight:400;
@@ -1319,7 +1316,6 @@ if("serviceWorker" in navigator){
     filter:blur(18px);
     opacity:0;
     animation:lampPulse 7s ease-in-out infinite;
-    will-change:opacity;
   }
   .light-glow.spot-1{
     left:13%;bottom:24%;width:9vw;height:9vw;min-width:90px;min-height:90px;max-width:170px;max-height:170px;
@@ -2178,7 +2174,7 @@ if("serviceWorker" in navigator){
   .cart-subhead button svg{width:15px;height:15px;stroke:var(--taupe);}
   .cart-subhead button:hover{color:var(--gold-dark);}
 
-  .cart-items{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:6px 20px;}
+  .cart-items{flex:1;overflow-y:auto;padding:6px 20px;}
   .cart-item{
     display:flex;gap:14px;padding:18px 0;border-bottom:1px solid var(--line);
     align-items:flex-start;
@@ -2587,7 +2583,7 @@ if("serviceWorker" in navigator){
   #search-close-btn{background:none;border:none;color:var(--taupe);width:34px;height:34px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   #search-close-btn svg{width:18px;height:18px;stroke:var(--taupe);}
   #search-close-btn:hover svg{stroke:var(--ink);}
-  #search-results{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-top:18px;}
+  #search-results{overflow-y:auto;padding-top:18px;}
   .search-result-row{
     display:flex;align-items:center;gap:16px;padding:12px 6px;
     border-bottom:1px solid var(--line);cursor:pointer;transition:background .2s ease;
@@ -2612,7 +2608,7 @@ if("serviceWorker" in navigator){
   #payment-modal-overlay.open{opacity:1;pointer-events:auto;}
   #payment-modal{
     position:fixed;top:50%;left:50%;z-index:1001;
-    width:460px;max-width:92vw;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+    width:460px;max-width:92vw;max-height:88vh;overflow-y:auto;
     background:
       radial-gradient(500px 260px at 100% 0%, rgba(210,175,113,0.18), transparent 60%),
       var(--ivory);
@@ -2657,7 +2653,7 @@ if("serviceWorker" in navigator){
   #success-modal-overlay.open{opacity:1;pointer-events:auto;}
   #success-modal{
     position:fixed;top:50%;left:50%;z-index:1011;
-    width:440px;max-width:90vw;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+    width:440px;max-width:90vw;max-height:88vh;overflow-y:auto;
     background:
       radial-gradient(500px 260px at 50% 0%, rgba(210,175,113,0.2), transparent 62%),
       var(--ivory);
@@ -2709,7 +2705,7 @@ if("serviceWorker" in navigator){
   #newsletter-modal-overlay.open{opacity:1;pointer-events:auto;}
   #newsletter-modal{
     position:fixed;top:50%;left:50%;z-index:1001;
-    width:460px;max-width:92vw;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+    width:460px;max-width:92vw;max-height:88vh;overflow-y:auto;
     background:linear-gradient(155deg, #322A22 0%, var(--ink) 45%, #241E19 100%);
     border:1px solid rgba(214,177,94,0.4);
     border-radius:4px;
@@ -5099,62 +5095,56 @@ if(siteNav){
   applyNavHeroProgress();
 }
 
-/* לחיצה על מוצר = ניווט אמיתי בדפדפן (רענון עמוד מלא), בכוונה: כך
-   שגלגל הטעינה המובנה של הדפדפן בטאב אכן רץ, בדיוק כמו באתר רב-עמודי
-   רגיל. ה-middleware בצד השרת (ראו middleware.mjs, PAGE_LOAD_DELAY_MS)
-   מוסיף השהיה מכוונת של כ-1.25 שניות לפני שהתשובה חוזרת, כך שהספינר
-   מספיק להיראות בבירור בכל ניווט - במקום קפיצה כמעט-מיידית. */
+/* לחיצה על מוצר = ניווט מיידי בתוך האפליקציה (בלי רענון עמוד מלא).
+   ה-URL בסרגל הכתובות עדיין מתעדכן באמת (showView עושה pushState),
+   כך שקישור ישיר, "פתח בלשונית חדשה", וכפתורי קדימה/אחורה בדפדפן
+   ממשיכים לעבוד בדיוק כמו קודם - רק בלי להמתין לרענון עמוד מלא בכל
+   קליק. (בעבר זה עשה window.location.href, מה שגרם לדפדפן להוריד
+   ולהריץ מחדש את כל הדף - כולל שתי קריאות רשת - בכל ניווט; זה מה
+   שגרם לעיכוב של כמה שניות בכל לחיצה.) */
 function goToProduct(id){
-  window.location.href = productPath(id);
+  showView("product", true, id);
 }
 
-/* גלגל טעינה זהוב שמסתובב בדיוק 1.5 שניות (GOLD_LOADER_MS) לפני
-   שהניווט האמיתי בדפדפן מופעל בפועל - על כפתורי הקולקציות
-   (Renaissance/Bloom/Heritage) ובקישור לעמוד המגבות. ה-1.5 שניות
-   האלה הן טיימר עצמאי משלה, לא תלוי במשך הטעינה האמיתית של הדף
-   (ה-middleware בצד השרת מוסיף עוד כ-1.25 שניות משלו אחרי זה, ראו
-   middleware.mjs) - כך שהספינר תמיד יסתובב בול שניה וחצי, בלי קשר
-   למהירות השרת. */
-const GOLD_LOADER_MS = 1500;
+/* גלגל טעינה זהוב שמופיע לרגע (1.25 שניות) בכל לחיצה על כפתורי
+   הקולקציות בעמוד המצעים (Renaissance / Bloom / Heritage), לפני
+   שהניווט בפועל קורה - נותן תחושת "טעינה" מפנקת. */
 const collectionLoadingOverlay = document.getElementById("collection-loading-overlay");
-function navigateWithGoldLoader(url){
-  if(!collectionLoadingOverlay){ window.location.href = url; return; }
+function navigateWithCollectionLoader(navTarget){
+  if(!collectionLoadingOverlay){ showView(navTarget); return; }
   collectionLoadingOverlay.classList.add("active");
   collectionLoadingOverlay.setAttribute("aria-hidden","false");
-  setTimeout(()=>{ window.location.href = url; }, GOLD_LOADER_MS);
+  setTimeout(()=>{
+    collectionLoadingOverlay.classList.remove("active");
+    collectionLoadingOverlay.setAttribute("aria-hidden","true");
+    showView(navTarget);
+  }, 1250);
 }
-/* אם מטיילים לאחור לדף שהיה שמור ב-bfcache באמצע ניווט כזה, לוודא
-   שהשכבה לא נשארת תקועה גלויה. */
-window.addEventListener("pageshow", ()=>{
-  if(!collectionLoadingOverlay) return;
-  collectionLoadingOverlay.classList.remove("active");
-  collectionLoadingOverlay.setAttribute("aria-hidden","true");
-});
 
-/* כל ניווט = ניווט אמיתי בדפדפן, בכוונה (לא SPA) - כך שגלגל הטעינה
-   המובנה של הדפדפן בטאב אכן רץ בכל מעבר עמוד, בדיוק כמו באתר רב-עמודי
-   רגיל. ה-middleware (middleware.mjs) מוסיף השהיה מכוונת של כ-1.25
-   שניות בצד השרת. אלמנטים שהם <a href> אמיתיים (רוב פריטי התפריט,
-   כולל "מגבות") לא נוגעים בהם כלל - הדפדפן מנווט אליהם בעצמו, כולל
-   תמיכה טבעית ב-Ctrl/Cmd/קליק אמצעי לפתיחה בלשונית חדשה, בלי שכבת
-   הספינר הזהוב (זו רק לכפתורי הקולקציות - ראו navigateWithGoldLoader
-   למעלה - שאין להם href אמיתי לנווט אליו בעצמם, לכן הם ממילא צריכים
-   טיפול ב-JS; קישור אמיתי כמו "מגבות" לא צריך את זה, ושכבת ה-1.5
-   שניות שלה רק עיכבה אותו בלי סיבה מעל השהיית השרת עצמה). כפתורים
-   בלי href אמיתי (כפתורי הקולקציות) מקבלים ניווט דרך JS ישירות,
-   לאותה כתובת בדיוק שהיו מקבלים כ-<a>. */
 document.querySelectorAll("[data-nav]").forEach(el=>{
-  if(el.tagName === "A" && el.getAttribute("href")) return; // קישור אמיתי - הדפדפן כבר מטפל בניווט עצמו
   el.addEventListener("click", (e)=>{
+    // קישורים אמיתיים (<a href>): קליק "רגיל" (עכבר שמאלי, בלי מקש
+    // מאפנן) מנווט מיידית בתוך האפליקציה. קליק עם Ctrl/Cmd/Shift/Alt
+    // או קליק אמצעי (פתיחה בלשונית/חלון חדשים) ממשיך להתנהג באופן
+    // טבעי של הדפדפן, כי אז אין טעם (ואי אפשר) לדלג על רענון עמוד.
+    if(el.tagName === "A" && el.getAttribute("href")){
+      if(e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    }
     e.preventDefault();
-    if(el.classList.contains("collection-btn")){ navigateWithGoldLoader(pathForView(el.dataset.nav)); return; }
-    window.location.href = pathForView(el.dataset.nav);
+    if(el.classList.contains("collection-btn")){
+      navigateWithCollectionLoader(el.dataset.nav);
+      return;
+    }
+    showView(el.dataset.nav);
   });
   el.addEventListener("keydown", (e)=>{
     if(e.key !== "Enter" && e.key !== " ") return;
     e.preventDefault();
-    if(el.classList.contains("collection-btn")){ navigateWithGoldLoader(pathForView(el.dataset.nav)); return; }
-    window.location.href = pathForView(el.dataset.nav);
+    if(el.classList.contains("collection-btn")){
+      navigateWithCollectionLoader(el.dataset.nav);
+      return;
+    }
+    showView(el.dataset.nav);
   });
 });
 
@@ -5246,6 +5236,39 @@ const TOWELS_DATA = [
   }
 ];
 PRODUCTS.push(...TOWELS_DATA);
+
+/* ============================================================
+   IMAGE PRELOADING
+   ------------------------------------------------------------
+   Fixes the flicker/delay reported when opening the collection
+   pages (Renaissance/Bloom/Heritage) or the towels page: those
+   <img> tags didn't exist in the DOM until the moment their view
+   was rendered, so the browser only started fetching each photo
+   at that exact instant - the shimmer placeholder (see the
+   .imgwrap CSS) sat there for as long as that fetch took, and the
+   real photo "popped in" once it arrived, which reads as a
+   flicker. This is most noticeable on the towels grid, where most
+   images are hosted on Unsplash's CDN rather than locally.
+
+   This warms the browser's own HTTP cache for every product photo
+   (all collections + towels) in the background, during idle time,
+   well before the user ever clicks a collection button or the
+   towels link. It never touches the DOM, never renders anything,
+   and doesn't change what appears on screen - by the time a grid
+   actually renders, the browser already has the bytes and paints
+   instantly instead of waiting on the network. */
+function preloadProductImages(){
+  PRODUCTS.forEach(p=>{
+    if(!p.img) return;
+    const img = new Image();
+    img.src = p.img;
+  });
+}
+if("requestIdleCallback" in window){
+  requestIdleCallback(preloadProductImages, {timeout:3000});
+} else {
+  setTimeout(preloadProductImages, 1200);
+}
 
 /* Applies admin-panel product overrides (price/name), fetched live from the
    server via GET /api/products (see api/products.js) - NOT from localStorage.
@@ -6091,7 +6114,7 @@ function updateWishlistUI(){
         <button class="btn outline" id="empty-wishlist-btn">לצפייה בקולקציה</button>
       </div>`;
     const btn = document.getElementById("empty-wishlist-btn");
-    if(btn) btn.addEventListener("click", ()=>{ closeWishlist(); window.location.href = pathForView("shop"); });
+    if(btn) btn.addEventListener("click", ()=>{ closeWishlist(); showView("shop"); });
     return;
   }
   itemsWrap.innerHTML = wishlist.map(id=>{
@@ -6262,7 +6285,7 @@ function updateCartUI(){
       </div>`;
     footWrap.style.display = "none";
     const btn = document.getElementById("empty-shop-btn");
-    if(btn) btn.addEventListener("click", ()=>{ closeCart(); window.location.href = pathForView("shop"); });
+    if(btn) btn.addEventListener("click", ()=>{ closeCart(); showView("shop"); });
   } else {
     footWrap.style.display = "block";
     itemsWrap.innerHTML = cart.map(c=>{
@@ -6308,7 +6331,7 @@ function closeCart(){
   document.getElementById("cart-overlay").classList.remove("open");
 }
 document.getElementById("cart-open-btn").addEventListener("click", openCart);
-document.getElementById("account-open-btn").addEventListener("click", ()=>{ window.location.href = pathForView("account"); });
+document.getElementById("account-open-btn").addEventListener("click", ()=>{ showView("account"); });
 document.getElementById("cart-close-btn").addEventListener("click", closeCart);
 document.getElementById("cart-overlay").addEventListener("click", closeCart);
 
@@ -6334,7 +6357,7 @@ document.getElementById("cart-share-btn").addEventListener("click", ()=>{
 document.getElementById("checkout-btn").addEventListener("click", ()=>{
   if(cart.length === 0) return;
   closeCart();
-  window.location.href = pathForView("checkout");
+  showView("checkout");
 });
 
 function checkoutShippingPrice(){
@@ -7221,7 +7244,7 @@ window.addEventListener("message", async (event)=>{
       ? `מספר הזמנה #${completedOrder.id}. שלחנו אישור למייל שלכם — נעדכן אתכם כשההזמנה תישלח.`
       : "שלחנו אישור למייל שלכם — נעדכן אתכם כשההזמנה תישלח.";
     showSuccessModal("ההזמנה התקבלה בהצלחה!", orderText, ()=>{
-      window.location.href = pathForView("home");
+      showView("home");
     });
   }, 1300);
 });
@@ -7489,7 +7512,7 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
   statementBtn.addEventListener("click", ()=>{
     panel.classList.remove("open");
     toggleBtn.setAttribute("aria-expanded", "false");
-    window.location.href = pathForView("accessibility");
+    showView("accessibility");
   });
 
   resetBtn.addEventListener("click", ()=>{
@@ -7507,16 +7530,7 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
 /* ============================================================
    INIT
    ============================================================ */
-/* Renders the current page (whichever view/product/collection the URL
-   points at) using whatever is in PRODUCTS right now. Runs once
-   immediately below - using the built-in catalog baked into this file -
-   so the first paint never waits on a network round-trip, and runs again
-   once applyAdminOverrides()/loadPopularProducts() resolve so any
-   admin-panel changes (price/image overrides, brand-new products, the
-   "popular" row) still get picked up. Safe to call twice: showView/
-   renderViewNow, history.replaceState and initScrollReveal are all
-   idempotent. */
-function renderCurrentView(){
+Promise.all([applyAdminOverrides(), loadPopularProducts()]).finally(function(){
   renderFeatured();
   renderCircleStrip();
 
@@ -7567,9 +7581,7 @@ function renderCurrentView(){
   const initStyle = document.getElementById("rs-initial-view-style");
   if(initStyle) initStyle.remove();
   if(window.initScrollReveal){ window.initScrollReveal(); }
-}
-renderCurrentView();
-Promise.all([applyAdminOverrides(), loadPopularProducts()]).finally(renderCurrentView);
+});
 applyContentOverrides();
 </script>
 
