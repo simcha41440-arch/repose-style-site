@@ -5181,7 +5181,7 @@ function productCardHTML(p){
       <button class="wish-btn ${isWished ? "active" : ""}" data-id="${p.id}" aria-label="${isWished ? "הסרה מהמועדפים" : "הוספה למועדפים"}" aria-pressed="${isWished}">
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-4.35-9.5-8.8C.7 8.3 2.2 4.3 6.2 4.3c2 0 3.5 1 5.8 2.5 2.3-1.5 3.8-2.5 5.8-2.5 4 0 5.5 4 3.5 7.9C19 16.65 12 21 12 21z"/></svg>
       </button>
-      <div class="imgwrap"><img src="${p.img}" alt="${p.name}" loading="lazy"></div>
+      <div class="imgwrap"><img src="${p.img}" alt="${p.name}" loading="eager" decoding="async"></div>
     </div>
     <div class="card-body">
       ${p.category !== "towel" && p.bedType === "twin" ? `<div class="cspec">2 סט מצעים יחיד 90/200</div>` : ""}
