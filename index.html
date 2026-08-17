@@ -3183,7 +3183,7 @@ if("serviceWorker" in navigator){
   <div class="bedding-feature">
     <div class="container bedding-feature-inner">
       <div class="bedding-img" id="bedding-img">
-        <img src="/images/site/bedding-only.png" alt="רפאוז סטייל - כלי מיטה בלבד, מצעי סאטן יוקרתיים" loading="lazy">
+        <img src="/images/site/bedding-only.png" alt="רפאוז סטייל - כלי מיטה בלבד, מצעי סאטן יוקרתיים" loading="lazy" width="1400" height="1400">
       </div>
       <div class="bedding-copy" id="bedding-copy">
         <div class="eyebrow">רפאוז סטייל · קולקציית מצעים יוקרתית</div>
@@ -3485,7 +3485,7 @@ if("serviceWorker" in navigator){
   <div class="container">
     <div class="feature-row about-feature">
       <div class="feature-frame">
-        <img data-content-key="about_image" src="https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&w=1000&h=1200&q=80" alt="מצעי רפאוז סטייל - איכות הבד" loading="lazy">
+        <img data-content-key="about_image" src="https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&w=1000&h=1200&q=80" alt="מצעי רפאוז סטייל - איכות הבד" loading="lazy" width="1000" height="1200">
       </div>
       <div class="feature-text">
         <div class="eyebrow">איך הכל התחיל</div>
@@ -4058,7 +4058,7 @@ if("serviceWorker" in navigator){
     <div class="footer-grid">
       <div class="footer-col">
         <div class="footer-brand">
-          <img src="/images/site/logo-shop.png" alt="רפאוז סטייל">
+          <img src="/images/site/logo-shop.png" alt="רפאוז סטייל" width="220" height="195">
           <span>רפאוז סטייל</span>
         </div>
         <p>רפאוז סטייל — יוקרה שתעצב לכם את הבית. מצעי כותנה פרימיום בעיצוב אלגנטי, לחדר שינה שמרגיש כמו סוויטה במלון בוטיק.</p>
@@ -5534,6 +5534,21 @@ const FEATURE_EYEBROW_LABELS = {
   okeanos: "Heritage"
 };
 
+/* Real pixel dimensions of each featured product's photo file, used only
+   to set width/height attributes on the <img> below so the browser can
+   reserve the correct box (via its intrinsic aspect ratio) before the
+   image has loaded - the CSS (width:100%;height:auto) already renders
+   each photo at its own natural ratio, so this doesn't change how any of
+   them look, it just lets the browser know that ratio in advance instead
+   of finding out only once the image arrives, which is what was causing
+   the page content below each featured photo to jump down the moment it
+   loaded. */
+const FEATURE_IMAGE_DIMENSIONS = {
+  yahalom: {w:1100, h:821},
+  prachim: {w:1189, h:862},
+  okeanos: {w:770, h:698}
+};
+
 function renderFeatured(){
   const featuredIds = ["yahalom","prachim","okeanos"];
   const wrap = document.getElementById("featured-container");
@@ -5541,10 +5556,12 @@ function renderFeatured(){
     const p = PRODUCTS.find(x=>x.id===id);
     const reverseClass = i % 2 === 1 ? "reverse" : "";
     const bedLabel = p.bedType === "twin" ? "זוג יחידים" : "זוגי";
+    const dim = FEATURE_IMAGE_DIMENSIONS[id];
+    const dimAttrs = dim ? ` width="${dim.w}" height="${dim.h}"` : "";
     return `
     <div class="feature-row ${reverseClass}" data-id="${p.id}">
       <div class="feature-frame" style="cursor:pointer;">
-        <img src="${p.img}" alt="${p.name}" loading="lazy" decoding="async">
+        <img src="${p.img}" alt="${p.name}" loading="lazy" decoding="async"${dimAttrs}>
         <div class="feature-plaque">
           <span class="fname serif">דגם ${p.name}</span>
           <span class="fprice">${priceHTML(p)}</span>
