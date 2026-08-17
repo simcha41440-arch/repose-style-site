@@ -5140,10 +5140,26 @@ function goToProduct(id){
    למהירות השרת. */
 const GOLD_LOADER_MS = 1500;
 const collectionLoadingOverlay = document.getElementById("collection-loading-overlay");
-function navigateWithGoldLoader(url){
+function navigateWithGoldLoader(url, collectionKey){
   if(!collectionLoadingOverlay){ window.location.href = url; return; }
   collectionLoadingOverlay.classList.add("active");
   collectionLoadingOverlay.setAttribute("aria-hidden","false");
+  /* The spinner's 1.5s wait was previously just dead time - the
+     destination collection page's own product photos only started
+     downloading once the real navigation kicked in a beat AFTER that,
+     which is exactly why they'd still fade in on arrival even after the
+     img-loaded fix above (that fix removes the flash for photos already
+     in cache - it can't do anything for photos that aren't). Warming
+     the browser's image cache for this collection's photos during the
+     spinner's own wait means that by the time the new page actually
+     loads, those photos are typically already cached, so they land in
+     the "already loaded" branch of the fix above and appear instantly
+     with no fade at all. */
+  if(collectionKey){
+    PRODUCTS.filter(p=>p.collection===collectionKey).forEach(p=>{
+      if(p.img){ new Image().src = p.img; }
+    });
+  }
   setTimeout(()=>{ window.location.href = url; }, GOLD_LOADER_MS);
 }
 /* אם מטיילים לאחור לדף שהיה שמור ב-bfcache באמצע ניווט כזה, לוודא
@@ -5170,13 +5186,13 @@ document.querySelectorAll("[data-nav]").forEach(el=>{
   if(el.tagName === "A" && el.getAttribute("href")) return; // קישור אמיתי - הדפדפן כבר מטפל בניווט עצמו
   el.addEventListener("click", (e)=>{
     e.preventDefault();
-    if(el.classList.contains("collection-btn")){ navigateWithGoldLoader(pathForView(el.dataset.nav)); return; }
+    if(el.classList.contains("collection-btn")){ navigateWithGoldLoader(pathForView(el.dataset.nav), el.dataset.collection); return; }
     window.location.href = pathForView(el.dataset.nav);
   });
   el.addEventListener("keydown", (e)=>{
     if(e.key !== "Enter" && e.key !== " ") return;
     e.preventDefault();
-    if(el.classList.contains("collection-btn")){ navigateWithGoldLoader(pathForView(el.dataset.nav)); return; }
+    if(el.classList.contains("collection-btn")){ navigateWithGoldLoader(pathForView(el.dataset.nav), el.dataset.collection); return; }
     window.location.href = pathForView(el.dataset.nav);
   });
 });
