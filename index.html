@@ -993,7 +993,17 @@ if("serviceWorker" in navigator){
       radial-gradient(900px 520px at 100% 15%, rgba(238,220,166,0.28), transparent 58%),
       radial-gradient(900px 600px at 0% 85%, rgba(216,185,108,0.22), transparent 60%),
       linear-gradient(180deg, #FFFDF8 0%, #FBF7EE 38%, #F6F0E1 72%, #F1E9D6 100%);
-    background-attachment:fixed;
+    /* background-attachment:fixed removed - it was the main cause of the
+       scroll feeling heavy/janky. A "fixed" background can't be handled
+       by the compositor: because it has to stay pinned to the viewport
+       while everything else moves, the browser has to repaint this
+       four-layer gradient (which covers the ENTIRE page) on the main
+       thread on every single scroll frame, on every page, the whole
+       time you scroll. With it removed the background scrolls normally
+       with the page like everything else and is composited once, so
+       scrolling no longer fights with it. Visually the difference is
+       negligible - these are soft, large-radius glows, not a sharp
+       pattern where a fixed vs. scrolling difference would be obvious. */
     color:var(--text-gold);
     font-family:'Rubik','Almoni Neue',sans-serif;
     font-weight:400;
@@ -1309,6 +1319,7 @@ if("serviceWorker" in navigator){
     filter:blur(18px);
     opacity:0;
     animation:lampPulse 7s ease-in-out infinite;
+    will-change:opacity;
   }
   .light-glow.spot-1{
     left:13%;bottom:24%;width:9vw;height:9vw;min-width:90px;min-height:90px;max-width:170px;max-height:170px;
@@ -2167,7 +2178,7 @@ if("serviceWorker" in navigator){
   .cart-subhead button svg{width:15px;height:15px;stroke:var(--taupe);}
   .cart-subhead button:hover{color:var(--gold-dark);}
 
-  .cart-items{flex:1;overflow-y:auto;padding:6px 20px;}
+  .cart-items{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:6px 20px;}
   .cart-item{
     display:flex;gap:14px;padding:18px 0;border-bottom:1px solid var(--line);
     align-items:flex-start;
@@ -2576,7 +2587,7 @@ if("serviceWorker" in navigator){
   #search-close-btn{background:none;border:none;color:var(--taupe);width:34px;height:34px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   #search-close-btn svg{width:18px;height:18px;stroke:var(--taupe);}
   #search-close-btn:hover svg{stroke:var(--ink);}
-  #search-results{overflow-y:auto;padding-top:18px;}
+  #search-results{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-top:18px;}
   .search-result-row{
     display:flex;align-items:center;gap:16px;padding:12px 6px;
     border-bottom:1px solid var(--line);cursor:pointer;transition:background .2s ease;
@@ -2601,7 +2612,7 @@ if("serviceWorker" in navigator){
   #payment-modal-overlay.open{opacity:1;pointer-events:auto;}
   #payment-modal{
     position:fixed;top:50%;left:50%;z-index:1001;
-    width:460px;max-width:92vw;max-height:88vh;overflow-y:auto;
+    width:460px;max-width:92vw;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
     background:
       radial-gradient(500px 260px at 100% 0%, rgba(210,175,113,0.18), transparent 60%),
       var(--ivory);
@@ -2646,7 +2657,7 @@ if("serviceWorker" in navigator){
   #success-modal-overlay.open{opacity:1;pointer-events:auto;}
   #success-modal{
     position:fixed;top:50%;left:50%;z-index:1011;
-    width:440px;max-width:90vw;max-height:88vh;overflow-y:auto;
+    width:440px;max-width:90vw;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
     background:
       radial-gradient(500px 260px at 50% 0%, rgba(210,175,113,0.2), transparent 62%),
       var(--ivory);
@@ -2698,7 +2709,7 @@ if("serviceWorker" in navigator){
   #newsletter-modal-overlay.open{opacity:1;pointer-events:auto;}
   #newsletter-modal{
     position:fixed;top:50%;left:50%;z-index:1001;
-    width:460px;max-width:92vw;max-height:88vh;overflow-y:auto;
+    width:460px;max-width:92vw;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
     background:linear-gradient(155deg, #322A22 0%, var(--ink) 45%, #241E19 100%);
     border:1px solid rgba(214,177,94,0.4);
     border-radius:4px;
@@ -5088,56 +5099,36 @@ if(siteNav){
   applyNavHeroProgress();
 }
 
-/* לחיצה על מוצר = ניווט מיידי בתוך האפליקציה (בלי רענון עמוד מלא).
-   ה-URL בסרגל הכתובות עדיין מתעדכן באמת (showView עושה pushState),
-   כך שקישור ישיר, "פתח בלשונית חדשה", וכפתורי קדימה/אחורה בדפדפן
-   ממשיכים לעבוד בדיוק כמו קודם - רק בלי להמתין לרענון עמוד מלא בכל
-   קליק. (בעבר זה עשה window.location.href, מה שגרם לדפדפן להוריד
-   ולהריץ מחדש את כל הדף - כולל שתי קריאות רשת - בכל ניווט; זה מה
-   שגרם לעיכוב של כמה שניות בכל לחיצה.) */
+/* לחיצה על מוצר = ניווט אמיתי בדפדפן (רענון עמוד מלא), בכוונה: כך
+   שגלגל הטעינה המובנה של הדפדפן בטאב אכן רץ, בדיוק כמו באתר רב-עמודי
+   רגיל. ה-middleware בצד השרת (ראו middleware.mjs, PAGE_LOAD_DELAY_MS)
+   מוסיף השהיה מכוונת של כ-1.25 שניות לפני שהתשובה חוזרת, כך שהספינר
+   מספיק להיראות בבירור בכל ניווט - במקום קפיצה כמעט-מיידית. */
 function goToProduct(id){
-  showView("product", true, id);
+  window.location.href = productPath(id);
 }
 
 /* גלגל טעינה זהוב שמופיע לרגע (1.25 שניות) בכל לחיצה על כפתורי
    הקולקציות בעמוד המצעים (Renaissance / Bloom / Heritage), לפני
    שהניווט בפועל קורה - נותן תחושת "טעינה" מפנקת. */
-const collectionLoadingOverlay = document.getElementById("collection-loading-overlay");
-function navigateWithCollectionLoader(navTarget){
-  if(!collectionLoadingOverlay){ showView(navTarget); return; }
-  collectionLoadingOverlay.classList.add("active");
-  collectionLoadingOverlay.setAttribute("aria-hidden","false");
-  setTimeout(()=>{
-    collectionLoadingOverlay.classList.remove("active");
-    collectionLoadingOverlay.setAttribute("aria-hidden","true");
-    showView(navTarget);
-  }, 1250);
-}
-
+/* כל ניווט = ניווט אמיתי בדפדפן, בכוונה (לא SPA) - כך שגלגל הטעינה
+   המובנה של הדפדפן בטאב אכן רץ בכל מעבר עמוד, בדיוק כמו באתר רב-עמודי
+   רגיל. ה-middleware (middleware.mjs) מוסיף השהיה מכוונת של כ-1.25
+   שניות בצד השרת כדי שהספינר יספיק להיראות. אלמנטים שהם <a href>
+   אמיתיים (רוב פריטי התפריט) לא נוגעים בהם כלל - הדפדפן מנווט אליהם
+   בעצמו, כולל תמיכה טבעית ב-Ctrl/Cmd/קליק אמצעי לפתיחה בלשונית חדשה.
+   רק כפתורים בלי href אמיתי (למשל כפתורי הקולקציות) מקבלים ניווט
+   דרך JS, לאותה כתובת בדיוק שהיו מקבלים כ-<a>. */
 document.querySelectorAll("[data-nav]").forEach(el=>{
+  if(el.tagName === "A" && el.getAttribute("href")) return; // קישור אמיתי - הדפדפן כבר מטפל בזה
   el.addEventListener("click", (e)=>{
-    // קישורים אמיתיים (<a href>): קליק "רגיל" (עכבר שמאלי, בלי מקש
-    // מאפנן) מנווט מיידית בתוך האפליקציה. קליק עם Ctrl/Cmd/Shift/Alt
-    // או קליק אמצעי (פתיחה בלשונית/חלון חדשים) ממשיך להתנהג באופן
-    // טבעי של הדפדפן, כי אז אין טעם (ואי אפשר) לדלג על רענון עמוד.
-    if(el.tagName === "A" && el.getAttribute("href")){
-      if(e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    }
     e.preventDefault();
-    if(el.classList.contains("collection-btn")){
-      navigateWithCollectionLoader(el.dataset.nav);
-      return;
-    }
-    showView(el.dataset.nav);
+    window.location.href = pathForView(el.dataset.nav);
   });
   el.addEventListener("keydown", (e)=>{
     if(e.key !== "Enter" && e.key !== " ") return;
     e.preventDefault();
-    if(el.classList.contains("collection-btn")){
-      navigateWithCollectionLoader(el.dataset.nav);
-      return;
-    }
-    showView(el.dataset.nav);
+    window.location.href = pathForView(el.dataset.nav);
   });
 });
 
@@ -6074,7 +6065,7 @@ function updateWishlistUI(){
         <button class="btn outline" id="empty-wishlist-btn">לצפייה בקולקציה</button>
       </div>`;
     const btn = document.getElementById("empty-wishlist-btn");
-    if(btn) btn.addEventListener("click", ()=>{ closeWishlist(); showView("shop"); });
+    if(btn) btn.addEventListener("click", ()=>{ closeWishlist(); window.location.href = pathForView("shop"); });
     return;
   }
   itemsWrap.innerHTML = wishlist.map(id=>{
@@ -6245,7 +6236,7 @@ function updateCartUI(){
       </div>`;
     footWrap.style.display = "none";
     const btn = document.getElementById("empty-shop-btn");
-    if(btn) btn.addEventListener("click", ()=>{ closeCart(); showView("shop"); });
+    if(btn) btn.addEventListener("click", ()=>{ closeCart(); window.location.href = pathForView("shop"); });
   } else {
     footWrap.style.display = "block";
     itemsWrap.innerHTML = cart.map(c=>{
@@ -6291,7 +6282,7 @@ function closeCart(){
   document.getElementById("cart-overlay").classList.remove("open");
 }
 document.getElementById("cart-open-btn").addEventListener("click", openCart);
-document.getElementById("account-open-btn").addEventListener("click", ()=>{ showView("account"); });
+document.getElementById("account-open-btn").addEventListener("click", ()=>{ window.location.href = pathForView("account"); });
 document.getElementById("cart-close-btn").addEventListener("click", closeCart);
 document.getElementById("cart-overlay").addEventListener("click", closeCart);
 
@@ -6317,7 +6308,7 @@ document.getElementById("cart-share-btn").addEventListener("click", ()=>{
 document.getElementById("checkout-btn").addEventListener("click", ()=>{
   if(cart.length === 0) return;
   closeCart();
-  showView("checkout");
+  window.location.href = pathForView("checkout");
 });
 
 function checkoutShippingPrice(){
@@ -7204,7 +7195,7 @@ window.addEventListener("message", async (event)=>{
       ? `מספר הזמנה #${completedOrder.id}. שלחנו אישור למייל שלכם — נעדכן אתכם כשההזמנה תישלח.`
       : "שלחנו אישור למייל שלכם — נעדכן אתכם כשההזמנה תישלח.";
     showSuccessModal("ההזמנה התקבלה בהצלחה!", orderText, ()=>{
-      showView("home");
+      window.location.href = pathForView("home");
     });
   }, 1300);
 });
@@ -7472,7 +7463,7 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
   statementBtn.addEventListener("click", ()=>{
     panel.classList.remove("open");
     toggleBtn.setAttribute("aria-expanded", "false");
-    showView("accessibility");
+    window.location.href = pathForView("accessibility");
   });
 
   resetBtn.addEventListener("click", ()=>{

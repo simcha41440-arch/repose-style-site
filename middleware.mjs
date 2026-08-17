@@ -38,11 +38,11 @@ const SITE_ORIGIN = "https://reposestyle.com";
  * traditional multi-page site. On Vercel this response is normally
  * near-instant, so that spinner barely has time to show. This adds a
  * deliberate wait here on the server before responding, so the tab
- * spinner is visibly running for a few seconds on every page
+ * spinner is visibly running for about 1.25 seconds on every page
  * navigation - a one-line, one-place knob (PAGE_LOAD_DELAY_MS) rather
  * than something scattered across every route.
  * ------------------------------------------------------------------ */
-const PAGE_LOAD_DELAY_MS = 2200;
+const PAGE_LOAD_DELAY_MS = 1250;
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -185,6 +185,8 @@ export const config = {
     "/privacy",
     "/terms",
     "/accessibility",
-    "/product/:id", // no SEO rewrite here (handled client-side), but still gets the delay above
+    "/product/:id",  // no SEO rewrite here (handled client-side), but still gets the delay above
+    "/checkout",     // no SEO rewrite (not indexable), but still gets the delay above
+    "/account",      // no SEO rewrite (not indexable), but still gets the delay above
   ],
 };
