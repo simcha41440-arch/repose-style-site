@@ -4608,8 +4608,8 @@ let wishlist = lsLoad("rstyle_wishlist", []); // [id]
 // Product ids ordered by how many were actually sold site-wide, most
 // popular first - powers the "הכי אהובים על הלקוחות שלנו" row at the
 // bottom of the product page (see loadPopularProducts/renderPopularProducts
-// below). Fetched once from GET /api/popular-products (server-side
-// aggregation of real orders - see api/popular-products.js), NOT
+// below). Fetched once from GET /api/products?popular=1 (server-side
+// aggregation of real orders - handled inside api/products.js, NOT
 // per-browser like cart/wishlist.
 let popularProductIds = [];
 let orders = lsLoad("rstyle_orders", []); // [{id, date, items:[{id,name,qty,price}], total, status}]
@@ -4722,6 +4722,76 @@ function viewForPath(path){
    ============================================================ */
 let _hasRenderedFirstView = false;
 
+/* ===== favicon "loading spinner" - shows a small rotating arc (canvas-
+   drawn, site gold color) in the browser tab itself for the duration of
+   each page transition, then restores the real favicon. Mimics the
+   browser's own native tab-loading spinner, which never shows here on its
+   own since navigation is client-side (no real page reload - see the
+   "nav-instant" comment above). Started from playPageTransitionBar below,
+   so it fires on the same triggers as the gold progress bar.
+
+   IMPORTANT: just mutating the href of the existing <link rel="icon">
+   tags does NOT reliably repaint Chrome's tab icon - it very often just
+   keeps showing the old one. The technique that actually works is to
+   remove the <link> and insert a brand-new element with the new href on
+   every frame, which is what this does. */
+var stopFaviconSpinner = (function(){
+  var SIZE = 32, FRAMES = 12;
+  var canvas = document.createElement("canvas");
+  canvas.width = SIZE; canvas.height = SIZE;
+  var ctx = canvas.getContext("2d");
+  var frames = [];
+  for(var i=0;i<FRAMES;i++){
+    ctx.clearRect(0,0,SIZE,SIZE);
+    var start = (i/FRAMES) * Math.PI*2;
+    ctx.beginPath();
+    ctx.arc(SIZE/2, SIZE/2, SIZE/2 - 4, start, start + Math.PI*1.4);
+    ctx.strokeStyle = "#B08A3E"; // var(--gold)
+    ctx.lineWidth = 4.5;
+    ctx.lineCap = "round";
+    ctx.stroke();
+    frames.push(canvas.toDataURL("image/png"));
+  }
+
+  // The real favicon <link> tags, exactly as shipped in <head> - hidden
+  // (not removed from the DOM permanently) while the spinner plays, then
+  // put back verbatim.
+  var originalLinks = Array.prototype.slice.call(document.querySelectorAll('link[rel="icon"]'));
+  var spinTimer = null, stopTimer = null, frameIdx = 0, spinLink = null, spinning = false;
+
+  function showFrame(idx){
+    var next = document.createElement("link");
+    next.rel = "icon";
+    next.href = frames[idx];
+    document.head.appendChild(next);
+    if(spinLink) document.head.removeChild(spinLink);
+    spinLink = next;
+  }
+  function restore(){
+    clearInterval(spinTimer); spinTimer = null;
+    spinning = false;
+    if(spinLink){ document.head.removeChild(spinLink); spinLink = null; }
+    originalLinks.forEach(function(l){ document.head.appendChild(l); });
+  }
+  window.__startFaviconSpinner = function(durationMs){
+    if(!originalLinks.length) return;
+    clearInterval(spinTimer);
+    clearTimeout(stopTimer);
+    if(!spinning){
+      spinning = true;
+      originalLinks.forEach(function(l){ if(l.parentNode) l.parentNode.removeChild(l); });
+      frameIdx = 0;
+      showFrame(frameIdx);
+    }
+    spinTimer = setInterval(function(){
+      frameIdx = (frameIdx + 1) % FRAMES;
+      showFrame(frameIdx);
+    }, 60);
+    stopTimer = setTimeout(restore, durationMs);
+  };
+  return restore;
+})();
+
 /* ===== gold top progress bar - fires on every navigation: forward
    clicks AND browser back/forward (popstate), since both paths run
    through showView(). See click-delegation script near end of <body>
@@ -4736,6 +4806,7 @@ function playPageTransitionBar(){
   // force reflow so the animation restarts even on rapid clicks
   void bar.offsetWidth;
   bar.classList.add('loading');
+  if(window.__startFaviconSpinner) window.__startFaviconSpinner(700);
 
   __transitionBarFinishTimer = setTimeout(function(){
     bar.classList.remove('loading');
@@ -5680,8 +5751,9 @@ document.getElementById("sort-select").addEventListener("change", (e)=>{
    RENDER: PRODUCT DETAIL
    ============================================================ */
 /* Fetches which products actually sell the most, site-wide, from
-   GET /api/popular-products (server-side aggregation of real orders - see
-   api/popular-products.js). Called once at INIT alongside
+   GET /api/products?popular=1 (server-side aggregation of real orders -
+   handled inside api/products.js, not its own function - see the comment
+   there). Called once at INIT alongside
    applyAdminOverrides(); the result is cached in popularProductIds for the
    rest of the session rather than re-fetched on every product page view. */
 async function loadPopularProducts(){
@@ -5690,7 +5762,7 @@ async function loadPopularProducts(){
     const timeout = setTimeout(()=>controller.abort(), 4000); // never block the site if the API is slow/down
     let res;
     try{
-      res = await fetch("/api/popular-products", { signal: controller.signal });
+      res = await fetch("/api/products?popular=1", { signal: controller.signal });
     } finally {
       clearTimeout(timeout);
     }

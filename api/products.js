@@ -18,6 +18,48 @@ module.exports = async (req, res) => {
   }
 
   if (req.method === 'GET') {
+    // ?popular=1 - a completely separate, public, read-only query: the
+    // top-selling product ids/quantities, aggregated from real orders.
+    // Used by the storefront to render a "מוצרים פופולריים" row instead of
+    // the old per-visitor "recently viewed" one. Handled here (instead of
+    // its own /api/popular-products.js file) to avoid adding another
+    // serverless function to the project - Vercel's plan caps how many a
+    // single project can have, and this project is already at that cap.
+    if (req.query && req.query.popular) {
+      const { data: orderRows, error: ordersErr } = await withFriendlyError(
+        supabase
+          .from('orders')
+          .select('items, status, created_at')
+          .neq('status', 'cancelled')
+          .order('created_at', { ascending: false })
+          .limit(1000)
+      );
+      if (ordersErr) {
+        return res.status(500).json({ error: ordersErr.message });
+      }
+      const totals = {};
+      (orderRows || []).forEach(function (order) {
+        let items;
+        try {
+          items = Array.isArray(order.items) ? order.items : JSON.parse(order.items);
+        } catch (e) {
+          items = [];
+        }
+        (items || []).forEach(function (it) {
+          const id = it && it.id;
+          if (!id) return;
+          const qty = Number(it.qty) || 1;
+          totals[id] = (totals[id] || 0) + qty;
+        });
+      });
+      const popular = Object.keys(totals)
+        .map(function (id) { return { id: id, qty: totals[id] }; })
+        .sort(function (a, b) { return b.qty - a.qty; })
+        .slice(0, 12);
+      res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=3600');
+      return res.status(200).json({ popular: popular });
+    }
+
     // Returns EVERY override row, active and inactive alike - not just
     // active=true ones. The storefront (applyAdminOverrides in index.html)
     // needs to see active:false rows too, since that's how it knows to hide
