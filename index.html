@@ -3439,9 +3439,9 @@ if("serviceWorker" in navigator){
       <div class="product-grid" id="related-grid"></div>
     </div>
 
-    <div class="related" id="recently-viewed-section" style="display:none;">
-      <h3>נצפה לאחרונה</h3>
-      <div class="product-grid" id="recently-viewed-grid"></div>
+    <div class="related" id="popular-products-section" style="display:none;">
+      <h3>הכי אהובים על הלקוחות שלנו</h3>
+      <div class="product-grid" id="popular-products-grid"></div>
     </div>
   </div>
 </section>
@@ -4467,7 +4467,7 @@ const PRODUCTS = [
     bg:"linear-gradient(145deg,#F7E4E4,#EAC9C2)",
     cotton:100, thread:400, bedType:"twin", tier:"premium", collection:"bloom",
     img:"/images/products/prachim.jpg", desc:1,
-    tag:"רב מכר", pillowsIncluded:true
+    tag:"רב מכר"
   },
   {
     id:"simfonia", name:"סימפוניה", nameEn:"SIMFONIA", price:700,
@@ -4479,7 +4479,7 @@ const PRODUCTS = [
     id:"rakefet", name:"רקפת", nameEn:"RAKEFET", price:890,
     bg:"linear-gradient(145deg,#EBD8DD,#C9A9B0)",
     cotton:100, thread:400, bedType:"twin", tier:"premium", collection:"bloom",
-    img:"/images/products/rakefet.jpg", desc:1, pillowsIncluded:true
+    img:"/images/products/rakefet.jpg", desc:1
   },
   {
     id:"yahalom", name:"יהלום", nameEn:"YAHALOM", price:1490,
@@ -4493,7 +4493,7 @@ const PRODUCTS = [
     id:"london", name:"לונדון", nameEn:"LONDON", price:690,
     bg:"linear-gradient(145deg,#F5EEDF,#E3D3AC)",
     cotton:100, thread:400, bedType:"twin", tier:"premium", collection:"renaissance", customizable:true,
-    img:"/images/products/london.jpg", desc:1, pillowsIncluded:true
+    img:"/images/products/london.jpg", desc:1
   },
   {
     id:"royal", name:"רויאל", nameEn:"ROYAL", price:1190,
@@ -4529,7 +4529,7 @@ const PRODUCTS = [
     id:"simfonia-premium", name:"פוקסיה", nameEn:"FUCHSIA", price:1000,
     bg:"linear-gradient(145deg,#F6F1EA,#D8C2A6)",
     cotton:100, thread:400, bedType:"twin", tier:"premium", collection:"bloom",
-    img:"/images/products/simfonia-premium.jpg", desc:1, pillowsIncluded:true
+    img:"/images/products/simfonia-premium.jpg", desc:1
   },
   {
     id:"elegantia", name:"מלודיה", nameEn:"MELODY", price:700,
@@ -4605,11 +4605,13 @@ function lsSave(key, value){
 
 let cart = lsLoad("rstyle_cart", []); // {id, qty}
 let wishlist = lsLoad("rstyle_wishlist", []); // [id]
-// Product ids the shopper has opened, most-recent-first - powers the
-// "נצפה לאחרונה" row at the bottom of the product page (see
-// trackRecentlyViewed/renderRecentlyViewed below). Purely a per-browser
-// localStorage list, same as cart/wishlist - never sent to the server.
-let recentlyViewed = lsLoad("rstyle_recently_viewed", []); // [id, ...]
+// Product ids ordered by how many were actually sold site-wide, most
+// popular first - powers the "הכי אהובים על הלקוחות שלנו" row at the
+// bottom of the product page (see loadPopularProducts/renderPopularProducts
+// below). Fetched once from GET /api/popular-products (server-side
+// aggregation of real orders - see api/popular-products.js), NOT
+// per-browser like cart/wishlist.
+let popularProductIds = [];
 let orders = lsLoad("rstyle_orders", []); // [{id, date, items:[{id,name,qty,price}], total, status}]
 let currentProductId = null;
 let currentQty = 1;
@@ -5295,6 +5297,18 @@ async function applyAdminOverrides(){
       p.compareAtPrice = (o.compare_at_price !== undefined && o.compare_at_price !== null && o.compare_at_price !== "") ? Number(o.compare_at_price) : null;
       p.outOfStock = !!o.out_of_stock;
     });
+
+    // Admin can permanently delete a built-in catalog product from the
+    // "ניהול מוצרים" tab - that's saved as an override row with
+    // active:false (there's no built-in fallback to "reset to" the way
+    // there is for price/name, so unlike those fields this one actually
+    // removes the product from every grid, search result, and direct link
+    // instead of just resetting a value).
+    for(let i = PRODUCTS.length - 1; i >= 0; i--){
+      const o = overrides[PRODUCTS[i].id];
+      if(o && o.active === false) PRODUCTS.splice(i, 1);
+    }
+
     syncProductStructuredData();
   }catch(e){ /* network error/timeout - fall back to the built-in catalog */ }
 }
@@ -5665,25 +5679,37 @@ document.getElementById("sort-select").addEventListener("change", (e)=>{
 /* ============================================================
    RENDER: PRODUCT DETAIL
    ============================================================ */
-/* Records that the shopper opened this product (most-recent-first, no
-   duplicates, capped so the localStorage list doesn't grow forever) -
-   called once per product-page view, right before rendering it. */
-function trackRecentlyViewed(id){
-  recentlyViewed = recentlyViewed.filter(function(x){ return x !== id; });
-  recentlyViewed.unshift(id);
-  if(recentlyViewed.length > 12) recentlyViewed = recentlyViewed.slice(0, 12);
-  lsSave("rstyle_recently_viewed", recentlyViewed);
+/* Fetches which products actually sell the most, site-wide, from
+   GET /api/popular-products (server-side aggregation of real orders - see
+   api/popular-products.js). Called once at INIT alongside
+   applyAdminOverrides(); the result is cached in popularProductIds for the
+   rest of the session rather than re-fetched on every product page view. */
+async function loadPopularProducts(){
+  try{
+    const controller = new AbortController();
+    const timeout = setTimeout(()=>controller.abort(), 4000); // never block the site if the API is slow/down
+    let res;
+    try{
+      res = await fetch("/api/popular-products", { signal: controller.signal });
+    } finally {
+      clearTimeout(timeout);
+    }
+    if(!res.ok) return;
+    const data = await res.json();
+    popularProductIds = (Array.isArray(data.popular) ? data.popular : []).map(function(x){ return x.id; });
+  }catch(e){ /* network error/timeout - section just stays hidden */ }
 }
 
-/* Renders the "נצפה לאחרונה" row - up to 8 previously-viewed products,
-   excluding whichever product page is currently open, most-recent-first.
-   Hides the whole section when there's nothing to show yet (first-ever
-   visit, or only the current product has been viewed so far). */
-function renderRecentlyViewed(currentId){
-  const section = document.getElementById("recently-viewed-section");
-  const grid = document.getElementById("recently-viewed-grid");
+/* Renders the "הכי אהובים על הלקוחות שלנו" row - up to 8 of the
+   best-selling products site-wide (by real order quantity), excluding
+   whichever product page is currently open. Hides the whole section when
+   there's nothing to show yet (no order history, or the fetch hasn't
+   resolved/failed). */
+function renderPopularProducts(currentId){
+  const section = document.getElementById("popular-products-section");
+  const grid = document.getElementById("popular-products-grid");
   if(!section || !grid) return;
-  const items = recentlyViewed
+  const items = popularProductIds
     .filter(function(id){ return id !== currentId; })
     .map(function(id){ return PRODUCTS.find(function(p){ return p.id === id; }); })
     .filter(Boolean)
@@ -5700,7 +5726,6 @@ function renderRecentlyViewed(currentId){
 function renderProductDetail(){
   const p = PRODUCTS.find(x=>x.id===currentProductId);
   if(!p) return;
-  trackRecentlyViewed(p.id);
   document.getElementById("pd-breadcrumb-name").textContent = displayName(p);
   const pdCatalogBtn = document.getElementById("pd-breadcrumb-catalog");
   if(pdCatalogBtn){
@@ -5784,7 +5809,7 @@ function renderProductDetail(){
   relGrid.innerHTML = relatedFill.map(productCardHTML).join("");
   attachCardClicks(relGrid);
 
-  renderRecentlyViewed(p.id);
+  renderPopularProducts(p.id);
 
   initMagnifier();
 }
@@ -7464,7 +7489,7 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
 /* ============================================================
    INIT
    ============================================================ */
-applyAdminOverrides().finally(function(){
+Promise.all([applyAdminOverrides(), loadPopularProducts()]).finally(function(){
   renderFeatured();
   renderCircleStrip();
 

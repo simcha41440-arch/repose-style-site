@@ -1460,54 +1460,132 @@
 
   function renderProducts(products){
     const wrap = document.getElementById('productsTableWrap');
-    if (!products || !products.length) {
-      wrap.innerHTML = '<div class="empty">אין כרגע שום מוצר עם מחיר/שם ששונה &mdash; כל האתר מציג את המחירים המקוריים.</div>';
+    const overridesById = {};
+    (products || []).forEach(function(p){ overridesById[p.id] = p; });
+
+    // Full row list: every built-in catalog product (whether or not it has
+    // an override yet - a never-touched product still needs to show up so
+    // it can be deleted), plus any override-only rows that aren't in the
+    // catalog at all (admin-added custom products).
+    const rows = CATALOG.map(function(c){ return { id: c.id, catalogEntry: c, override: overridesById[c.id] || null }; });
+    Object.keys(overridesById).forEach(function(id){
+      if (CATALOG_BY_ID[id]) return; // already covered above
+      rows.push({ id: id, catalogEntry: null, override: overridesById[id] });
+    });
+
+    if (!rows.length) {
+      wrap.innerHTML = '<div class="empty">אין מוצרים.</div>';
       return;
     }
+
     let html = '<table><thead><tr>' +
       '<th>מוצר</th><th>שם חלופי</th><th>מחיר מקורי</th><th>מחיר חדש</th><th>מחיר לפני מבצע</th><th>מלאי</th><th>סטטוס</th><th>עודכן</th><th></th>' +
       '</tr></thead><tbody>';
-    products.forEach(function(p){
-      const catalogEntry = CATALOG_BY_ID[p.id];
-      const isCustom = !!p.category; // added via "הוספת מוצר חדש" - not an override of a built-in catalog product
-      const displayName = isCustom ? (p.name + ' (' + escapeHtml(p.id) + ') - מוצר שנוסף')
-        : (catalogEntry ? catalogEntry.name : p.id) + ' (' + escapeHtml(p.id) + ')';
-      const onSale = p.compare_at_price != null && Number(p.compare_at_price) > Number(p.price != null ? p.price : (catalogEntry ? catalogEntry.price : 0));
-      const actions = isCustom
-        ? ('<button type="button" class="btn outline small" data-edit-product="' + escapeHtml(p.id) + '">עריכה מלאה</button> ' +
-           '<button type="button" class="btn outline small" data-duplicate-product="' + escapeHtml(p.id) + '">שכפול</button> ' +
-           '<button type="button" class="btn danger small" data-delete-product="' + escapeHtml(p.id) + '">מחיקת מוצר</button>')
-        : ('<button type="button" class="btn outline small" data-duplicate-product="' + escapeHtml(p.id) + '">שכפול</button> ' +
-           '<button type="button" class="btn outline small" data-delete-product="' + escapeHtml(p.id) + '">איפוס למקור</button>');
+    rows.forEach(function(row){
+      const id = row.id;
+      const catalogEntry = row.catalogEntry;
+      const p = row.override;
+      const isCustom = !catalogEntry; // added via "הוספת מוצר חדש" - not part of the built-in catalog at all
+      const isDeleted = !!p && p.active === false;
+      const displayName = isCustom ? ((p && p.name) || id) + ' (' + escapeHtml(id) + ') - מוצר שנוסף'
+        : catalogEntry.name + ' (' + escapeHtml(id) + ')';
+      const price = p && p.price != null ? p.price : null;
+      const onSale = p && p.compare_at_price != null && Number(p.compare_at_price) > Number(price != null ? price : (catalogEntry ? catalogEntry.price : 0));
+
+      let actions;
+      if (isDeleted) {
+        // Deleted product (catalog product with active:false, or a custom
+        // product an admin deactivated rather than removed outright) -
+        // only offer restoring it, no price/stock edits while it's hidden.
+        actions = '<button type="button" class="btn outline small" data-restore-product="' + escapeHtml(id) + '">שחזור מוצר</button>';
+      } else if (isCustom) {
+        actions = '<button type="button" class="btn outline small" data-edit-product="' + escapeHtml(id) + '">עריכה מלאה</button> ' +
+           '<button type="button" class="btn outline small" data-duplicate-product="' + escapeHtml(id) + '">שכפול</button> ' +
+           '<button type="button" class="btn danger small" data-delete-product="' + escapeHtml(id) + '">מחיקת מוצר</button>';
+      } else {
+        actions = '<button type="button" class="btn outline small" data-duplicate-product="' + escapeHtml(id) + '">שכפול</button> ' +
+           (p ? '<button type="button" class="btn outline small" data-reset-product="' + escapeHtml(id) + '">איפוס מחיר/שם למקור</button> ' : '') +
+           '<button type="button" class="btn danger small" data-delete-product="' + escapeHtml(id) + '">מחיקת מוצר</button>';
+      }
+
       html += '<tr>' +
         '<td>' + escapeHtml(displayName) + '</td>' +
-        '<td>' + escapeHtml(p.name || '-') + '</td>' +
+        '<td>' + escapeHtml((p && p.name) || '-') + '</td>' +
         '<td>' + (catalogEntry ? '₪' + escapeHtml(catalogEntry.price) : '-') + '</td>' +
-        '<td>' + (p.price != null ? '₪' + escapeHtml(p.price) : '-') + '</td>' +
-        '<td>' + (p.compare_at_price != null ? '₪' + escapeHtml(p.compare_at_price) + (onSale ? ' <span class="tag active">במבצע</span>' : '') : '-') + '</td>' +
-        '<td>' + (p.out_of_stock ? '<span class="tag inactive">אזל מהמלאי</span>' : '<span class="tag active">במלאי</span>') + '</td>' +
-        '<td><span class="tag active">פעיל</span></td>' +
-        '<td>' + (p.updated_at ? new Date(p.updated_at).toLocaleString('he-IL') : '-') + '</td>' +
+        '<td>' + (price != null ? '₪' + escapeHtml(price) : '-') + '</td>' +
+        '<td>' + (p && p.compare_at_price != null ? '₪' + escapeHtml(p.compare_at_price) + (onSale ? ' <span class="tag active">במבצע</span>' : '') : '-') + '</td>' +
+        '<td>' + (p && p.out_of_stock ? '<span class="tag inactive">אזל מהמלאי</span>' : '<span class="tag active">במלאי</span>') + '</td>' +
+        '<td>' + (isDeleted ? '<span class="tag inactive">נמחק</span>' : '<span class="tag active">פעיל</span>') + '</td>' +
+        '<td>' + (p && p.updated_at ? new Date(p.updated_at).toLocaleString('he-IL') : '-') + '</td>' +
         '<td>' + actions + '</td>' +
         '</tr>';
     });
     html += '</tbody></table>';
     wrap.innerHTML = html;
 
+    // Permanently deletes a product from the site. For a built-in catalog
+    // product this saves an override row with active:false (there's no
+    // "original" to fall back to the way there is for price/name, so this
+    // is the only way to hide one) - see applyAdminOverrides in index.html,
+    // which filters PRODUCTS against exactly this flag. For a custom
+    // admin-added product (no catalog fallback at all) this instead removes
+    // its override row outright, since active:false would just leave an
+    // incomplete, unreachable row behind with nothing to restore it to but
+    // the same button.
     wrap.querySelectorAll('[data-delete-product]').forEach(function(btn){
       btn.addEventListener('click', async function(){
         const id = btn.getAttribute('data-delete-product');
+        const catalogEntry = CATALOG_BY_ID[id];
         const p = lastProductOverrides[id];
-        const isCustom = p && !!p.category;
-        const msg = isCustom
-          ? 'למחוק את המוצר "' + (p.name || id) + '" לצמיתות? הוא יוסר מהאתר.'
-          : 'לאפס את המחיר/שם עבור "' + id + '" ולהחזיר למקור?';
-        if (!confirm(msg)) return;
+        const name = (catalogEntry && catalogEntry.name) || (p && p.name) || id;
+        const confirmMsg = catalogEntry
+          ? 'למחוק את המוצר "' + name + '"? הוא יוסר מהאתר לכל המבקרים (אפשר לשחזר אותו מהרשימה בכל שלב).'
+          : 'למחוק את המוצר "' + name + '" לצמיתות? הוא יוסר מהאתר.';
+        if (!confirm(confirmMsg)) return;
+        btn.disabled = true;
+        try {
+          if (catalogEntry) {
+            await api('/api/products', { method:'POST', body: JSON.stringify({ id: id, active: false }) });
+          } else {
+            await api('/api/products?id=' + encodeURIComponent(id), { method:'DELETE' });
+          }
+          loadProducts();
+        } catch(e) {
+          alert(e.message || 'שגיאה במחיקה.');
+          btn.disabled = false;
+        }
+      });
+    });
+
+    wrap.querySelectorAll('[data-restore-product]').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        const id = btn.getAttribute('data-restore-product');
+        btn.disabled = true;
+        try {
+          await api('/api/products', { method:'POST', body: JSON.stringify({ id: id, active: true }) });
+          loadProducts();
+        } catch(e) {
+          alert(e.message || 'שגיאה בשחזור.');
+          btn.disabled = false;
+        }
+      });
+    });
+
+    // "איפוס מחיר/שם למקור" - only shown for a catalog product that has an
+    // override row and is NOT deleted. Removes the override row entirely
+    // (so price/name/image go back to the built-in defaults) without
+    // touching the product's visibility.
+    wrap.querySelectorAll('[data-reset-product]').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        const id = btn.getAttribute('data-reset-product');
+        if (!confirm('לאפס את המחיר/שם עבור "' + id + '" ולהחזיר למקור?')) return;
+        btn.disabled = true;
         try {
           await api('/api/products?id=' + encodeURIComponent(id), { method:'DELETE' });
           loadProducts();
         } catch(e) {
-          alert(e.message || 'שגיאה במחיקה.');
+          alert(e.message || 'שגיאה באיפוס.');
+          btn.disabled = false;
         }
       });
     });

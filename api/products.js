@@ -18,8 +18,14 @@ module.exports = async (req, res) => {
   }
 
   if (req.method === 'GET') {
+    // Returns EVERY override row, active and inactive alike - not just
+    // active=true ones. The storefront (applyAdminOverrides in index.html)
+    // needs to see active:false rows too, since that's how it knows to hide
+    // a built-in catalog product that an admin deleted; if this only
+    // returned active rows, a deleted product would just vanish from the
+    // response and silently fall back to being shown again.
     const { data, error } = await withFriendlyError(
-      supabase.from('product_overrides').select('*').eq('active', true)
+      supabase.from('product_overrides').select('*')
     );
 
     if (error) {
