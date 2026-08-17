@@ -952,6 +952,15 @@ if("serviceWorker" in navigator){
      even reaches the <img> tag in the body - this is what removes the
      brief dark flash visitors saw before the photo appeared. -->
 <link rel="preload" as="image" href="/images/site/hero-new/hero-bg-1.jpg" fetchpriority="high">
+<!-- The 3 collection-nav button photos (Renaissance/Bloom/Heritage) are only
+     ever set via JS (see setCollectionNavPhotos), so without a preload hint
+     the browser doesn't start fetching them until that script runs partway
+     through the page - these hints let the browser start fetching them
+     immediately, in parallel with everything else, so they're ready (or
+     much closer to ready) by the time the buttons need them. -->
+<link rel="preload" as="image" href="/images/products/yahalom.jpg">
+<link rel="preload" as="image" href="/images/products/simfonia-premium.jpg">
+<link rel="preload" as="image" href="/images/products/star.jpg">
 <style>
   :root{
     --cream:#E7C77E;
@@ -1863,6 +1872,17 @@ if("serviceWorker" in navigator){
     background:rgba(20,16,12,0.28);
     margin-bottom:2px;
   }
+  /* The photo itself is set via JS (background-image has no "loaded"
+     event of its own to hook into - see setCollectionNavPhotos), so it's
+     faded in on a dedicated class toggled once the photo is actually
+     confirmed loaded, the same way product-card photos fade in, instead
+     of just popping into place the instant the network request finishes. */
+  .collection-btn{background-image:none !important;}
+  .collection-btn .cn-bg{
+    position:absolute;inset:0;z-index:-2;background-size:cover;background-position:center;
+    opacity:0;transition:opacity .5s ease;
+  }
+  .collection-btn .cn-bg.cn-bg-ready{opacity:1;}
   .collection-btn .cn-name{font-size:24px;font-weight:700;letter-spacing:0.03em;text-shadow:0 2px 10px rgba(0,0,0,0.55);}
   .collection-btn .cn-sub{font-size:13px;color:rgba(255,255,255,0.9);font-weight:400;letter-spacing:0.04em;}
   @media (max-width:900px){
@@ -3254,14 +3274,17 @@ if("serviceWorker" in navigator){
       <p>כל הסטים מיוצרים מבדי כותנה באריגת סאטן, בגימור המעניק לחדר השינה שלכם מראה של מלון יוקרה.</p>
       <div class="collection-nav">
         <button class="collection-btn" data-nav="shop-renaissance" data-collection="renaissance">
+          <span class="cn-bg" aria-hidden="true"></span>
           <span class="cn-name">Renaissance</span>
           <span class="cn-sub">כותנה 100% · 400 חוט</span>
         </button>
         <button class="collection-btn" data-nav="shop-bloom" data-collection="bloom">
+          <span class="cn-bg" aria-hidden="true"></span>
           <span class="cn-name">Bloom</span>
           <span class="cn-sub">כותנה 100% · 400 חוט</span>
         </button>
         <button class="collection-btn" data-nav="shop-heritage" data-collection="heritage">
+          <span class="cn-bg" aria-hidden="true"></span>
           <span class="cn-name">Heritage</span>
           <span class="cn-sub">כותנה 50% · 250 חוט</span>
         </button>
@@ -7394,7 +7417,21 @@ function setCollectionNavPhotos(){
     document.querySelectorAll(".collection-btn[data-collection]").forEach(btn=>{
       const key = btn.dataset.collection;
       const p = PRODUCTS.find(x=>x.id === featuredByCollection[key]);
-      if(p && p.img){ btn.style.backgroundImage = `url("${p.img}")`; }
+      const bg = btn.querySelector(".cn-bg");
+      if(!p || !p.img || !bg) return;
+      if(bg.dataset.src === p.img) return; // already set (or already loading) - avoid re-requesting on repeat calls
+      bg.dataset.src = p.img;
+      /* Preload via a plain Image() so we get a real "loaded" moment to fade
+         in on (background-image has no load event of its own). If it's
+         already cached, the browser resolves this on the next tick anyway,
+         so cached photos still appear essentially instantly - just never as
+         a hard, placeholder-less pop. */
+      const loader = new Image();
+      loader.onload = ()=>{
+        bg.style.backgroundImage = `url("${p.img}")`;
+        bg.classList.add("cn-bg-ready");
+      };
+      loader.src = p.img;
     });
   }catch(e){ console.error("setCollectionNavPhotos failed:", e); }
 }
