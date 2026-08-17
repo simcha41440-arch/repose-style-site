@@ -5108,18 +5108,20 @@ function goToProduct(id){
   window.location.href = productPath(id);
 }
 
-/* גלגל טעינה זהוב שמופיע לרגע (כ-1.5 שניות) לפני שהניווט האמיתי
-   בדפדפן מתבצע בפועל - על כפתורי הקולקציות (Renaissance/Bloom/
-   Heritage) ובכניסה לעמוד המגבות. הניווט עצמו הוא רענון דף אמיתי
-   (ראו למעלה) שכבר לוקח כ-1.25 שניות בצד השרת (middleware.mjs) -
-   השכבה הזו לא מוסיפה שום השהיה נוספת משלה, היא רק "מלבישה" את
-   הזמן שהדפדפן ממילא מחכה בעיצוב זהוב ומרשים במקום שהדף הישן פשוט
-   יישאר תקוע כמו שהוא. היא נשארת גלויה עד שהדף בפועל מוחלף. */
+/* גלגל טעינה זהוב שמסתובב בדיוק 1.5 שניות (GOLD_LOADER_MS) לפני
+   שהניווט האמיתי בדפדפן מופעל בפועל - על כפתורי הקולקציות
+   (Renaissance/Bloom/Heritage) ובקישור לעמוד המגבות. ה-1.5 שניות
+   האלה הן טיימר עצמאי משלה, לא תלוי במשך הטעינה האמיתית של הדף
+   (ה-middleware בצד השרת מוסיף עוד כ-1.25 שניות משלו אחרי זה, ראו
+   middleware.mjs) - כך שהספינר תמיד יסתובב בול שניה וחצי, בלי קשר
+   למהירות השרת. */
+const GOLD_LOADER_MS = 1500;
 const collectionLoadingOverlay = document.getElementById("collection-loading-overlay");
-function showGoldLoader(){
-  if(!collectionLoadingOverlay) return;
+function navigateWithGoldLoader(url){
+  if(!collectionLoadingOverlay){ window.location.href = url; return; }
   collectionLoadingOverlay.classList.add("active");
   collectionLoadingOverlay.setAttribute("aria-hidden","false");
+  setTimeout(()=>{ window.location.href = url; }, GOLD_LOADER_MS);
 }
 /* אם מטיילים לאחור לדף שהיה שמור ב-bfcache באמצע ניווט כזה, לוודא
    שהשכבה לא נשארת תקועה גלויה. */
@@ -5132,29 +5134,26 @@ window.addEventListener("pageshow", ()=>{
 /* כל ניווט = ניווט אמיתי בדפדפן, בכוונה (לא SPA) - כך שגלגל הטעינה
    המובנה של הדפדפן בטאב אכן רץ בכל מעבר עמוד, בדיוק כמו באתר רב-עמודי
    רגיל. ה-middleware (middleware.mjs) מוסיף השהיה מכוונת של כ-1.25
-   שניות בצד השרת כדי שהספינר יספיק להיראות. אלמנטים שהם <a href>
-   אמיתיים (רוב פריטי התפריט) לא נוגעים בהם כלל - הדפדפן מנווט אליהם
-   בעצמו, כולל תמיכה טבעית ב-Ctrl/Cmd/קליק אמצעי לפתיחה בלשונית חדשה
-   - חוץ מקישור "מגבות", שמקבל מאזין נוסף (בלי preventDefault) רק
-   כדי להציג את השכבה הזהובה, בלי לשנות את הניווט הטבעי שלו בכלום.
-   רק כפתורים בלי href אמיתי (למשל כפתורי הקולקציות) מקבלים ניווט
-   דרך JS, לאותה כתובת בדיוק שהיו מקבלים כ-<a>. */
+   שניות בצד השרת. אלמנטים שהם <a href> אמיתיים (רוב פריטי התפריט,
+   כולל "מגבות") לא נוגעים בהם כלל - הדפדפן מנווט אליהם בעצמו, כולל
+   תמיכה טבעית ב-Ctrl/Cmd/קליק אמצעי לפתיחה בלשונית חדשה, בלי שכבת
+   הספינר הזהוב (זו רק לכפתורי הקולקציות - ראו navigateWithGoldLoader
+   למעלה - שאין להם href אמיתי לנווט אליו בעצמם, לכן הם ממילא צריכים
+   טיפול ב-JS; קישור אמיתי כמו "מגבות" לא צריך את זה, ושכבת ה-1.5
+   שניות שלה רק עיכבה אותו בלי סיבה מעל השהיית השרת עצמה). כפתורים
+   בלי href אמיתי (כפתורי הקולקציות) מקבלים ניווט דרך JS ישירות,
+   לאותה כתובת בדיוק שהיו מקבלים כ-<a>. */
 document.querySelectorAll("[data-nav]").forEach(el=>{
-  if(el.tagName === "A" && el.getAttribute("href")){
-    if(el.dataset.nav === "towels"){
-      el.addEventListener("click", ()=> showGoldLoader());
-    }
-    return; // קישור אמיתי - הדפדפן כבר מטפל בניווט עצמו
-  }
+  if(el.tagName === "A" && el.getAttribute("href")) return; // קישור אמיתי - הדפדפן כבר מטפל בניווט עצמו
   el.addEventListener("click", (e)=>{
     e.preventDefault();
-    if(el.classList.contains("collection-btn")) showGoldLoader();
+    if(el.classList.contains("collection-btn")){ navigateWithGoldLoader(pathForView(el.dataset.nav)); return; }
     window.location.href = pathForView(el.dataset.nav);
   });
   el.addEventListener("keydown", (e)=>{
     if(e.key !== "Enter" && e.key !== " ") return;
     e.preventDefault();
-    if(el.classList.contains("collection-btn")) showGoldLoader();
+    if(el.classList.contains("collection-btn")){ navigateWithGoldLoader(pathForView(el.dataset.nav)); return; }
     window.location.href = pathForView(el.dataset.nav);
   });
 });
