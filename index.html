@@ -4723,12 +4723,16 @@ function viewForPath(path){
 let _hasRenderedFirstView = false;
 
 /* ===== favicon "loading spinner" - shows a small rotating arc (canvas-
-   drawn, site gold color) in the browser tab itself for the duration of
+   drawn, thin neutral gray - matching the color of Chrome's own real tab
+   throbber, not the site's gold) in the browser tab for the duration of
    each page transition, then restores the real favicon. Mimics the
    browser's own native tab-loading spinner, which never shows here on its
    own since navigation is client-side (no real page reload - see the
-   "nav-instant" comment above). Started from playPageTransitionBar below,
-   so it fires on the same triggers as the gold progress bar.
+   "nav-instant" comment above). Runs ONE clean, smooth rotation over
+   ~1.25s (matching how long a real navigation takes on most sites) rather
+   than several fast spins, so it reads as genuine rather than gimmicky.
+   Started from playPageTransitionBar below, so it fires on the same
+   triggers as the gold progress bar.
 
    IMPORTANT: just mutating the href of the existing <link rel="icon">
    tags does NOT reliably repaint Chrome's tab icon - it very often just
@@ -4736,7 +4740,7 @@ let _hasRenderedFirstView = false;
    remove the <link> and insert a brand-new element with the new href on
    every frame, which is what this does. */
 var stopFaviconSpinner = (function(){
-  var SIZE = 32, FRAMES = 12;
+  var SIZE = 32, FRAMES = 20, FRAME_MS = 62;
   var canvas = document.createElement("canvas");
   canvas.width = SIZE; canvas.height = SIZE;
   var ctx = canvas.getContext("2d");
@@ -4745,9 +4749,9 @@ var stopFaviconSpinner = (function(){
     ctx.clearRect(0,0,SIZE,SIZE);
     var start = (i/FRAMES) * Math.PI*2;
     ctx.beginPath();
-    ctx.arc(SIZE/2, SIZE/2, SIZE/2 - 4, start, start + Math.PI*1.4);
-    ctx.strokeStyle = "#B08A3E"; // var(--gold)
-    ctx.lineWidth = 4.5;
+    ctx.arc(SIZE/2, SIZE/2, SIZE/2 - 3.5, start, start + Math.PI*1.3);
+    ctx.strokeStyle = "#8A8F98"; // neutral gray, close to Chrome's own throbber
+    ctx.lineWidth = 2.75;
     ctx.lineCap = "round";
     ctx.stroke();
     frames.push(canvas.toDataURL("image/png"));
@@ -4786,7 +4790,7 @@ var stopFaviconSpinner = (function(){
     spinTimer = setInterval(function(){
       frameIdx = (frameIdx + 1) % FRAMES;
       showFrame(frameIdx);
-    }, 60);
+    }, FRAME_MS);
     stopTimer = setTimeout(restore, durationMs);
   };
   return restore;
@@ -4795,7 +4799,10 @@ var stopFaviconSpinner = (function(){
 /* ===== gold top progress bar - fires on every navigation: forward
    clicks AND browser back/forward (popstate), since both paths run
    through showView(). See click-delegation script near end of <body>
-   for the additional "any button click" trigger. */
+   for the additional "any button click" trigger. Stays in its "loading"
+   state for the same ~1.25s that showView now actually waits before
+   swapping the view (see showView below), so the bar, the favicon
+   spinner, and the real page change all finish together. */
 var __transitionBarHideTimer, __transitionBarFinishTimer;
 function playPageTransitionBar(){
   var bar = document.getElementById('page-transition-bar');
@@ -4806,7 +4813,7 @@ function playPageTransitionBar(){
   // force reflow so the animation restarts even on rapid clicks
   void bar.offsetWidth;
   bar.classList.add('loading');
-  if(window.__startFaviconSpinner) window.__startFaviconSpinner(700);
+  if(window.__startFaviconSpinner) window.__startFaviconSpinner(1250);
 
   __transitionBarFinishTimer = setTimeout(function(){
     bar.classList.remove('loading');
@@ -4814,19 +4821,31 @@ function playPageTransitionBar(){
     __transitionBarHideTimer = setTimeout(function(){
       bar.classList.remove('finishing');
     }, 450);
-  }, 260);
+  }, 1250);
 }
 
+var __viewSwitchTimer;
 function showView(name, updateHistory, productId){
-  /* Navigation is instant - no artificial wait, no fade. The page swap
-     happens the moment you click, exactly like the very first paint on
-     load (see the "nav-instant" class below, which keeps the .fadeIn
-     entrance animation from playing on any page after the first one).
-     The gold progress bar still flashes briefly on every navigation,
-     including browser back/forward, since this runs on every call. */
+  /* Every navigation - forward clicks, browser back/forward, all of it -
+     now genuinely takes ~1.25s before the new page appears, matching how
+     long a real page load feels on most sites (see the gold progress bar
+     and favicon spinner above, both timed to finish at the same moment).
+     This is a deliberate artificial wait, not real loading time - the
+     content itself is ready instantly, same as always.
+     Exception: the very first view on initial page load renders
+     immediately (no one should stare at a blank page for 1.25s right
+     after opening the site) - see _hasRenderedFirstView below. */
   document.documentElement.classList.add("nav-instant");
   playPageTransitionBar();
-  renderViewNow(name, updateHistory, productId);
+  clearTimeout(__viewSwitchTimer);
+  if(!_hasRenderedFirstView){
+    _hasRenderedFirstView = true;
+    renderViewNow(name, updateHistory, productId);
+    return;
+  }
+  __viewSwitchTimer = setTimeout(function(){
+    renderViewNow(name, updateHistory, productId);
+  }, 1250);
 }
 
 function renderViewNow(name, updateHistory, productId){
@@ -5171,17 +5190,18 @@ function goToProduct(id){
 }
 
 /* גלגל טעינה זהוב שמופיע לרגע (1.25 שניות) בכל לחיצה על כפתורי
-   הקולקציות בעמוד המצעים (Renaissance / Bloom / Heritage), לפני
-   שהניווט בפועל קורה - נותן תחושת "טעינה" מפנקת. */
+   הקולקציות בעמוד המצעים (Renaissance / Bloom / Heritage) - קורא
+   ל-showView מיד, שכעת ממילא ממתין ~1.25 שניות בעצמו לפני שהעמוד
+   מתחלף (ראו showView), כך שהחפיפה מדויקת ולא כפולה. */
 const collectionLoadingOverlay = document.getElementById("collection-loading-overlay");
 function navigateWithCollectionLoader(navTarget){
   if(!collectionLoadingOverlay){ showView(navTarget); return; }
   collectionLoadingOverlay.classList.add("active");
   collectionLoadingOverlay.setAttribute("aria-hidden","false");
+  showView(navTarget);
   setTimeout(()=>{
     collectionLoadingOverlay.classList.remove("active");
     collectionLoadingOverlay.setAttribute("aria-hidden","true");
-    showView(navTarget);
   }, 1250);
 }
 
