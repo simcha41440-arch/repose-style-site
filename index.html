@@ -7507,7 +7507,16 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
 /* ============================================================
    INIT
    ============================================================ */
-Promise.all([applyAdminOverrides(), loadPopularProducts()]).finally(function(){
+/* Renders the current page (whichever view/product/collection the URL
+   points at) using whatever is in PRODUCTS right now. Runs once
+   immediately below - using the built-in catalog baked into this file -
+   so the first paint never waits on a network round-trip, and runs again
+   once applyAdminOverrides()/loadPopularProducts() resolve so any
+   admin-panel changes (price/image overrides, brand-new products, the
+   "popular" row) still get picked up. Safe to call twice: showView/
+   renderViewNow, history.replaceState and initScrollReveal are all
+   idempotent. */
+function renderCurrentView(){
   renderFeatured();
   renderCircleStrip();
 
@@ -7558,7 +7567,9 @@ Promise.all([applyAdminOverrides(), loadPopularProducts()]).finally(function(){
   const initStyle = document.getElementById("rs-initial-view-style");
   if(initStyle) initStyle.remove();
   if(window.initScrollReveal){ window.initScrollReveal(); }
-});
+}
+renderCurrentView();
+Promise.all([applyAdminOverrides(), loadPopularProducts()]).finally(renderCurrentView);
 applyContentOverrides();
 </script>
 
