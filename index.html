@@ -993,7 +993,17 @@ if("serviceWorker" in navigator){
       radial-gradient(900px 520px at 100% 15%, rgba(238,220,166,0.28), transparent 58%),
       radial-gradient(900px 600px at 0% 85%, rgba(216,185,108,0.22), transparent 60%),
       linear-gradient(180deg, #FFFDF8 0%, #FBF7EE 38%, #F6F0E1 72%, #F1E9D6 100%);
-    background-attachment:fixed;
+    /* background-attachment:fixed removed - it was the main cause of the
+       scroll feeling heavy/janky. A "fixed" background can't be handled
+       by the compositor: because it has to stay pinned to the viewport
+       while everything else moves, the browser has to repaint this
+       four-layer gradient (which covers the ENTIRE page) on the main
+       thread on every single scroll frame, on every page, the whole
+       time you scroll. With it removed the background scrolls normally
+       with the page like everything else and is composited once, so
+       scrolling no longer fights with it. Visually the difference is
+       negligible - these are soft, large-radius glows, not a sharp
+       pattern where a fixed vs. scrolling difference would be obvious. */
     color:var(--text-gold);
     font-family:'Rubik','Almoni Neue',sans-serif;
     font-weight:400;
@@ -1309,6 +1319,7 @@ if("serviceWorker" in navigator){
     filter:blur(18px);
     opacity:0;
     animation:lampPulse 7s ease-in-out infinite;
+    will-change:opacity;
   }
   .light-glow.spot-1{
     left:13%;bottom:24%;width:9vw;height:9vw;min-width:90px;min-height:90px;max-width:170px;max-height:170px;
@@ -2167,7 +2178,7 @@ if("serviceWorker" in navigator){
   .cart-subhead button svg{width:15px;height:15px;stroke:var(--taupe);}
   .cart-subhead button:hover{color:var(--gold-dark);}
 
-  .cart-items{flex:1;overflow-y:auto;padding:6px 20px;}
+  .cart-items{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:6px 20px;}
   .cart-item{
     display:flex;gap:14px;padding:18px 0;border-bottom:1px solid var(--line);
     align-items:flex-start;
@@ -2576,7 +2587,7 @@ if("serviceWorker" in navigator){
   #search-close-btn{background:none;border:none;color:var(--taupe);width:34px;height:34px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   #search-close-btn svg{width:18px;height:18px;stroke:var(--taupe);}
   #search-close-btn:hover svg{stroke:var(--ink);}
-  #search-results{overflow-y:auto;padding-top:18px;}
+  #search-results{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-top:18px;}
   .search-result-row{
     display:flex;align-items:center;gap:16px;padding:12px 6px;
     border-bottom:1px solid var(--line);cursor:pointer;transition:background .2s ease;
@@ -2601,7 +2612,7 @@ if("serviceWorker" in navigator){
   #payment-modal-overlay.open{opacity:1;pointer-events:auto;}
   #payment-modal{
     position:fixed;top:50%;left:50%;z-index:1001;
-    width:460px;max-width:92vw;max-height:88vh;overflow-y:auto;
+    width:460px;max-width:92vw;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
     background:
       radial-gradient(500px 260px at 100% 0%, rgba(210,175,113,0.18), transparent 60%),
       var(--ivory);
@@ -2646,7 +2657,7 @@ if("serviceWorker" in navigator){
   #success-modal-overlay.open{opacity:1;pointer-events:auto;}
   #success-modal{
     position:fixed;top:50%;left:50%;z-index:1011;
-    width:440px;max-width:90vw;max-height:88vh;overflow-y:auto;
+    width:440px;max-width:90vw;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
     background:
       radial-gradient(500px 260px at 50% 0%, rgba(210,175,113,0.2), transparent 62%),
       var(--ivory);
@@ -2698,7 +2709,7 @@ if("serviceWorker" in navigator){
   #newsletter-modal-overlay.open{opacity:1;pointer-events:auto;}
   #newsletter-modal{
     position:fixed;top:50%;left:50%;z-index:1001;
-    width:460px;max-width:92vw;max-height:88vh;overflow-y:auto;
+    width:460px;max-width:92vw;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
     background:linear-gradient(155deg, #322A22 0%, var(--ink) 45%, #241E19 100%);
     border:1px solid rgba(214,177,94,0.4);
     border-radius:4px;
@@ -5088,56 +5099,62 @@ if(siteNav){
   applyNavHeroProgress();
 }
 
-/* לחיצה על מוצר = ניווט מיידי בתוך האפליקציה (בלי רענון עמוד מלא).
-   ה-URL בסרגל הכתובות עדיין מתעדכן באמת (showView עושה pushState),
-   כך שקישור ישיר, "פתח בלשונית חדשה", וכפתורי קדימה/אחורה בדפדפן
-   ממשיכים לעבוד בדיוק כמו קודם - רק בלי להמתין לרענון עמוד מלא בכל
-   קליק. (בעבר זה עשה window.location.href, מה שגרם לדפדפן להוריד
-   ולהריץ מחדש את כל הדף - כולל שתי קריאות רשת - בכל ניווט; זה מה
-   שגרם לעיכוב של כמה שניות בכל לחיצה.) */
+/* לחיצה על מוצר = ניווט אמיתי בדפדפן (רענון עמוד מלא), בכוונה: כך
+   שגלגל הטעינה המובנה של הדפדפן בטאב אכן רץ, בדיוק כמו באתר רב-עמודי
+   רגיל. ה-middleware בצד השרת (ראו middleware.mjs, PAGE_LOAD_DELAY_MS)
+   מוסיף השהיה מכוונת של כ-1.25 שניות לפני שהתשובה חוזרת, כך שהספינר
+   מספיק להיראות בבירור בכל ניווט - במקום קפיצה כמעט-מיידית. */
 function goToProduct(id){
-  showView("product", true, id);
+  window.location.href = productPath(id);
 }
 
-/* גלגל טעינה זהוב שמופיע לרגע (1.25 שניות) בכל לחיצה על כפתורי
-   הקולקציות בעמוד המצעים (Renaissance / Bloom / Heritage), לפני
-   שהניווט בפועל קורה - נותן תחושת "טעינה" מפנקת. */
+/* גלגל טעינה זהוב שמסתובב בדיוק 1.5 שניות (GOLD_LOADER_MS) לפני
+   שהניווט האמיתי בדפדפן מופעל בפועל - על כפתורי הקולקציות
+   (Renaissance/Bloom/Heritage) ובקישור לעמוד המגבות. ה-1.5 שניות
+   האלה הן טיימר עצמאי משלה, לא תלוי במשך הטעינה האמיתית של הדף
+   (ה-middleware בצד השרת מוסיף עוד כ-1.25 שניות משלו אחרי זה, ראו
+   middleware.mjs) - כך שהספינר תמיד יסתובב בול שניה וחצי, בלי קשר
+   למהירות השרת. */
+const GOLD_LOADER_MS = 1500;
 const collectionLoadingOverlay = document.getElementById("collection-loading-overlay");
-function navigateWithCollectionLoader(navTarget){
-  if(!collectionLoadingOverlay){ showView(navTarget); return; }
+function navigateWithGoldLoader(url){
+  if(!collectionLoadingOverlay){ window.location.href = url; return; }
   collectionLoadingOverlay.classList.add("active");
   collectionLoadingOverlay.setAttribute("aria-hidden","false");
-  setTimeout(()=>{
-    collectionLoadingOverlay.classList.remove("active");
-    collectionLoadingOverlay.setAttribute("aria-hidden","true");
-    showView(navTarget);
-  }, 1250);
+  setTimeout(()=>{ window.location.href = url; }, GOLD_LOADER_MS);
 }
+/* אם מטיילים לאחור לדף שהיה שמור ב-bfcache באמצע ניווט כזה, לוודא
+   שהשכבה לא נשארת תקועה גלויה. */
+window.addEventListener("pageshow", ()=>{
+  if(!collectionLoadingOverlay) return;
+  collectionLoadingOverlay.classList.remove("active");
+  collectionLoadingOverlay.setAttribute("aria-hidden","true");
+});
 
+/* כל ניווט = ניווט אמיתי בדפדפן, בכוונה (לא SPA) - כך שגלגל הטעינה
+   המובנה של הדפדפן בטאב אכן רץ בכל מעבר עמוד, בדיוק כמו באתר רב-עמודי
+   רגיל. ה-middleware (middleware.mjs) מוסיף השהיה מכוונת של כ-1.25
+   שניות בצד השרת. אלמנטים שהם <a href> אמיתיים (רוב פריטי התפריט,
+   כולל "מגבות") לא נוגעים בהם כלל - הדפדפן מנווט אליהם בעצמו, כולל
+   תמיכה טבעית ב-Ctrl/Cmd/קליק אמצעי לפתיחה בלשונית חדשה, בלי שכבת
+   הספינר הזהוב (זו רק לכפתורי הקולקציות - ראו navigateWithGoldLoader
+   למעלה - שאין להם href אמיתי לנווט אליו בעצמם, לכן הם ממילא צריכים
+   טיפול ב-JS; קישור אמיתי כמו "מגבות" לא צריך את זה, ושכבת ה-1.5
+   שניות שלה רק עיכבה אותו בלי סיבה מעל השהיית השרת עצמה). כפתורים
+   בלי href אמיתי (כפתורי הקולקציות) מקבלים ניווט דרך JS ישירות,
+   לאותה כתובת בדיוק שהיו מקבלים כ-<a>. */
 document.querySelectorAll("[data-nav]").forEach(el=>{
+  if(el.tagName === "A" && el.getAttribute("href")) return; // קישור אמיתי - הדפדפן כבר מטפל בניווט עצמו
   el.addEventListener("click", (e)=>{
-    // קישורים אמיתיים (<a href>): קליק "רגיל" (עכבר שמאלי, בלי מקש
-    // מאפנן) מנווט מיידית בתוך האפליקציה. קליק עם Ctrl/Cmd/Shift/Alt
-    // או קליק אמצעי (פתיחה בלשונית/חלון חדשים) ממשיך להתנהג באופן
-    // טבעי של הדפדפן, כי אז אין טעם (ואי אפשר) לדלג על רענון עמוד.
-    if(el.tagName === "A" && el.getAttribute("href")){
-      if(e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    }
     e.preventDefault();
-    if(el.classList.contains("collection-btn")){
-      navigateWithCollectionLoader(el.dataset.nav);
-      return;
-    }
-    showView(el.dataset.nav);
+    if(el.classList.contains("collection-btn")){ navigateWithGoldLoader(pathForView(el.dataset.nav)); return; }
+    window.location.href = pathForView(el.dataset.nav);
   });
   el.addEventListener("keydown", (e)=>{
     if(e.key !== "Enter" && e.key !== " ") return;
     e.preventDefault();
-    if(el.classList.contains("collection-btn")){
-      navigateWithCollectionLoader(el.dataset.nav);
-      return;
-    }
-    showView(el.dataset.nav);
+    if(el.classList.contains("collection-btn")){ navigateWithGoldLoader(pathForView(el.dataset.nav)); return; }
+    window.location.href = pathForView(el.dataset.nav);
   });
 });
 
@@ -5173,6 +5190,40 @@ function productCardHTML(p){
       <span class="clink">${p.outOfStock ? "אזל מהמלאי" : "לצפייה במוצר"}</span>
     </div>
   </div>`;
+}
+
+/* ============================================================
+   FLICKER FIX: skip a DOM rewrite when a grid's markup hasn't
+   actually changed.
+   ------------------------------------------------------------
+   Every render*() function below rebuilds a whole section by
+   setting innerHTML, which destroys and recreates every <img>
+   inside it - even when nothing actually changed (e.g. clicking
+   back into a collection/towels page you already visited, or the
+   admin-overrides/popular-products network calls resolving with
+   the exact same data that was already shown). A freshly created
+   <img> always restarts at opacity:0 behind its shimmer
+   placeholder (see the .imgwrap CSS) and only fades back in once
+   its 'load' event fires - so on an unchanged re-render, photos
+   that were already loaded and visible visibly blink out and back
+   in for no reason. Comparing the newly generated HTML string to
+   what's already sitting in the container and skipping the write
+   whenever they're identical keeps the existing, already-loaded
+   <img> elements untouched (no flicker, no redundant network
+   activity) while still rendering normally the first time a
+   section is shown, or the instant its content genuinely changes
+   (a price/name override, a wishlist toggle, a filter/sort change,
+   etc. - all of which change the generated HTML string, so they
+   still trigger a normal re-render). Returns true when it wrote
+   new content (so callers know whether they need to re-attach
+   click handlers / re-init anything tied to the new nodes), false
+   when it skipped because nothing changed. */
+function setGridHTML(container, html){
+  if(!container) return false;
+  if(container.__lastRenderedHTML === html) return false;
+  container.__lastRenderedHTML = html;
+  container.innerHTML = html;
+  return true;
 }
 
 function attachCardClicks(container){
@@ -5464,8 +5515,8 @@ function renderTowels(){
   const grid = document.getElementById("towel-grid");
   if(!grid) return;
   const towelProducts = PRODUCTS.filter(p => p.category === "towel");
-  grid.innerHTML = towelProducts.map(productCardHTML).join("");
-  attachCardClicks(grid);
+  const html = towelProducts.map(productCardHTML).join("");
+  if(setGridHTML(grid, html)) attachCardClicks(grid);
 }
 
 /* ============================================================
@@ -5486,7 +5537,7 @@ const FEATURE_EYEBROW_LABELS = {
 function renderFeatured(){
   const featuredIds = ["yahalom","prachim","okeanos"];
   const wrap = document.getElementById("featured-container");
-  wrap.innerHTML = featuredIds.map((id, i)=>{
+  const html = featuredIds.map((id, i)=>{
     const p = PRODUCTS.find(x=>x.id===id);
     const reverseClass = i % 2 === 1 ? "reverse" : "";
     const bedLabel = p.bedType === "twin" ? "זוג יחידים" : "זוגי";
@@ -5507,6 +5558,8 @@ function renderFeatured(){
       </div>
     </div>`;
   }).join("");
+
+  if(!setGridHTML(wrap, html)) return;
 
   wrap.querySelectorAll(".feature-frame, .view-product-btn").forEach(el=>{
     el.addEventListener("click", (e)=>{
@@ -5544,7 +5597,17 @@ function renderCircleStrip(){
   /* THREE identical copies back-to-back (extra safety margin for very wide/
      ultrawide screens — see the JS-driven loop below for why this is now
      immune to gaps regardless of screen width or page text direction). */
-  track.innerHTML = items + items + items;
+  const html = items + items + items;
+  /* Skip re-rendering (and re-initializing the marquee below) when the
+     strip's content hasn't actually changed - this function now runs both
+     immediately on load and again once admin overrides resolve (see INIT),
+     and without this guard a second identical run would tear down and
+     rebuild every circle image (causing a visible flicker) AND start a
+     second, competing requestAnimationFrame scroll loop on top of the
+     first one. */
+  if(track.__lastRenderedHTML === html) return;
+  track.__lastRenderedHTML = html;
+  track.innerHTML = html;
 
   const nodes = track.querySelectorAll(".circle-item");
   nodes.forEach((el, i)=>{
@@ -5638,16 +5701,15 @@ function renderShop(){
   const beddingTotal = PRODUCTS.filter(p => p.category !== "towel").length;
   document.getElementById("result-count").textContent = `מציג ${list.length} מתוך ${beddingTotal} מוצרים`;
   if(list.length === 0){
-    wrap.innerHTML = `<div class="empty-state">
+    setGridHTML(wrap, `<div class="empty-state">
       <h3 class="serif">לא נמצאו מוצרים התואמים לסינון</h3>
       <p>נסו לשנות את גודל המיטה שנבחר.</p>
-    </div>`;
+    </div>`);
     return;
   }
 
-  wrap.innerHTML = `<div class="product-grid">${list.map(productCardHTML).join("")}</div>`;
-
-  attachCardClicks(wrap);
+  const html = `<div class="product-grid">${list.map(productCardHTML).join("")}</div>`;
+  if(setGridHTML(wrap, html)) attachCardClicks(wrap);
 }
 
 /* ============================================================
@@ -5659,8 +5721,8 @@ function renderCollectionPage(key){
   if(!grid) return;
   const items = PRODUCTS.filter(p => p.collection === key);
   countEl.textContent = `מציג ${items.length} דגמים בקולקציית ${CATEGORY_ORDER.find(c=>c.key===key)?.title || ""}`;
-  grid.innerHTML = items.map(productCardHTML).join("");
-  attachCardClicks(grid);
+  const html = items.map(productCardHTML).join("");
+  if(setGridHTML(grid, html)) attachCardClicks(grid);
 }
 
 document.querySelectorAll("[data-filter-size]").forEach(btn=>{
@@ -5720,8 +5782,8 @@ function renderPopularProducts(currentId){
     return;
   }
   section.style.display = "block";
-  grid.innerHTML = items.map(productCardHTML).join("");
-  attachCardClicks(grid);
+  const html = items.map(productCardHTML).join("");
+  if(setGridHTML(grid, html)) attachCardClicks(grid);
 }
 
 function renderProductDetail(){
@@ -5807,8 +5869,8 @@ function renderProductDetail(){
     ? related.concat(PRODUCTS.filter(x=>x.id!==p.id && !related.includes(x) && sameTopCategory(x)).slice(0, 3-related.length))
     : related;
   const relGrid = document.getElementById("related-grid");
-  relGrid.innerHTML = relatedFill.map(productCardHTML).join("");
-  attachCardClicks(relGrid);
+  const relatedHTML = relatedFill.map(productCardHTML).join("");
+  if(setGridHTML(relGrid, relatedHTML)) attachCardClicks(relGrid);
 
   renderPopularProducts(p.id);
 
@@ -6074,7 +6136,7 @@ function updateWishlistUI(){
         <button class="btn outline" id="empty-wishlist-btn">לצפייה בקולקציה</button>
       </div>`;
     const btn = document.getElementById("empty-wishlist-btn");
-    if(btn) btn.addEventListener("click", ()=>{ closeWishlist(); showView("shop"); });
+    if(btn) btn.addEventListener("click", ()=>{ closeWishlist(); window.location.href = pathForView("shop"); });
     return;
   }
   itemsWrap.innerHTML = wishlist.map(id=>{
@@ -6245,7 +6307,7 @@ function updateCartUI(){
       </div>`;
     footWrap.style.display = "none";
     const btn = document.getElementById("empty-shop-btn");
-    if(btn) btn.addEventListener("click", ()=>{ closeCart(); showView("shop"); });
+    if(btn) btn.addEventListener("click", ()=>{ closeCart(); window.location.href = pathForView("shop"); });
   } else {
     footWrap.style.display = "block";
     itemsWrap.innerHTML = cart.map(c=>{
@@ -6291,7 +6353,7 @@ function closeCart(){
   document.getElementById("cart-overlay").classList.remove("open");
 }
 document.getElementById("cart-open-btn").addEventListener("click", openCart);
-document.getElementById("account-open-btn").addEventListener("click", ()=>{ showView("account"); });
+document.getElementById("account-open-btn").addEventListener("click", ()=>{ window.location.href = pathForView("account"); });
 document.getElementById("cart-close-btn").addEventListener("click", closeCart);
 document.getElementById("cart-overlay").addEventListener("click", closeCart);
 
@@ -6317,7 +6379,7 @@ document.getElementById("cart-share-btn").addEventListener("click", ()=>{
 document.getElementById("checkout-btn").addEventListener("click", ()=>{
   if(cart.length === 0) return;
   closeCart();
-  showView("checkout");
+  window.location.href = pathForView("checkout");
 });
 
 function checkoutShippingPrice(){
@@ -7204,7 +7266,7 @@ window.addEventListener("message", async (event)=>{
       ? `מספר הזמנה #${completedOrder.id}. שלחנו אישור למייל שלכם — נעדכן אתכם כשההזמנה תישלח.`
       : "שלחנו אישור למייל שלכם — נעדכן אתכם כשההזמנה תישלח.";
     showSuccessModal("ההזמנה התקבלה בהצלחה!", orderText, ()=>{
-      showView("home");
+      window.location.href = pathForView("home");
     });
   }, 1300);
 });
@@ -7472,7 +7534,7 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
   statementBtn.addEventListener("click", ()=>{
     panel.classList.remove("open");
     toggleBtn.setAttribute("aria-expanded", "false");
-    showView("accessibility");
+    window.location.href = pathForView("accessibility");
   });
 
   resetBtn.addEventListener("click", ()=>{
@@ -7490,9 +7552,66 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
 /* ============================================================
    INIT
    ============================================================ */
+/* Renders whichever page the current URL points at, and sets up
+   scroll position + browser history exactly like a normal first
+   load always has (this is the exact body of what used to run
+   directly inside the Promise.all().finally() below). Pulled into
+   its own function so it can run immediately, synchronously, using
+   the built-in product catalog already baked into this file -
+   instead of only after the admin-overrides/popular-products
+   network round trip resolves. Previously every collection/towel/
+   shop grid stayed completely empty until that fetch finished
+   (which is what made images "take a long time to load" on a
+   fresh visit) even though the page had everything it needed to
+   paint immediately. */
+function renderInitialRoute(){
+  const currentPath = window.location.pathname;
+  const productMatch = currentPath.match(PRODUCT_PATH_RE);
+  const productId = productMatch ? decodeURIComponent(productMatch[1]) : null;
+
+  if(productId && PRODUCTS.some(p=>p.id === productId)){
+    showView("product", false, productId);
+    window.history.replaceState({view:"product", productId}, "", currentPath);
+  } else {
+    const viewName = viewForPath(currentPath);
+    showView(viewName, false);
+    window.history.replaceState({view: viewName}, "", currentPath);
+  }
+}
+
+/* Re-renders just the currently-active page's product content -
+   without touching scroll position, browser history, or which
+   view is active - so that once the admin-overrides/popular-
+   products network calls resolve, any real change they bring (an
+   overridden price/name, the "popular" row) still gets picked up,
+   without repeating the "first load" side effects above a second
+   time (which would otherwise yank the page back to the top if the
+   visitor had already started scrolling while that fetch was in
+   flight). Every render function this can call is guarded by
+   setGridHTML (see above), so when nothing actually changed - the
+   overwhelmingly common case - this is a complete no-op: no
+   flicker, no image re-fetch, no wasted work. */
+function refreshCurrentRouteContent(){
+  const activeView = document.querySelector(".view.active");
+  if(!activeView) return;
+  switch(activeView.id){
+    case "view-shop": renderShop(); break;
+    case "view-shop-renaissance": renderCollectionPage("renaissance"); break;
+    case "view-shop-bloom": renderCollectionPage("bloom"); break;
+    case "view-shop-heritage": renderCollectionPage("heritage"); break;
+    case "view-towels": renderTowels(); break;
+    case "view-product": renderProductDetail(); break;
+  }
+}
+
+renderFeatured();
+renderCircleStrip();
+renderInitialRoute();
+
 Promise.all([applyAdminOverrides(), loadPopularProducts()]).finally(function(){
   renderFeatured();
   renderCircleStrip();
+  refreshCurrentRouteContent();
 
   /* Close the dead space between the circle showcase and the section
      after it (see the .bedding-feature CSS comment for why that gap
@@ -7522,18 +7641,6 @@ Promise.all([applyAdminOverrides(), loadPopularProducts()]).finally(function(){
   updateCartUI();
   updateWishlistUI();
 
-  const currentPath = window.location.pathname;
-  const productMatch = currentPath.match(PRODUCT_PATH_RE);
-  const productId = productMatch ? decodeURIComponent(productMatch[1]) : null;
-
-  if(productId && PRODUCTS.some(p=>p.id === productId)){
-    showView("product", false, productId);
-    window.history.replaceState({view:"product", productId}, "", currentPath);
-  } else {
-    const viewName = viewForPath(currentPath);
-    showView(viewName, false);
-    window.history.replaceState({view: viewName}, "", currentPath);
-  }
   /* The main app is now driving which page is shown (via the .view/.active
      classes) - remove the early anti-flash style from <head> so it doesn't
      interfere with later in-app transitions (e.g. returning to the home
