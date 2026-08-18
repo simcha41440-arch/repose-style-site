@@ -5339,6 +5339,103 @@ PRODUCTS.push(...TOWELS_DATA);
    visitor on every device, not just the browser that made the change.
    Called once during INIT, before the first render, so the very first
    paint already shows the correct price - see the INIT section below. */
+/* Local cache key for the last-known admin overrides (see
+   applyAdminOverrides()/applyCachedAdminOverrides() below). Bump the
+   suffix if the shape of the cached payload ever changes, so old,
+   incompatible cache entries are ignored instead of half-applied. */
+const ADMIN_OVERRIDES_CACHE_KEY = "rs_admin_overrides_cache_v1";
+
+/* Applies a /api/products-shaped payload (either freshly fetched or read
+   back from localStorage) onto PRODUCTS: brand-new admin-added products,
+   price/name/image overrides on existing ones, and admin deletions.
+   Pulled out of applyAdminOverrides() so the exact same logic can run
+   synchronously from a local cache (see applyCachedAdminOverrides())
+   before the very first paint, instead of only after the network
+   round-trip - that's what removes the old-photo/new-photo flash on
+   collection pages, since returning visitors then see the already-current
+   image immediately rather than the stale built-in one first. Safe to
+   call more than once with the same or newer data: adding a product
+   that's already there, or re-applying the same price/name/image, is a
+   no-op each subsequent time. */
+function applyOverridesData(data){
+  const overrides = {};
+  (Array.isArray(data.products) ? data.products : []).forEach(function(o){ overrides[o.id] = o; });
+
+  /* Admin-added brand-new products (ids that don't exist anywhere in the
+     built-in catalog above) - built from the saved override row plus its
+     "details" JSON (see the admin panel's "הוספת מוצר חדש" form and
+     api/products.js), then pushed into PRODUCTS so they render in the
+     shop/towel grids, search, and product page exactly like a built-in
+     product. Existing-product overrides (price/name/image changes) are
+     still applied by the PRODUCTS.forEach below, same as always. */
+  Object.keys(overrides).forEach(function(id){
+    const o = overrides[id];
+    if(PRODUCTS.some(function(p){ return p.id === id; })) return; // existing product, not a new one
+    if(o.active === false) return; // saved but turned off
+    if(!o.name || o.price === undefined || o.price === null || o.price === "") return; // incomplete row - skip rather than show a broken card
+    const d = (o.details && typeof o.details === "object") ? o.details : {};
+    const isTowel = o.category === "towel";
+    PRODUCTS.push({
+      id: id,
+      name: o.name,
+      price: Number(o.price),
+      compareAtPrice: (o.compare_at_price !== undefined && o.compare_at_price !== null && o.compare_at_price !== "") ? Number(o.compare_at_price) : null,
+      img: o.image || "/images/site/logo-shop.png",
+      category: isTowel ? "towel" : undefined,
+      cotton: d.cotton != null && d.cotton !== "" ? Number(d.cotton) : 100,
+      thread: d.thread != null && d.thread !== "" ? Number(d.thread) : 300,
+      weight: d.weight != null && d.weight !== "" ? Number(d.weight) : 600,
+      bedType: d.bedType === "double" ? "double" : "twin",
+      tier: d.tier === "premium" ? "premium" : "classic",
+      collection: !isTowel ? (d.collection || "heritage") : undefined,
+      tag: d.tag || undefined,
+      customDesc: d.desc || "",
+      pillowsIncluded: !!d.pillowsIncluded,
+      outOfStock: !!o.out_of_stock,
+      isCustom: true
+    });
+  });
+
+  PRODUCTS.forEach(function(p){
+    const o = overrides[p.id];
+    if(!o) return;
+    if(o.price !== undefined && o.price !== null && o.price !== "") p.price = Number(o.price);
+    if(o.name !== undefined && o.name !== null && o.name !== "") p.name = o.name;
+    if(o.image !== undefined && o.image !== null && o.image !== "") p.img = o.image;
+    p.compareAtPrice = (o.compare_at_price !== undefined && o.compare_at_price !== null && o.compare_at_price !== "") ? Number(o.compare_at_price) : null;
+    p.outOfStock = !!o.out_of_stock;
+  });
+
+  // Admin can permanently delete a built-in catalog product from the
+  // "ניהול מוצרים" tab - that's saved as an override row with
+  // active:false (there's no built-in fallback to "reset to" the way
+  // there is for price/name, so unlike those fields this one actually
+  // removes the product from every grid, search result, and direct link
+  // instead of just resetting a value).
+  for(let i = PRODUCTS.length - 1; i >= 0; i--){
+    const o = overrides[PRODUCTS[i].id];
+    if(o && o.active === false) PRODUCTS.splice(i, 1);
+  }
+
+  syncProductStructuredData();
+}
+
+/* Reads yesterday's (or five-minutes-ago's) admin overrides straight from
+   localStorage and applies them to PRODUCTS synchronously, with no network
+   wait at all. Meant to run once, before the very first renderCurrentView()
+   call at INIT below, so a returning visitor's first paint already shows
+   whatever photo/price/name is actually current - instead of the built-in
+   default first and the real one a moment later. Same "raw=1" opt-out as
+   applyAdminOverrides(), so the admin panel still gets pristine defaults. */
+function applyCachedAdminOverrides(){
+  try{
+    if(new URLSearchParams(location.search).get("raw") === "1") return;
+    const cached = localStorage.getItem(ADMIN_OVERRIDES_CACHE_KEY);
+    if(!cached) return;
+    applyOverridesData(JSON.parse(cached));
+  }catch(e){ /* no cache yet, or it's corrupt/from an old format - just skip it */ }
+}
+
 async function applyAdminOverrides(){
   try{
     if(new URLSearchParams(location.search).get("raw") === "1") return; // admin panel requests pristine defaults
@@ -5352,67 +5449,12 @@ async function applyAdminOverrides(){
     }
     if(!res.ok) return;
     const data = await res.json();
-    const overrides = {};
-    (Array.isArray(data.products) ? data.products : []).forEach(function(o){ overrides[o.id] = o; });
-
-    /* Admin-added brand-new products (ids that don't exist anywhere in the
-       built-in catalog above) - built from the saved override row plus its
-       "details" JSON (see the admin panel's "הוספת מוצר חדש" form and
-       api/products.js), then pushed into PRODUCTS so they render in the
-       shop/towel grids, search, and product page exactly like a built-in
-       product. Existing-product overrides (price/name/image changes) are
-       still applied by the PRODUCTS.forEach below, same as always. */
-    Object.keys(overrides).forEach(function(id){
-      const o = overrides[id];
-      if(PRODUCTS.some(function(p){ return p.id === id; })) return; // existing product, not a new one
-      if(o.active === false) return; // saved but turned off
-      if(!o.name || o.price === undefined || o.price === null || o.price === "") return; // incomplete row - skip rather than show a broken card
-      const d = (o.details && typeof o.details === "object") ? o.details : {};
-      const isTowel = o.category === "towel";
-      PRODUCTS.push({
-        id: id,
-        name: o.name,
-        price: Number(o.price),
-        compareAtPrice: (o.compare_at_price !== undefined && o.compare_at_price !== null && o.compare_at_price !== "") ? Number(o.compare_at_price) : null,
-        img: o.image || "/images/site/logo-shop.png",
-        category: isTowel ? "towel" : undefined,
-        cotton: d.cotton != null && d.cotton !== "" ? Number(d.cotton) : 100,
-        thread: d.thread != null && d.thread !== "" ? Number(d.thread) : 300,
-        weight: d.weight != null && d.weight !== "" ? Number(d.weight) : 600,
-        bedType: d.bedType === "double" ? "double" : "twin",
-        tier: d.tier === "premium" ? "premium" : "classic",
-        collection: !isTowel ? (d.collection || "heritage") : undefined,
-        tag: d.tag || undefined,
-        customDesc: d.desc || "",
-        pillowsIncluded: !!d.pillowsIncluded,
-        outOfStock: !!o.out_of_stock,
-        isCustom: true
-      });
-    });
-
-    PRODUCTS.forEach(function(p){
-      const o = overrides[p.id];
-      if(!o) return;
-      if(o.price !== undefined && o.price !== null && o.price !== "") p.price = Number(o.price);
-      if(o.name !== undefined && o.name !== null && o.name !== "") p.name = o.name;
-      if(o.image !== undefined && o.image !== null && o.image !== "") p.img = o.image;
-      p.compareAtPrice = (o.compare_at_price !== undefined && o.compare_at_price !== null && o.compare_at_price !== "") ? Number(o.compare_at_price) : null;
-      p.outOfStock = !!o.out_of_stock;
-    });
-
-    // Admin can permanently delete a built-in catalog product from the
-    // "ניהול מוצרים" tab - that's saved as an override row with
-    // active:false (there's no built-in fallback to "reset to" the way
-    // there is for price/name, so unlike those fields this one actually
-    // removes the product from every grid, search result, and direct link
-    // instead of just resetting a value).
-    for(let i = PRODUCTS.length - 1; i >= 0; i--){
-      const o = overrides[PRODUCTS[i].id];
-      if(o && o.active === false) PRODUCTS.splice(i, 1);
-    }
-
-    syncProductStructuredData();
-  }catch(e){ /* network error/timeout - fall back to the built-in catalog */ }
+    applyOverridesData(data);
+    // Remember this response for next time, so the *next* page load can
+    // apply it synchronously (via applyCachedAdminOverrides above) before
+    // the first paint instead of after a network round-trip.
+    try{ localStorage.setItem(ADMIN_OVERRIDES_CACHE_KEY, JSON.stringify(data)); }catch(e){ /* storage full/blocked - not worth failing the page over */ }
+  }catch(e){ /* network error/timeout - fall back to the built-in catalog (or the cache already applied above) */ }
 }
 
 /* Keeps the Product/ItemList structured data (see <script id="product-list-ld">
@@ -7667,6 +7709,7 @@ function renderCurrentView(){
   if(initStyle) initStyle.remove();
   if(window.initScrollReveal){ window.initScrollReveal(); }
 }
+applyCachedAdminOverrides(); // apply last-known admin photos/prices synchronously, before the first paint - see its comment above for why
 renderCurrentView();
 Promise.all([applyAdminOverrides(), loadPopularProducts()]).finally(renderCurrentView);
 applyContentOverrides();
