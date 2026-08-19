@@ -2730,6 +2730,7 @@ if("serviceWorker" in navigator){
   .success-modal-title{margin:0 0 10px;font-size:23px;color:var(--text-gold);}
   .success-modal-text{margin:0 0 28px;color:var(--taupe);font-size:14.5px;line-height:1.7;}
   .success-modal-ok{width:100%;justify-content:center;}
+  .success-modal-extra{width:100%;justify-content:center;display:flex;}
   @media (prefers-reduced-motion: reduce){
     #success-modal-overlay, #success-modal{transition:none;}
     .success-modal-icon{animation:none;}
@@ -4346,6 +4347,7 @@ if("serviceWorker" in navigator){
   </div>
   <h3 class="success-modal-title serif" id="success-modal-title">פנייתכם התקבלה בהצלחה!</h3>
   <p class="success-modal-text" id="success-modal-text">תודה רבה, נחזור אליכם בהקדם האפשרי.</p>
+  <a class="btn outline success-modal-extra" id="success-modal-extra" href="#" target="_blank" rel="noopener" style="display:none;margin-bottom:12px;"></a>
   <button type="button" class="btn success-modal-ok" id="success-modal-ok">מעולה, תודה!</button>
 </div>
 
@@ -4722,6 +4724,18 @@ const VIEW_SEO = {
   "account":         { path:"/account",        title:"האזור האישי שלי | רפאוז סטייל", desc:"ההזמנות, המועדפים והעגלה השמורה שלך ברפאוז סטייל." }
 };
 const SITE_ORIGIN = "https://reposestyle.com";
+
+/* ============================================================
+   "האתגר הכללי" - the trivia/points challenge micro-site (see
+   the separate project you uploaded). It's a different, separately
+   deployed site - not part of this file - so all we need here is
+   its live URL, to link to it (with the order id) after a
+   successful purchase. Replace with the real URL once you deploy
+   it (e.g. to a subdomain like challenge.reposestyle.com, or its
+   own Vercel URL). Until it's set, the "200 points" line/button
+   in the order-success popup simply doesn't show. */
+const CHALLENGE_URL = "";
+const CHALLENGE_CONFIGURED = !!CHALLENGE_URL;
 
 /* ============================================================
    TRANZILA SECURE PAYMENT (see TRANZILA-SETUP.md)
@@ -7266,9 +7280,18 @@ document.getElementById("payment-modal-overlay").addEventListener("click", close
    ============================================================ */
 let _successModalOnClose = null;
 
-function showSuccessModal(title, text, onClose){
+function showSuccessModal(title, text, onClose, extraCta){
   document.getElementById("success-modal-title").textContent = title || "פנייתכם התקבלה בהצלחה!";
   document.getElementById("success-modal-text").textContent = text || "תודה רבה, נחזור אליכם בהקדם האפשרי.";
+  const extraEl = document.getElementById("success-modal-extra");
+  if(extraCta && extraCta.href && extraCta.label){
+    extraEl.textContent = extraCta.label;
+    extraEl.href = extraCta.href;
+    extraEl.style.display = "flex";
+  } else {
+    extraEl.style.display = "none";
+    extraEl.removeAttribute("href");
+  }
   _successModalOnClose = typeof onClose === "function" ? onClose : null;
   document.getElementById("success-modal-overlay").classList.add("open");
   document.getElementById("success-modal").classList.add("open");
@@ -7395,11 +7418,14 @@ window.addEventListener("message", async (event)=>{
     if(couponMsgEl) couponMsgEl.textContent = "";
     _tranzilaHandlingResult = false;
     const orderText = completedOrder
-      ? `מספר הזמנה #${completedOrder.id}. שלחנו אישור למייל שלכם — נעדכן אתכם כשההזמנה תישלח.`
+      ? `מספר הזמנה #${completedOrder.id}. שלחנו אישור למייל שלכם — נעדכן אתכם כשההזמנה תישלח.${CHALLENGE_CONFIGURED ? " בנוסף, קיבלתם 200 נקודות זכות באתגר הכללי שלנו!" : ""}`
       : "שלחנו אישור למייל שלכם — נעדכן אתכם כשההזמנה תישלח.";
+    const challengeCta = (CHALLENGE_CONFIGURED && completedOrder)
+      ? { label: "לצפייה ב-200 הנקודות שלי באתגר ←", href: CHALLENGE_URL.replace(/\/$/, "") + "/index.html?purchase=" + encodeURIComponent(completedOrder.id) }
+      : null;
     showSuccessModal("ההזמנה התקבלה בהצלחה!", orderText, ()=>{
       window.location.href = pathForView("home");
-    });
+    }, challengeCta);
   }, 1300);
 });
 
