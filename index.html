@@ -3112,6 +3112,7 @@ if("serviceWorker" in navigator){
       <a data-nav="home" href="/" class="active">בית</a>
       <a data-nav="shop" href="/shop">מצעים</a>
       <a data-nav="towels" href="/towels">מגבות</a>
+      <a data-nav="sale" href="/sale">מבצעים</a>
       <a data-nav="about" href="/about">אודות</a>
       <a data-nav="contact" href="/contact">צור קשר</a>
       <span class="nav-underline" id="nav-underline"></span>
@@ -3140,6 +3141,7 @@ if("serviceWorker" in navigator){
     <a data-nav="home" href="/">בית</a>
     <a data-nav="shop" href="/shop">מצעים</a>
     <a data-nav="towels" href="/towels">מגבות</a>
+    <a data-nav="sale" href="/sale">מבצעים</a>
     <a data-nav="about" href="/about">אודות</a>
     <a data-nav="contact" href="/contact">צור קשר</a>
   </div>
@@ -3389,6 +3391,28 @@ if("serviceWorker" in navigator){
 </div>
 </section>
 
+<!-- ============ SALE VIEW ============ -->
+<section class="view" id="view-sale">
+<div class="view-frame">
+  <div class="container">
+    <div class="breadcrumb">
+      <button data-nav="home">בית</button>
+      <span class="sep">/</span>
+      <span class="current">מבצעים</span>
+    </div>
+    <div class="shop-header collection-page-header">
+      <div class="eyebrow">רפאוז סטייל</div>
+      <h1>מבצעים</h1>
+      <p>הדגמים שנמצאים כרגע במבצע - במחיר מוזל לזמן מוגבל.</p>
+    </div>
+  </div>
+  <div class="container">
+    <p class="result-count" id="result-count-sale" style="margin-bottom:24px;"></p>
+    <div class="product-grid" id="sale-grid"></div>
+  </div>
+</div>
+</section>
+
 <!-- ============ PRODUCT DETAIL VIEW ============ -->
 <section class="view" id="view-product">
   <div class="container">
@@ -3465,6 +3489,13 @@ if("serviceWorker" in navigator){
         </div>
 
         <p class="pd-note"><svg class="icon" viewBox="0 0 24 24"><rect x="2" y="8" width="13" height="9"/><path d="M15 11h4l3 3v3h-7z"/><circle cx="7" cy="19" r="1.6"/><circle cx="18" cy="19" r="1.6"/></svg> משלוח מהיר לכל הארץ · ארוז באריזת מתנה יוקרתית</p>
+
+        <div class="pd-includes" style="display:block;">
+          <h4>הוראות כביסה</h4>
+          <p style="font-size:14.5px;line-height:1.7;font-weight:300;white-space:pre-line;margin:0;">לפני השימוש יש לבדוק את המוצר.
+אח"כ לכבס - אריגים צבעוניים לכבס בנפרד, במים פושרים (30 מעלות) ובאבקה או נוזל עדינים, המיועדים לכביסה צבעונית בלבד.
+ללא כלור וללא סחיטה.</p>
+        </div>
       </div>
     </div>
 
@@ -3474,7 +3505,7 @@ if("serviceWorker" in navigator){
     </div>
 
     <div class="related" id="popular-products-section" style="display:none;">
-      <h3>הכי אהובים על הלקוחות שלנו</h3>
+      <h3>לקוחות שרכשו מוצר זה, אהבו גם:</h3>
       <div class="product-grid" id="popular-products-grid"></div>
     </div>
   </div>
@@ -4092,6 +4123,7 @@ if("serviceWorker" in navigator){
           <li><a data-nav="home" href="/">בית</a></li>
           <li><a data-nav="shop" href="/shop">מצעים</a></li>
           <li><a data-nav="towels" href="/towels">מגבות</a></li>
+          <li><a data-nav="sale" href="/sale">מבצעים</a></li>
           <li><a data-nav="about" href="/about">אודות</a></li>
           <li><a data-nav="contact" href="/contact">צור קשר</a></li>
         </ul>
@@ -4587,6 +4619,13 @@ function getDesc(p){
 function displayName(p){
   return p.category === "towel" ? p.name : `דגם ${p.name}`;
 }
+/* Whether a product currently has an active sale - compareAtPrice set by
+   the admin via the "מבצע" field, and higher than the current price. Used
+   both for the strikethrough price display and to decide which products
+   show up on the /sale page, so the two always agree. */
+function isOnSale(p){
+  return !!(p.compareAtPrice && Number(p.compareAtPrice) > p.price);
+}
 /* Renders a product's price as HTML - if a sale is active (compareAtPrice
    set by the admin via the "מבצע" fields, and higher than the current
    price), shows the old price with a strikethrough plus a "מבצע" badge
@@ -4595,7 +4634,7 @@ function displayName(p){
    so a sale set in the admin panel appears consistently across the site. */
 function priceHTML(p){
   const price = p.price.toLocaleString('he-IL');
-  if(p.compareAtPrice && Number(p.compareAtPrice) > p.price){
+  if(isOnSale(p)){
     const was = Number(p.compareAtPrice).toLocaleString('he-IL');
     return `<span class="was-price"><span class="was-num">${was}</span> ₪</span>${price} ₪<span class="sale-badge">✦ מבצע</span>`;
   }
@@ -4639,13 +4678,6 @@ function lsSave(key, value){
 
 let cart = lsLoad("rstyle_cart", []); // {id, qty}
 let wishlist = lsLoad("rstyle_wishlist", []); // [id]
-// Product ids ordered by how many were actually sold site-wide, most
-// popular first - powers the "הכי אהובים על הלקוחות שלנו" row at the
-// bottom of the product page (see loadPopularProducts/renderPopularProducts
-// below). Fetched once from GET /api/products?popular=1 (server-side
-// aggregation of real orders - handled inside api/products.js, NOT
-// per-browser like cart/wishlist.
-let popularProductIds = [];
 let orders = lsLoad("rstyle_orders", []); // [{id, date, items:[{id,name,qty,price}], total, status}]
 let currentProductId = null;
 let currentQty = 1;
@@ -4665,6 +4697,7 @@ const VIEW_SEO = {
   "shop-bloom":      { path:"/shop/bloom",     title:"קולקציית Bloom | רפאוז סטייל", desc:"קולקציית Bloom ממבחר מצעי היוקרה של רפאוז סטייל." },
   "shop-heritage":   { path:"/shop/heritage",  title:"קולקציית Heritage | רפאוז סטייל", desc:"קולקציית Heritage ממבחר מצעי היוקרה של רפאוז סטייל." },
   "towels":          { path:"/towels",         title:"מגבות יוקרה | רפאוז סטייל", desc:"מגבות יוקרה איכותיות מבית רפאוז סטייל — רכות, סופגות ועמידות לאורך זמן." },
+  "sale":            { path:"/sale",           title:"מבצעים | רפאוז סטייל", desc:"הדגמים שנמצאים כרגע במבצע אצל רפאוז סטייל — במחיר מוזל לזמן מוגבל." },
   "about":           { path:"/about",          title:"אודות | רפאוז סטייל", desc:"על רפאוז סטייל — הסיפור שמאחורי המותג, הערכים והדרך בה אנו בונים כל סט מצעים." },
   "contact":         { path:"/contact",        title:"צור קשר | רפאוז סטייל", desc:"צרו קשר עם צוות רפאוז סטייל בכל שאלה או בקשה." },
   "shipping":        { path:"/shipping",       title:"משלוחים והחזרות | רפאוז סטייל", desc:"מדיניות המשלוחים וההחזרות של רפאוז סטייל." },
@@ -4804,6 +4837,9 @@ function renderViewNow(name, updateHistory, productId){
     const key = name.replace("shop-", "");
     document.getElementById(`view-${name}`).classList.add("active");
     renderCollectionPage(key);
+  } else if(name === "sale"){
+    document.getElementById("view-sale").classList.add("active");
+    renderSalePage();
   } else if(name === "product"){
     const p = productId ? PRODUCTS.find(x=>x.id===productId) : null;
     if(p){
@@ -5807,6 +5843,31 @@ function renderCollectionPage(key){
   attachCardClicks(grid);
 }
 
+/* ============================================================
+   RENDER: SALE PAGE
+   ============================================================ */
+/* Not a fixed collection - pulls in whichever products currently have an
+   active sale (see isOnSale above), across every category. So the moment
+   a sale price is set (or removed) for a product in the admin panel, it
+   automatically appears (or disappears) here - nothing else to configure. */
+function renderSalePage(){
+  const grid = document.getElementById("sale-grid");
+  const countEl = document.getElementById("result-count-sale");
+  if(!grid) return;
+  const items = PRODUCTS.filter(isOnSale);
+  if(!items.length){
+    countEl.textContent = "";
+    grid.innerHTML = `<div class="empty-state">
+      <h3 class="serif">אין כרגע מוצרים במבצע</h3>
+      <p>בקרו שוב בקרוב - מבצעים חדשים מתעדכנים מעת לעת.</p>
+    </div>`;
+    return;
+  }
+  countEl.textContent = `מציג ${items.length} דגמים במבצע`;
+  grid.innerHTML = items.map(productCardHTML).join("");
+  attachCardClicks(grid);
+}
+
 document.querySelectorAll("[data-filter-size]").forEach(btn=>{
   btn.addEventListener("click", ()=>{
     document.querySelectorAll("[data-filter-size]").forEach(b=>b.classList.remove("active"));
@@ -5823,38 +5884,15 @@ document.getElementById("sort-select").addEventListener("change", (e)=>{
 /* ============================================================
    RENDER: PRODUCT DETAIL
    ============================================================ */
-/* Fetches which products actually sell the most, site-wide, from
-   GET /api/products?popular=1 (server-side aggregation of real orders -
-   handled inside api/products.js, not its own function - see the comment
-   there). Called once at INIT alongside
-   applyAdminOverrides(); the result is cached in popularProductIds for the
-   rest of the session rather than re-fetched on every product page view. */
-async function loadPopularProducts(){
-  try{
-    const controller = new AbortController();
-    const timeout = setTimeout(()=>controller.abort(), 4000); // never block the site if the API is slow/down
-    let res;
-    try{
-      res = await fetch("/api/products?popular=1", { signal: controller.signal });
-    } finally {
-      clearTimeout(timeout);
-    }
-    if(!res.ok) return;
-    const data = await res.json();
-    popularProductIds = (Array.isArray(data.popular) ? data.popular : []).map(function(x){ return x.id; });
-  }catch(e){ /* network error/timeout - section just stays hidden */ }
-}
-
-/* Renders the "הכי אהובים על הלקוחות שלנו" row - up to 8 of the
-   best-selling products site-wide (by real order quantity), excluding
-   whichever product page is currently open. Hides the whole section when
-   there's nothing to show yet (no order history, or the fetch hasn't
-   resolved/failed). */
+/* Renders the "לקוחות שרכשו מוצר זה, אהבו גם:" row - a fixed, curated
+   list of models (not driven by real sales data), excluding whichever
+   product page is currently open. */
+const FEATURED_RELATED_IDS = ["yahalom", "prachim", "simfonia", "royal", "rakefet", "star"];
 function renderPopularProducts(currentId){
   const section = document.getElementById("popular-products-section");
   const grid = document.getElementById("popular-products-grid");
   if(!section || !grid) return;
-  const items = popularProductIds
+  const items = FEATURED_RELATED_IDS
     .filter(function(id){ return id !== currentId; })
     .map(function(id){ return PRODUCTS.find(function(p){ return p.id === id; }); })
     .filter(Boolean)
@@ -7652,9 +7690,9 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
    points at) using whatever is in PRODUCTS right now. Runs once
    immediately below - using the built-in catalog baked into this file -
    so the first paint never waits on a network round-trip, and runs again
-   once applyAdminOverrides()/loadPopularProducts() resolve so any
-   admin-panel changes (price/image overrides, brand-new products, the
-   "popular" row) still get picked up. Safe to call twice: showView/
+   once applyAdminOverrides() resolves so any admin-panel changes
+   (price/image overrides, brand-new products) still get picked up.
+   Safe to call twice: showView/
    renderViewNow, history.replaceState and initScrollReveal are all
    idempotent. */
 function renderCurrentView(){
@@ -7711,7 +7749,7 @@ function renderCurrentView(){
 }
 applyCachedAdminOverrides(); // apply last-known admin photos/prices synchronously, before the first paint - see its comment above for why
 renderCurrentView();
-Promise.all([applyAdminOverrides(), loadPopularProducts()]).finally(renderCurrentView);
+Promise.all([applyAdminOverrides()]).finally(renderCurrentView);
 applyContentOverrides();
 </script>
 
