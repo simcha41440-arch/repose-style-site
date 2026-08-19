@@ -2103,17 +2103,19 @@ if("serviceWorker" in navigator){
   .pd-plaque .l1{font-family:'Rubik','Almoni Neue',sans-serif;font-size:14px;color:var(--taupe);}
   .pd-plaque .l2{font-size:12px;color:var(--taupe-light);letter-spacing:0.08em;}
 
-  .pd-care{
-    margin-top:34px;padding:24px 26px;background:var(--ivory);
-    border:1px solid var(--line);
+  .pd-care-band{
+    margin:56px 0 8px;padding:34px 20px;
+    border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+    text-align:center;
   }
-  .pd-care-head{margin-bottom:14px;}
-  .pd-care-head span{
-    font-size:13px;letter-spacing:0.08em;font-weight:600;color:var(--gold-dark);
-    font-family:'Rubik','Almoni Neue',sans-serif;
+  .pd-care-band-label{
+    display:block;font-size:12px;letter-spacing:0.1em;font-weight:600;color:var(--gold-dark);
+    font-family:'Rubik','Almoni Neue',sans-serif;margin-bottom:12px;
   }
-  .pd-care p{font-size:13.5px;line-height:1.75;color:var(--taupe);font-weight:300;margin:0;}
-  @media (max-width:900px){.pd-care{margin-top:24px;padding:20px 22px;}}
+  .pd-care-band p{
+    max-width:640px;margin:0 auto;font-size:13.5px;line-height:1.8;color:var(--taupe);font-weight:300;
+  }
+  @media (max-width:900px){.pd-care-band{margin:36px 0 8px;padding:26px 16px;}}
 
   .pd-info .eyebrow{margin-bottom:20px;}
   .pd-info h1{font-size:clamp(28px,4vw,40px);margin-bottom:16px;}
@@ -3445,13 +3447,6 @@ if("serviceWorker" in navigator){
           <span class="l1" id="pd-plaque-name"></span>
           <span class="l2">REPOSE STYLE</span>
         </div>
-
-        <div class="pd-care">
-          <div class="pd-care-head">
-            <span>הוראות כביסה</span>
-          </div>
-          <p>לפני השימוש יש לבדוק את המוצר. אח"כ לכבס - אריגים צבעוניים לכבס בנפרד, במים פושרים (30 מעלות) ובאבקה או נוזל עדינים, המיועדים לכביסה צבעונית בלבד. ללא כלור וללא סחיטה.</p>
-        </div>
       </div>
 
       <div class="pd-info">
@@ -3509,6 +3504,11 @@ if("serviceWorker" in navigator){
 
         <p class="pd-note"><svg class="icon" viewBox="0 0 24 24"><rect x="2" y="8" width="13" height="9"/><path d="M15 11h4l3 3v3h-7z"/><circle cx="7" cy="19" r="1.6"/><circle cx="18" cy="19" r="1.6"/></svg> משלוח מהיר לכל הארץ · ארוז באריזת מתנה יוקרתית</p>
       </div>
+    </div>
+
+    <div class="pd-care-band">
+      <span class="pd-care-band-label">הוראות כביסה</span>
+      <p>לפני השימוש יש לבדוק את המוצר. אח"כ לכבס - אריגים צבעוניים לכבס בנפרד, במים פושרים (30 מעלות) ובאבקה או נוזל עדינים, המיועדים לכביסה צבעונית בלבד. ללא כלור וללא סחיטה.</p>
     </div>
 
     <div class="related">
