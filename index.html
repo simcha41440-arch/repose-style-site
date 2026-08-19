@@ -2104,23 +2104,16 @@ if("serviceWorker" in navigator){
   .pd-plaque .l2{font-size:12px;color:var(--taupe-light);letter-spacing:0.08em;}
 
   .pd-care{
-    margin-top:26px;padding:24px 26px;background:var(--ivory);
-    border:1px solid var(--line);border-top:2px solid var(--gold);
-    position:relative;
+    margin-top:34px;padding:24px 26px;background:var(--ivory);
+    border:1px solid var(--line);
   }
-  .pd-care-head{
-    display:flex;align-items:center;gap:10px;margin-bottom:18px;
-  }
-  .pd-care-head svg{width:22px;height:22px;stroke:var(--gold-dark);stroke-width:1.5;flex-shrink:0;}
+  .pd-care-head{margin-bottom:14px;}
   .pd-care-head span{
     font-size:13px;letter-spacing:0.08em;font-weight:600;color:var(--gold-dark);
     font-family:'Rubik','Almoni Neue',sans-serif;
   }
-  .pd-care-items{display:flex;flex-direction:column;gap:14px;}
-  .pd-care-item{display:flex;gap:12px;align-items:flex-start;}
-  .pd-care-item svg{width:17px;height:17px;stroke:var(--gold-dark);flex-shrink:0;margin-top:2px;opacity:0.85;}
-  .pd-care-item p{font-size:13.5px;line-height:1.65;color:var(--taupe);font-weight:300;margin:0;}
-  @media (max-width:900px){.pd-care{margin-top:20px;padding:20px 22px;}}
+  .pd-care p{font-size:13.5px;line-height:1.75;color:var(--taupe);font-weight:300;margin:0;}
+  @media (max-width:900px){.pd-care{margin-top:24px;padding:20px 22px;}}
 
   .pd-info .eyebrow{margin-bottom:20px;}
   .pd-info h1{font-size:clamp(28px,4vw,40px);margin-bottom:16px;}
@@ -3455,23 +3448,9 @@ if("serviceWorker" in navigator){
 
         <div class="pd-care">
           <div class="pd-care-head">
-            <svg class="icon" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="13" r="5"/><path d="M9 13c0.7-1.3 2-1.3 3 0s2.3 1.3 3 0"/><circle cx="8.3" cy="5.5" r="0.6" fill="currentColor" stroke="none"/><circle cx="10.3" cy="5.5" r="0.6" fill="currentColor" stroke="none"/></svg>
             <span>הוראות כביסה</span>
           </div>
-          <div class="pd-care-items">
-            <div class="pd-care-item">
-              <svg class="icon" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="M20 20l-5-5"/></svg>
-              <p>לפני השימוש יש לבדוק את המוצר.</p>
-            </div>
-            <div class="pd-care-item">
-              <svg class="icon" viewBox="0 0 24 24"><path d="M12 3c-3 4-5 7-5 10a5 5 0 0 0 10 0c0-3-2-6-5-10z"/></svg>
-              <p>אח"כ לכבס - אריגים צבעוניים לכבס בנפרד, במים פושרים (30 מעלות) ובאבקה או נוזל עדינים, המיועדים לכביסה צבעונית בלבד.</p>
-            </div>
-            <div class="pd-care-item">
-              <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              <p>ללא כלור וללא סחיטה.</p>
-            </div>
-          </div>
+          <p>לפני השימוש יש לבדוק את המוצר. אח"כ לכבס - אריגים צבעוניים לכבס בנפרד, במים פושרים (30 מעלות) ובאבקה או נוזל עדינים, המיועדים לכביסה צבעונית בלבד. ללא כלור וללא סחיטה.</p>
         </div>
       </div>
 
