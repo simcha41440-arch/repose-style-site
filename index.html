@@ -4651,7 +4651,7 @@ function priceHTML(p){
   const price = p.price.toLocaleString('he-IL');
   if(isOnSale(p)){
     const was = Number(p.compareAtPrice).toLocaleString('he-IL');
-    return `<span class="was-price"><span class="was-num">${was}</span> ₪</span>${price} ₪<span class="sale-badge">✦ מבצע</span>`;
+    return `<span class="was-price"><span class="was-num">${was}</span></span> ${price} ₪<span class="sale-badge">✦ מבצע</span>`;
   }
   return `${price} ₪`;
 }
