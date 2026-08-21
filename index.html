@@ -963,7 +963,21 @@ if("serviceWorker" in navigator){
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@200;300;400;500;600;700&family=Rubik:wght@300;400;500;600;700&family=Jost:wght@200;300;400;500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Poppins:wght@200;300;400&family=Montserrat:wght@100;200;300;400&display=swap" rel="stylesheet">
+<!-- The Google Fonts stylesheet used to be a normal render-blocking
+     <link rel="stylesheet">: the browser had to wait for a full round
+     trip to fonts.googleapis.com before it could paint ANYTHING, which is
+     exactly the "takes a second before you see the site" delay, and once
+     it finally did paint, the actual font files were often still
+     downloading - so text (including the gold headings/labels) visibly
+     swapped from the fallback font a beat later. Loading it as
+     rel="preload" and only switching it to a real stylesheet once it's
+     done (onload) lets the browser paint the page immediately with the
+     fallback font, then swap to the real fonts smoothly once they're
+     ready - the same technique every major site uses. The <noscript>
+     tag keeps it working exactly as before for the rare visitor without
+     JS. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Assistant:wght@200;300;400;500;600;700&family=Rubik:wght@300;400;500;600;700&family=Jost:wght@200;300;400;500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Poppins:wght@200;300;400&family=Montserrat:wght@100;200;300;400&display=swap" onload="this.onload=null;this.rel='stylesheet';">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Assistant:wght@200;300;400;500;600;700&family=Rubik:wght@300;400;500;600;700&family=Jost:wght@200;300;400;500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Poppins:wght@200;300;400&family=Montserrat:wght@100;200;300;400&display=swap" rel="stylesheet"></noscript>
 <!-- Preloaded with high priority so the first hero photo is already
      downloading (in parallel with everything else) before the browser
      even reaches the <img> tag in the body - this is what removes the
