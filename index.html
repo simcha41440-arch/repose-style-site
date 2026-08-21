@@ -7081,6 +7081,35 @@ document.getElementById("ck-coupon-apply").addEventListener("click", async ()=>{
   renderCheckoutSummary();
 });
 
+/* Auto-fills and auto-applies a coupon code arriving via ?coupon=CODE in
+   the URL - e.g. a visitor coming from the "האתגר הכללי" trivia
+   mini-site, which shows them a code after finishing the quiz and links
+   back here with it attached. Only ever pre-fills the field and clicks
+   the same "אישור" button a visitor would click themselves - the actual
+   validation still goes through fetchActiveCoupons()/api/coupons.js
+   above like any manually-typed code, so an invalid or inactive code
+   still shows the normal "אינו תקף" message rather than silently
+   applying a discount. Runs once on load; harmless if the param is
+   absent or the visitor isn't on the checkout page yet (the click just
+   waits for them to get there). */
+(function(){
+  try{
+    const code = new URLSearchParams(location.search).get("coupon");
+    if(!code) return;
+    const input = document.getElementById("ck-coupon");
+    const applyBtn = document.getElementById("ck-coupon-apply");
+    if(!input || !applyBtn) return;
+    input.value = code;
+    document.addEventListener("app:view-changed", function tryApply(){
+      if(document.getElementById("view-checkout").classList.contains("active")){
+        applyBtn.click();
+        document.removeEventListener("app:view-changed", tryApply);
+      }
+    });
+    if(document.getElementById("view-checkout").classList.contains("active")) applyBtn.click();
+  }catch(e){}
+})();
+
 /* Timestamp used as a lightweight bot-defense signal on the public forms
    below (contact, checkout, checkout mini-contact, newsletter): a
    genuine visitor needs at least a couple of seconds to fill in a form,
