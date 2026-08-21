@@ -50,8 +50,8 @@
       "/shop/renaissance": "shop-renaissance",
       "/shop/bloom": "shop-bloom",
       "/shop/heritage": "shop-heritage",
-      "/towels": "towels",
       "/sale": "sale",
+      "/towels": "towels",
       "/about": "about",
       "/contact": "contact",
       "/shipping": "shipping",
@@ -77,6 +77,22 @@
          over that rule regardless of its own specificity. */
       style.textContent = "#view-home{display:none !important;}#view-" + view + "{display:block !important;}header.site-nav{--nav-o:1 !important;--nav-f:1 !important;}";
       document.head.appendChild(style);
+    }
+    /* The 3 collection-nav button photos on /shop (see setCollectionNavPhotos()
+       further down) only start loading once that script runs, near the end of
+       this file - so on a direct visit/refresh of /shop they visibly pop in
+       late. Kick off the actual requests here, at the very top of <head>,
+       so the browser fetches them in parallel with the rest of the page
+       instead of waiting for it to finish downloading first. This only
+       fires on /shop, so no other page pays for it. */
+    if(view === "shop"){
+      ["/images/products/yahalom.jpg","/images/products/simfonia-premium.jpg","/images/products/star.jpg"].forEach(function(src){
+        var link = document.createElement("link");
+        link.rel = "preload";
+        link.as = "image";
+        link.href = src;
+        document.head.appendChild(link);
+      });
     }
   }catch(e){}
 })();
@@ -947,20 +963,6 @@ if("serviceWorker" in navigator){
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- The 6 towel product photos are hotlinked from images.unsplash.com
-     (every other product photo on the site is hosted locally under
-     /images/products/, but these were never migrated). That means the
-     browser has to open a brand-new connection - DNS lookup + TLS
-     handshake - to a domain it hasn't talked to yet the moment it hits
-     /towels, on top of the image download itself. Preconnecting here
-     lets the browser do that connection setup in parallel with
-     everything else while the page is still loading, so by the time the
-     towel photos are actually requested only the download itself is
-     left waiting - cutting a real chunk off the "images take a few
-     seconds to show up" delay on that page without touching the photos
-     or the layout at all. */
-<link rel="preconnect" href="https://images.unsplash.com" crossorigin>
-<link rel="dns-prefetch" href="https://images.unsplash.com">
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@200;300;400;500;600;700&family=Rubik:wght@300;400;500;600;700&family=Jost:wght@200;300;400;500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Poppins:wght@200;300;400&family=Montserrat:wght@100;200;300;400&display=swap" rel="stylesheet">
 <!-- Preloaded with high priority so the first hero photo is already
      downloading (in parallel with everything else) before the browser
@@ -3061,12 +3063,6 @@ if("serviceWorker" in navigator){
   body.a11y-grayscale{filter:grayscale(1);}
   body.a11y-spacing, body.a11y-spacing *{letter-spacing:0.06em !important;word-spacing:0.15em !important;line-height:1.9 !important;}
   body.a11y-readable, body.a11y-readable *{font-family:Arial, Verdana, sans-serif !important;}
-  body.a11y-invert{filter:invert(1) hue-rotate(180deg);}
-  body.a11y-invert img, body.a11y-invert video, body.a11y-invert [style*="background-image"]{filter:invert(1) hue-rotate(180deg);}
-  body.a11y-focus *:focus{outline:3px solid #005fcc !important;outline-offset:3px !important;box-shadow:0 0 0 5px rgba(255,255,255,0.85) !important;}
-  body.a11y-bigcursor, body.a11y-bigcursor *{
-    cursor:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" viewBox="0 0 24 24"><path d="M3 2 L3 20 L8 16 L11 22 L14 20.5 L11 14.5 L17 14.5 Z" fill="black" stroke="white" stroke-width="1.5" stroke-linejoin="round"/></svg>') 2 2, auto !important;
-  }
 
   /* ===== Floating WhatsApp button - bottom-right, always available,
      no form to fill in - just opens a chat with the business number. ===== */
@@ -3836,7 +3832,7 @@ if("serviceWorker" in navigator){
       </div>
       <div class="feature-text" style="margin-bottom:36px;">
         <h3>התאמות הנגישות באתר</h3>
-        <p>האתר כולל תפריט נגישות (סמל כסא הגלגלים המופיע בצדי המסך) המאפשר בין היתר: הגדלת והקטנת טקסט, שינוי ניגודיות צבעים, היפוך צבעים, הדגשת קישורים, הדגשת פוקוס עבור גולשי מקלדת, סמן עכבר מוגדל, גווני אפור, ריווח קריאה מוגבר, גופן קריא למתקשים בקריאה, עצירת אנימציות, וקישור "דלג לתוכן הראשי" בתחילת כל עמוד עבור גולשי מקלדת וקוראי מסך.</p>
+        <p>האתר כולל תפריט נגישות (סמל כסא הגלגלים המופיע בצדי המסך) המאפשר בין היתר: הגדלת והקטנת טקסט, שינוי ניגודיות צבעים, הדגשת קישורים, התאמה לגולשי מקלדת וקוראי מסך, עצירת אנימציות ועוד.</p>
       </div>
       <div class="feature-text">
         <h3>פניות בנושא נגישות</h3>
@@ -4287,18 +4283,6 @@ if("serviceWorker" in navigator){
   <div class="a11y-row">
     <span>גופן קריא (דיסלקציה)</span>
     <button type="button" class="a11y-mini" id="a11y-readable-btn">Aa</button>
-  </div>
-  <div class="a11y-row">
-    <span>היפוך צבעים</span>
-    <button type="button" class="a11y-mini" id="a11y-invert-btn">◒</button>
-  </div>
-  <div class="a11y-row">
-    <span>הדגשת פוקוס מקלדת</span>
-    <button type="button" class="a11y-mini" id="a11y-focus-btn">⌗</button>
-  </div>
-  <div class="a11y-row">
-    <span>סמן עכבר מוגדל</span>
-    <button type="button" class="a11y-mini" id="a11y-bigcursor-btn">➤</button>
   </div>
   <div class="a11y-row">
     <span>הצהרת נגישות</span>
@@ -5331,18 +5315,6 @@ function customizableRibbonHTML(p){
     : "";
 }
 
-/* Every product grid on the site (shop, towels, a collection page, sale,
-   related-products) shares this one card template. Photos used to be
-   loading="eager" - fetching the ENTIRE grid's worth of photos the
-   instant the grid renders, all fighting over bandwidth at once,
-   including rows still far below the fold. On a longer grid that's
-   exactly the "scroll down and the photos take a moment to catch up"
-   delay. loading="lazy" fixes that: the browser only starts fetching a
-   photo once it's actually about to enter view, so what's on-screen
-   right now gets the bandwidth instead of competing with a dozen
-   photos nobody has scrolled to yet - while photos already in the
-   initial viewport when the grid renders still start loading
-   immediately, so first paint isn't affected. */
 function productCardHTML(p){
   if(p.hidden) return "";
   const isWished = wishlist.includes(p.id);
@@ -7620,29 +7592,13 @@ function trackSiteVisit(){
 function setCollectionNavPhotos(){
   try{
     const featuredByCollection = { renaissance:"yahalom", bloom:"simfonia-premium", heritage:"star" };
-    /* These 3 buttons render their photo at a fixed 270x340 box (see
-       .collection-btn CSS), but were pulling the exact same full-size
-       file used for the product's own gallery/detail pages (700-1100px
-       wide, 70-115KB) - several times more pixels than a 270x340 box
-       will ever show, even at 2x retina. That's the "collection button
-       photos take a while to load" delay. Dedicated *-nav.jpg copies
-       (resized to the box's actual retina need, still visually the
-       same photo since .cn-bg uses background-size:cover) live
-       alongside the originals so every other use of these products'
-       full photos - cards, product page, lightbox - is untouched. */
-    const NAV_IMG = {
-      yahalom: "/images/products/yahalom-nav.jpg",
-      "simfonia-premium": "/images/products/simfonia-premium-nav.jpg",
-      star: "/images/products/star-nav.jpg"
-    };
     document.querySelectorAll(".collection-btn[data-collection]").forEach(btn=>{
       const key = btn.dataset.collection;
       const p = PRODUCTS.find(x=>x.id === featuredByCollection[key]);
       const bg = btn.querySelector(".cn-bg");
       if(!p || !p.img || !bg) return;
-      const navSrc = NAV_IMG[p.id] || p.img;
-      if(bg.dataset.src === navSrc) return; // already set (or already loading) - avoid re-requesting on repeat calls
-      bg.dataset.src = navSrc;
+      if(bg.dataset.src === p.img) return; // already set (or already loading) - avoid re-requesting on repeat calls
+      bg.dataset.src = p.img;
       /* Preload via a plain Image() so we get a real "loaded" moment to fade
          in on (background-image has no load event of its own). If it's
          already cached, the browser resolves this on the next tick anyway,
@@ -7650,10 +7606,10 @@ function setCollectionNavPhotos(){
          a hard, placeholder-less pop. */
       const loader = new Image();
       loader.onload = ()=>{
-        bg.style.backgroundImage = `url("${navSrc}")`;
+        bg.style.backgroundImage = `url("${p.img}")`;
         bg.classList.add("cn-bg-ready");
       };
-      loader.src = navSrc;
+      loader.src = p.img;
     });
   }catch(e){ console.error("setCollectionNavPhotos failed:", e); }
 }
@@ -7710,9 +7666,6 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
   const grayscaleBtn = document.getElementById("a11y-grayscale-btn");
   const spacingBtn = document.getElementById("a11y-spacing-btn");
   const readableBtn = document.getElementById("a11y-readable-btn");
-  const invertBtn = document.getElementById("a11y-invert-btn");
-  const focusBtn = document.getElementById("a11y-focus-btn");
-  const bigcursorBtn = document.getElementById("a11y-bigcursor-btn");
   const statementBtn = document.getElementById("a11y-statement-btn");
   const resetBtn = document.getElementById("a11y-reset-btn");
 
@@ -7768,21 +7721,6 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
     readableBtn.classList.toggle("active");
   });
 
-  invertBtn.addEventListener("click", ()=>{
-    document.body.classList.toggle("a11y-invert");
-    invertBtn.classList.toggle("active");
-  });
-
-  focusBtn.addEventListener("click", ()=>{
-    document.body.classList.toggle("a11y-focus");
-    focusBtn.classList.toggle("active");
-  });
-
-  bigcursorBtn.addEventListener("click", ()=>{
-    document.body.classList.toggle("a11y-bigcursor");
-    bigcursorBtn.classList.toggle("active");
-  });
-
   statementBtn.addEventListener("click", ()=>{
     panel.classList.remove("open");
     toggleBtn.setAttribute("aria-expanded", "false");
@@ -7791,16 +7729,13 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
 
   resetBtn.addEventListener("click", ()=>{
     setFont(0);
-    document.body.classList.remove("a11y-contrast","a11y-underline","a11y-nostop","a11y-grayscale","a11y-spacing","a11y-readable","a11y-invert","a11y-focus","a11y-bigcursor");
+    document.body.classList.remove("a11y-contrast","a11y-underline","a11y-nostop","a11y-grayscale","a11y-spacing","a11y-readable");
     contrastBtn.classList.remove("active");
     underlineBtn.classList.remove("active");
     nostopBtn.classList.remove("active");
     grayscaleBtn.classList.remove("active");
     spacingBtn.classList.remove("active");
     readableBtn.classList.remove("active");
-    invertBtn.classList.remove("active");
-    focusBtn.classList.remove("active");
-    bigcursorBtn.classList.remove("active");
   });
 })();
 
@@ -7817,33 +7752,45 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
    renderViewNow, history.replaceState and initScrollReveal are all
    idempotent. */
 function renderCurrentView(){
-  renderFeatured();
-  renderCircleStrip();
+  /* renderFeatured()/renderCircleStrip() (and the gap-closing measurement
+     right after them) only build/adjust markup that lives inside the
+     home view - but this function used to run them unconditionally on
+     EVERY page load, home or not. On a lightweight page like /contact,
+     that meant a burst of extra DOM building plus a forced synchronous
+     layout (getBoundingClientRect/scrollHeight) for a hidden home-page
+     section had to finish before the visible page settled, which is
+     exactly the "delay and jump before the content/form render properly"
+     - so it's now skipped entirely on any page other than home. */
+  const isHomeView = (window.location.pathname.replace(/\/+$/, "") || "/") === "/";
+  if(isHomeView){
+    renderFeatured();
+    renderCircleStrip();
 
-  /* Close the dead space between the circle showcase and the section
-     after it (see the .bedding-feature CSS comment for why that gap
-     exists) by measuring how much of hero-showcase's 100vh is actually
-     unused once its content is laid out, then pulling the next section
-     up by exactly that much. Re-measured on resize/font-load since both
-     the 100vh figure and the content's own height change with viewport
-     size and font rendering. */
-  (function(){
-    const showcase = document.getElementById("hero-showcase");
-    const inner = document.getElementById("hero-showcase-inner");
-    const beddingFeature = document.querySelector(".bedding-feature");
-    if(!showcase || !inner || !beddingFeature) return;
-    function closeGap(){
-      const showcaseH = showcase.getBoundingClientRect().height;
-      const innerH = inner.scrollHeight;
-      const gap = showcaseH - innerH;
-      beddingFeature.style.marginTop = gap > 0 ? ("-" + gap + "px") : "0";
-    }
-    closeGap();
-    window.addEventListener("resize", closeGap);
-    window.addEventListener("load", closeGap);
-    if(document.fonts && document.fonts.ready) document.fonts.ready.then(closeGap);
-    setTimeout(closeGap, 400); // catch any late image/layout settling
-  })();
+    /* Close the dead space between the circle showcase and the section
+       after it (see the .bedding-feature CSS comment for why that gap
+       exists) by measuring how much of hero-showcase's 100vh is actually
+       unused once its content is laid out, then pulling the next section
+       up by exactly that much. Re-measured on resize/font-load since both
+       the 100vh figure and the content's own height change with viewport
+       size and font rendering. */
+    (function(){
+      const showcase = document.getElementById("hero-showcase");
+      const inner = document.getElementById("hero-showcase-inner");
+      const beddingFeature = document.querySelector(".bedding-feature");
+      if(!showcase || !inner || !beddingFeature) return;
+      function closeGap(){
+        const showcaseH = showcase.getBoundingClientRect().height;
+        const innerH = inner.scrollHeight;
+        const gap = showcaseH - innerH;
+        beddingFeature.style.marginTop = gap > 0 ? ("-" + gap + "px") : "0";
+      }
+      closeGap();
+      window.addEventListener("resize", closeGap);
+      window.addEventListener("load", closeGap);
+      if(document.fonts && document.fonts.ready) document.fonts.ready.then(closeGap);
+      setTimeout(closeGap, 400); // catch any late image/layout settling
+    })();
+  }
 
   updateCartUI();
   updateWishlistUI();
