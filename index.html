@@ -5564,6 +5564,27 @@ function syncProductStructuredData(){
   }catch(e){ /* malformed/missing block - leave the static defaults in place */ }
 }
 
+/* Swaps an <img>'s src only after the new image has finished downloading
+   in the background, instead of pointing the visible element straight at
+   an unfetched URL. Setting el.src directly makes the browser clear the
+   element and show it half-decoded/blank while the new file streams in -
+   this is what caused the hero photo (and any admin-uploaded content
+   image) to sometimes flash or look blurry for a moment on first load.
+   Preloading off-screen first means the swap only happens once the image
+   is already sitting in the browser cache, so it appears instantly, with
+   no in-between frame. Same technique already used by the product-photo
+   lightbox above (see openImageLightbox). Skipped entirely if the value
+   already matches what's showing, so nothing re-downloads for no reason. */
+function preloadThenSetSrc(el, val){
+  if(!el || !val) return;
+  let resolved = val;
+  try{ resolved = new URL(val, location.href).href; }catch(e){}
+  if(el.src === resolved) return;
+  const pre = new Image();
+  pre.onload = pre.onerror = function(){ el.src = val; };
+  pre.src = val;
+}
+
 /* Applies text/image overrides saved from the admin panel's "עריכת תוכן"
    tab (see api/content.js) onto any element in the page marked with a
    data-content-key attribute - the homepage hero title/subtitle/slides
@@ -5591,7 +5612,7 @@ async function applyContentOverrides(){
       const val = content[key];
       if(val === undefined || val === null || val === "") return;
       if(el.tagName === "IMG"){
-        el.src = val;
+        preloadThenSetSrc(el, val);
       } else {
         el.textContent = val;
       }
@@ -5627,7 +5648,7 @@ function applyHeroBanner(content){
     return;
   }
   document.body.classList.remove("hero-simple"); // banner image wins if both are on
-  imgEl.src = imageUrl;
+  preloadThenSetSrc(imgEl, imageUrl);
   const linkUrl = (content.hero_banner_link_url || "").trim();
   if(linkUrl){
     linkEl.href = linkUrl;
