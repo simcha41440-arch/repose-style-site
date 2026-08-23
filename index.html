@@ -7729,10 +7729,17 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
      the checkout/payment panel on the right). This is session-only:
      every fresh page load / refresh resets it to the default
      bottom-right spot. It can be dragged freely in any direction,
-     including further down toward the bottom edge. */
+     including further down toward the bottom edge.
+
+     Normally a short press-and-hold arms drag mode (so a plain click
+     still opens WhatsApp). Two ways to skip that wait and drag right
+     away: double-click/double-tap the button, or hold Shift while
+     pressing it. */
   const HOLD_MS = 350; // how long to press before drag mode kicks in
+  const DBLCLICK_MS = 350; // max gap between presses to count as a double-click/tap
   let dragging = false, moved = false, holdTimer = null, pressed = false;
   let startX = 0, startY = 0, startLeft = 0, startTop = 0;
+  let lastPressTime = 0;
 
   // Belt-and-suspenders: some browsers try to start a native
   // "drag this link" operation on an <a>. Block it outright so it
@@ -7763,17 +7770,28 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
     tip.style.top = (r.top + r.height/2 - tip.offsetHeight/2) + "px";
   }
 
-  function startPress(clientX, clientY){
+  function armDrag(){
+    dragging = true;
+    btn.classList.add("wa-dragging");
+    if(tip) tip.classList.remove("show");
+  }
+
+  function startPress(clientX, clientY, instant){
     pressed = true; moved = false; dragging = false;
     const r = btn.getBoundingClientRect();
     startLeft = r.left; startTop = r.top;
     startX = clientX; startY = clientY;
     clearTimeout(holdTimer);
-    holdTimer = setTimeout(function(){
-      dragging = true;
-      btn.classList.add("wa-dragging");
-      if(tip) tip.classList.remove("show");
-    }, HOLD_MS);
+
+    const now = Date.now();
+    const isDoublePress = (now - lastPressTime) < DBLCLICK_MS;
+    lastPressTime = now;
+
+    if(instant || isDoublePress){
+      armDrag();
+    } else {
+      holdTimer = setTimeout(armDrag, HOLD_MS);
+    }
   }
 
   function movePress(clientX, clientY){
@@ -7801,15 +7819,17 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
   // Mouse
   btn.addEventListener("mousedown", function(e){
     if(e.button !== 0) return;
-    startPress(e.clientX, e.clientY);
+    startPress(e.clientX, e.clientY, e.shiftKey);
   });
   window.addEventListener("mousemove", function(e){ movePress(e.clientX, e.clientY); });
   window.addEventListener("mouseup", endPress);
 
-  // Touch
+  // Touch (double-tap is handled the same way as double-click, via
+  // the lastPressTime gap check in startPress - there's no shiftKey
+  // equivalent on touch, so only the double-tap shortcut applies)
   btn.addEventListener("touchstart", function(e){
     const t = e.touches[0];
-    if(t) startPress(t.clientX, t.clientY);
+    if(t) startPress(t.clientX, t.clientY, false);
   }, {passive:true});
   window.addEventListener("touchmove", function(e){
     if(!dragging) return;
