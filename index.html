@@ -7724,13 +7724,12 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
      bottom-right spot. It can be dragged freely in any direction,
      including further down toward the bottom edge. */
   const HOLD_MS = 350; // how long to press before drag mode kicks in
-  let dragging = false, moved = false, holdTimer = null, pointerId = null;
+  let dragging = false, moved = false, holdTimer = null, pressed = false;
   let startX = 0, startY = 0, startLeft = 0, startTop = 0;
 
-  // Belt-and-suspenders: some browsers still try to start a native
-  // "drag this link" operation on an <a> even with draggable="false"
-  // on slower/older builds. That native drag is what caused the button
-  // to get stuck mid-move until an unrelated key press. Block it outright.
+  // Belt-and-suspenders: some browsers try to start a native
+  // "drag this link" operation on an <a>. Block it outright so it
+  // never interferes with our own drag handling below.
   btn.addEventListener("dragstart", function(e){ e.preventDefault(); });
 
   function clamp(val, min, max){ return Math.min(Math.max(val, min), max); }
@@ -7757,62 +7756,65 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
     tip.style.top = (r.top + r.height/2 - tip.offsetHeight/2) + "px";
   }
 
-
-  btn.addEventListener("pointerdown", function(e){
-    if(e.button !== undefined && e.button !== 0) return;
-    moved = false; dragging = false;
-    pointerId = e.pointerId;
+  function startPress(clientX, clientY){
+    pressed = true; moved = false; dragging = false;
     const r = btn.getBoundingClientRect();
     startLeft = r.left; startTop = r.top;
-    startX = e.clientX; startY = e.clientY;
-    if(btn.setPointerCapture){ try{ btn.setPointerCapture(e.pointerId); }catch(err){} }
-    // Only start drag mode after a deliberate press-and-hold, so a
-    // normal quick click still opens WhatsApp like on any other site.
+    startX = clientX; startY = clientY;
     clearTimeout(holdTimer);
     holdTimer = setTimeout(function(){
       dragging = true;
       btn.classList.add("wa-dragging");
       if(tip) tip.classList.remove("show");
     }, HOLD_MS);
-  });
+  }
 
-  window.addEventListener("pointermove", function(e){
-    if(pointerId === null) return;
+  function movePress(clientX, clientY){
+    if(!pressed) return;
     if(!dragging){
-      // Cancel the pending hold if the pointer wanders before it fires -
-      // that's a normal click/drag-of-the-page, not a press-and-hold.
-      const dx = e.clientX - startX, dy = e.clientY - startY;
+      const dx = clientX - startX, dy = clientY - startY;
+      // Pointer wandered before the hold fired - that's a normal
+      // click, not a press-and-hold. Cancel the pending drag.
       if(Math.abs(dx) > 6 || Math.abs(dy) > 6){ clearTimeout(holdTimer); }
       return;
     }
-    const dx = e.clientX - startX, dy = e.clientY - startY;
+    const dx = clientX - startX, dy = clientY - startY;
     if(Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
-    if(moved){
-      placeAt(startLeft + dx, startTop + dy);
-    }
-  });
+    if(moved){ placeAt(startLeft + dx, startTop + dy); }
+  }
 
-  window.addEventListener("pointerup", function(){
+  function endPress(){
     clearTimeout(holdTimer);
-    pointerId = null;
+    pressed = false;
     if(!dragging) return;
     dragging = false;
     btn.classList.remove("wa-dragging");
-  });
+  }
 
-  // Safety nets: force-stop dragging if the pointer gets interrupted
-  // (e.g. released outside the window, or the tab loses focus) so it
-  // can never get stuck mid-drag.
-  window.addEventListener("pointercancel", function(){
-    clearTimeout(holdTimer);
-    pointerId = null; dragging = false;
-    btn.classList.remove("wa-dragging");
+  // Mouse
+  btn.addEventListener("mousedown", function(e){
+    if(e.button !== 0) return;
+    startPress(e.clientX, e.clientY);
   });
-  window.addEventListener("blur", function(){
-    clearTimeout(holdTimer);
-    pointerId = null; dragging = false;
-    btn.classList.remove("wa-dragging");
-  });
+  window.addEventListener("mousemove", function(e){ movePress(e.clientX, e.clientY); });
+  window.addEventListener("mouseup", endPress);
+
+  // Touch
+  btn.addEventListener("touchstart", function(e){
+    const t = e.touches[0];
+    if(t) startPress(t.clientX, t.clientY);
+  }, {passive:true});
+  window.addEventListener("touchmove", function(e){
+    if(!dragging) return;
+    const t = e.touches[0];
+    if(t){ movePress(t.clientX, t.clientY); e.preventDefault(); }
+  }, {passive:false});
+  window.addEventListener("touchend", endPress);
+  window.addEventListener("touchcancel", endPress);
+
+  // Safety net: force-stop dragging if the tab loses focus mid-drag,
+  // so it can never get stuck.
+  window.addEventListener("blur", endPress);
 
   window.addEventListener("resize", function(){
     // Only reclamp if it was actually dragged this session (i.e. left/top
