@@ -3088,7 +3088,9 @@ if("serviceWorker" in navigator){
     box-shadow:0 10px 26px -6px rgba(20,16,12,0.5);
     text-decoration:none;
     transition:transform .3s ease, box-shadow .3s ease;
+    touch-action:none;user-select:none;-webkit-user-select:none;
   }
+  #wa-float.wa-dragging{transition:none;}
   #wa-float:hover{transform:scale(1.08);box-shadow:0 14px 32px -6px rgba(20,16,12,0.55);}
   #wa-float svg{width:30px;height:30px;fill:#fff;}
   #wa-float::before{
@@ -7713,8 +7715,98 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
   if(tip){
     btn.addEventListener("mouseenter", ()=> tip.classList.add("show"));
     btn.addEventListener("mouseleave", ()=> tip.classList.remove("show"));
-    btn.addEventListener("click", ()=> tip.classList.remove("show"));
   }
+
+  /* ---- Drag to reposition ----
+     Lets visitors drag the button out of the way (e.g. when it covers
+     the checkout/payment panel on the right). This is session-only:
+     every fresh page load / refresh resets it to the default
+     bottom-right spot. It can be dragged freely in any direction,
+     including further down toward the bottom edge. */
+  const HOLD_MS = 350; // how long to press before drag mode kicks in
+  let dragging = false, moved = false, holdTimer = null, pointerId = null;
+  let startX = 0, startY = 0, startLeft = 0, startTop = 0;
+
+  function clamp(val, min, max){ return Math.min(Math.max(val, min), max); }
+
+  function placeAt(left, top){
+    const w = btn.offsetWidth || 58;
+    const h = btn.offsetHeight || 58;
+    left = clamp(left, 4, window.innerWidth - w - 4);
+    top = clamp(top, 4, window.innerHeight - h - 4);
+    btn.style.left = left + "px";
+    btn.style.top = top + "px";
+    btn.style.right = "auto";
+    btn.style.bottom = "auto";
+    positionTip();
+    return {left, top};
+  }
+
+  function positionTip(){
+    if(!tip) return;
+    const r = btn.getBoundingClientRect();
+    tip.style.left = "auto";
+    tip.style.bottom = "auto";
+    tip.style.right = (window.innerWidth - r.left + 10) + "px";
+    tip.style.top = (r.top + r.height/2 - tip.offsetHeight/2) + "px";
+  }
+
+
+  btn.addEventListener("pointerdown", function(e){
+    if(e.button !== undefined && e.button !== 0) return;
+    moved = false; dragging = false;
+    pointerId = e.pointerId;
+    const r = btn.getBoundingClientRect();
+    startLeft = r.left; startTop = r.top;
+    startX = e.clientX; startY = e.clientY;
+    if(btn.setPointerCapture){ try{ btn.setPointerCapture(e.pointerId); }catch(err){} }
+    // Only start drag mode after a deliberate press-and-hold, so a
+    // normal quick click still opens WhatsApp like on any other site.
+    clearTimeout(holdTimer);
+    holdTimer = setTimeout(function(){
+      dragging = true;
+      btn.classList.add("wa-dragging");
+      if(tip) tip.classList.remove("show");
+    }, HOLD_MS);
+  });
+
+  window.addEventListener("pointermove", function(e){
+    if(pointerId === null) return;
+    if(!dragging){
+      // Cancel the pending hold if the pointer wanders before it fires -
+      // that's a normal click/drag-of-the-page, not a press-and-hold.
+      const dx = e.clientX - startX, dy = e.clientY - startY;
+      if(Math.abs(dx) > 6 || Math.abs(dy) > 6){ clearTimeout(holdTimer); }
+      return;
+    }
+    const dx = e.clientX - startX, dy = e.clientY - startY;
+    if(Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
+    if(moved){
+      placeAt(startLeft + dx, startTop + dy);
+    }
+  });
+
+  window.addEventListener("pointerup", function(){
+    clearTimeout(holdTimer);
+    pointerId = null;
+    if(!dragging) return;
+    dragging = false;
+    btn.classList.remove("wa-dragging");
+  });
+
+  window.addEventListener("resize", function(){
+    // Only reclamp if it was actually dragged this session (i.e. left/top
+    // were set) - otherwise leave the original CSS bottom/right in place.
+    if(btn.style.left){
+      const r = btn.getBoundingClientRect();
+      placeAt(r.left, r.top);
+    }
+  });
+
+  btn.addEventListener("click", function(e){
+    if(moved){ e.preventDefault(); moved = false; }
+    else if(tip){ tip.classList.remove("show"); }
+  });
 })();
 
 /* ============================================================
