@@ -3081,7 +3081,7 @@ if("serviceWorker" in navigator){
   /* ===== Floating WhatsApp button - bottom-right, always available,
      no form to fill in - just opens a chat with the business number. ===== */
   #wa-float{
-    position:fixed;bottom:26px;right:22px;z-index:980;
+    position:fixed;bottom:26px;right:22px;z-index:1150;
     width:58px;height:58px;border-radius:50%;
     background:var(--green-wa);color:#fff;
     display:flex;align-items:center;justify-content:center;
@@ -7705,13 +7705,20 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
   // Shows a small "דברו איתנו" tooltip once per visit, a few seconds
   // after the page settles, so the button doesn't feel like it's
   // shouting from the first frame.
-  if(tip && !sessionStorage.getItem("rs_wa_tip_shown")){
-    setTimeout(()=>{
-      tip.classList.add("show");
-      sessionStorage.setItem("rs_wa_tip_shown", "1");
-      setTimeout(()=> tip.classList.remove("show"), 5000);
-    }, 2500);
-  }
+  // Guarded: some browsers block sessionStorage entirely (e.g. when a
+  // page is opened directly as a local file rather than via a server).
+  // Without this try/catch, that throws here and silently kills every
+  // line of script after it in this block - including the drag setup
+  // below - which is what made the button seem stuck/undraggable.
+  try{
+    if(tip && !sessionStorage.getItem("rs_wa_tip_shown")){
+      setTimeout(()=>{
+        tip.classList.add("show");
+        try{ sessionStorage.setItem("rs_wa_tip_shown", "1"); }catch(e){}
+        setTimeout(()=> tip.classList.remove("show"), 5000);
+      }, 2500);
+    }
+  }catch(e){}
   if(tip){
     btn.addEventListener("mouseenter", ()=> tip.classList.add("show"));
     btn.addEventListener("mouseleave", ()=> tip.classList.remove("show"));
