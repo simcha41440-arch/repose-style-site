@@ -21,6 +21,27 @@
      script takes over (see the "INIT" section at the bottom of the page). -->
 <script>
 (function(){
+  /* Stop the browser from silently restoring the previous scroll
+     position on an actual page refresh. By default
+     (history.scrollRestoration = "auto"), reloading the page while
+     scrolled down first paints at scrollY 0 - the nav renders in its
+     "top of page" state (unscrolled / transparent-over-hero on the
+     homepage, 104px tall) - and then, a beat later, the browser jumps
+     the page back down to where it was, flipping the nav to its
+     "scrolled" state (opaque, 80px tall) right after first paint.
+     That's the visible "toolbar jumps for a moment" on refresh.
+     This only applies to an actual reload - back/forward navigation
+     is deliberately left alone (see the "First paint" comment in the
+     scroll script further down), since restoring scroll position
+     there is expected and already handled correctly. */
+  try{
+    var navEntry = performance.getEntriesByType && performance.getEntriesByType("navigation")[0];
+    var isReload = navEntry ? navEntry.type === "reload" : (performance.navigation && performance.navigation.type === 1);
+    if(isReload && "scrollRestoration" in history){
+      history.scrollRestoration = "manual";
+      window.scrollTo(0, 0);
+    }
+  }catch(e){}
   try{
     var path = location.pathname.replace(/\/+$/, "") || "/";
     var map = {
@@ -29,6 +50,7 @@
       "/shop/renaissance": "shop-renaissance",
       "/shop/bloom": "shop-bloom",
       "/shop/heritage": "shop-heritage",
+      "/sale": "sale",
       "/towels": "towels",
       "/about": "about",
       "/contact": "contact",
@@ -46,8 +68,31 @@
     if(view !== "home"){
       var style = document.createElement("style");
       style.id = "rs-initial-view-style";
-      style.textContent = "#view-home{display:none !important;}#view-" + view + "{display:block !important;}";
+      /* Also force the header fully opaque right away on every non-home
+         page. Without this, header.site-nav stays transparent (--nav-o:0)
+         for a brief moment on load: the CSS rule below that drives the
+         transparent-over-hero state matches on #view-home still carrying
+         its raw-markup "active" class, which isn't removed until the
+         main script's deferred init runs a beat later. !important wins
+         over that rule regardless of its own specificity. */
+      style.textContent = "#view-home{display:none !important;}#view-" + view + "{display:block !important;}header.site-nav{--nav-o:1 !important;--nav-f:1 !important;}";
       document.head.appendChild(style);
+    }
+    /* The 3 collection-nav button photos on /shop (see setCollectionNavPhotos()
+       further down) only start loading once that script runs, near the end of
+       this file - so on a direct visit/refresh of /shop they visibly pop in
+       late. Kick off the actual requests here, at the very top of <head>,
+       so the browser fetches them in parallel with the rest of the page
+       instead of waiting for it to finish downloading first. This only
+       fires on /shop, so no other page pays for it. */
+    if(view === "shop"){
+      ["/images/products/yahalom.jpg","/images/products/simfonia-premium.jpg","/images/products/star.jpg"].forEach(function(src){
+        var link = document.createElement("link");
+        link.rel = "preload";
+        link.as = "image";
+        link.href = src;
+        document.head.appendChild(link);
+      });
     }
   }catch(e){}
 })();
@@ -84,7 +129,7 @@
   "@context": "https://schema.org",
   "@type": "Organization",
   "name": "רפאוז סטייל",
-  "alternateName": ["Repose Style", "Reposestyle"],
+  "alternateName": ["Repose Style", "Reposestyle", "rptuz xyhhk"],
   "url": "https://reposestyle.com/",
   "logo": "https://reposestyle.com/logo.png",
   "address": {
@@ -918,7 +963,35 @@ if("serviceWorker" in navigator){
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- The Google Fonts stylesheet used to be a normal render-blocking
+     <link rel="stylesheet">: the browser had to wait for a full round
+     trip to fonts.googleapis.com before it could paint ANYTHING, which is
+     exactly the "takes a second before you see the site" delay, and once
+     it finally did paint, the actual font files were often still
+     downloading - so text (including the gold headings/labels) visibly
+     swapped from the fallback font a beat later. Loading it as
+     rel="preload" and only switching it to a real stylesheet once it's
+     done (onload) lets the browser paint the page immediately with the
+     fallback font, then swap to the real fonts smoothly once they're
+     ready - the same technique every major site uses. The <noscript>
+     tag keeps it working exactly as before for the rare visitor without
+     JS. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Assistant:wght@200;300;400;500;600;700&family=Rubik:wght@300;400;500;600;700&family=Jost:wght@200;300;400;500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Poppins:wght@200;300;400&family=Montserrat:wght@100;200;300;400&display=swap" onload="this.onload=null;this.rel='stylesheet';">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Assistant:wght@200;300;400;500;600;700&family=Rubik:wght@300;400;500;600;700&family=Jost:wght@200;300;400;500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Poppins:wght@200;300;400&family=Montserrat:wght@100;200;300;400&display=swap" rel="stylesheet"></noscript>
+<!-- Preloaded with high priority so the first hero photo is already
+     downloading (in parallel with everything else) before the browser
+     even reaches the <img> tag in the body - this is what removes the
+     brief dark flash visitors saw before the photo appeared. -->
+<link rel="preload" as="image" href="/images/site/hero-new/hero-bg-1.jpg" fetchpriority="high">
+<!-- The 3 collection-nav button photos (Renaissance/Bloom/Heritage) are only
+     ever set via JS (see setCollectionNavPhotos), so without a preload hint
+     the browser doesn't start fetching them until that script runs partway
+     through the page - these hints let the browser start fetching them
+     immediately, in parallel with everything else, so they're ready (or
+     much closer to ready) by the time the buttons need them. -->
+<link rel="preload" as="image" href="/images/products/yahalom.jpg">
+<link rel="preload" as="image" href="/images/products/simfonia-premium.jpg">
+<link rel="preload" as="image" href="/images/products/star.jpg">
 <style>
   :root{
     --cream:#E7C77E;
@@ -943,7 +1016,16 @@ if("serviceWorker" in navigator){
     --radius:999px;
   }
   *{box-sizing:border-box;}
-  html{scroll-behavior:smooth; overflow-anchor:none;}
+  /* scrollbar-gutter:stable reserves the scrollbar's width from the
+     very first frame, even on a short page with nothing to scroll
+     yet. Without it, a page that loads shorter than the viewport
+     (no scrollbar) and then grows taller as images/content settle
+     in (scrollbar appears) shifts the whole centered layout - the
+     nav bar included - sideways by the scrollbar's width for a
+     moment. Reserving the gutter up front means that shift never
+     happens, on every page, not just the ones tall enough to
+     scroll immediately. */
+  html{scroll-behavior:smooth; overflow-anchor:none; scrollbar-gutter:stable;}
   body{
     margin:0;
     background:
@@ -951,7 +1033,17 @@ if("serviceWorker" in navigator){
       radial-gradient(900px 520px at 100% 15%, rgba(238,220,166,0.28), transparent 58%),
       radial-gradient(900px 600px at 0% 85%, rgba(216,185,108,0.22), transparent 60%),
       linear-gradient(180deg, #FFFDF8 0%, #FBF7EE 38%, #F6F0E1 72%, #F1E9D6 100%);
-    background-attachment:fixed;
+    /* background-attachment:fixed removed - it was the main cause of the
+       scroll feeling heavy/janky. A "fixed" background can't be handled
+       by the compositor: because it has to stay pinned to the viewport
+       while everything else moves, the browser has to repaint this
+       four-layer gradient (which covers the ENTIRE page) on the main
+       thread on every single scroll frame, on every page, the whole
+       time you scroll. With it removed the background scrolls normally
+       with the page like everything else and is composited once, so
+       scrolling no longer fights with it. Visually the difference is
+       negligible - these are soft, large-radius glows, not a sharp
+       pattern where a fixed vs. scrolling difference would be obvious. */
     color:var(--text-gold);
     font-family:'Rubik','Almoni Neue',sans-serif;
     font-weight:400;
@@ -986,22 +1078,84 @@ if("serviceWorker" in navigator){
   .container{max-width:1240px;margin:0 auto;padding:0 32px;}
   @media (max-width:640px){.container{padding:0 20px;}}
 
-  /* ===== NAV ===== */
+  /* ===== NAV =====
+     Two flags (both 0→1, both default to 1 = normal opaque header
+     everywhere) drive the whole "transparent over hero, then a
+     separate floating strip, then gold once the heading arrives"
+     effect. On the homepage only, JS sets them inline on the header
+     element — see the scroll script below:
+       --nav-f ("floating") turns on the moment the visitor scrolls
+         even a couple px — a colorless frosted-glass look (blur,
+         faint white tint, soft shadow) that reads as its own bar.
+       --nav-o ("gold") turns on once the "רפאוז סטייל / הקולקציות
+         שלנו" heading (#showcase-heading) scrolls up to meet the
+         bottom of the bar — this is what actually turns it gold.
+     Every visual piece of the bar (background, border, shadow, logo,
+     pill, text/icon color) reads from these two values so it all
+     changes "as one piece" and stays in sync automatically. */
   header.site-nav{
     position:sticky;top:0;z-index:500;
-    background:linear-gradient(180deg, rgba(248,236,201,0.94) 0%, rgba(230,200,119,0.9) 100%);
-    backdrop-filter:blur(6px) saturate(120%);
-    -webkit-backdrop-filter:blur(6px) saturate(120%);
-    border-bottom:1px solid rgba(138,108,46,0.3);
-    transition:box-shadow .35s cubic-bezier(.4,0,.2,1), border-color .35s cubic-bezier(.4,0,.2,1), background .35s cubic-bezier(.4,0,.2,1);
+    --nav-o:1;
+    /* --nav-f (0→1): the "floating" flag. Independent of --nav-o - it
+       turns on the moment the visitor scrolls even a few px, giving the
+       bar a distinct frosted-glass edge (blur + faint neutral tint +
+       shadow) while staying see-through and NOT yet gold. --nav-o only
+       flips to 1 once the "רפאוז סטייל / הקולקציות שלנו" heading further
+       down the page actually reaches the bar (see JS below) - that's
+       what triggers the gold color. The neutral (--nav-f) background/
+       border/shadow layers and the gold (--nav-o) ones are stacked
+       together below so that once --nav-o reaches 1 the gold simply
+       paints over/outweighs the neutral floating look - no extra class
+       needed to swap between them. */
+    --nav-f:1;
+    background:
+      linear-gradient(180deg, rgb(248 236 201 / calc(var(--nav-o) * 0.94)) 0%, rgb(230 200 119 / calc(var(--nav-o) * 0.9)) 100%),
+      linear-gradient(180deg, rgb(255 255 255 / calc(var(--nav-f) * 0.16)) 0%, rgb(255 255 255 / calc(var(--nav-f) * 0.05)) 100%);
+    backdrop-filter:blur(calc(max(var(--nav-o), var(--nav-f)) * 10px)) saturate(calc(100% + var(--nav-o) * 20%));
+    -webkit-backdrop-filter:blur(calc(max(var(--nav-o), var(--nav-f)) * 10px)) saturate(calc(100% + var(--nav-o) * 20%));
+    border-bottom:none;
+    box-shadow:
+      0 10px 30px -18px rgb(43 36 32 / calc(max(var(--nav-o), var(--nav-f) * 0.55) * 0.35)),
+      inset 0 -1px 0 0 rgb(138 108 46 / calc(var(--nav-o) * 0.3)),
+      inset 0 -1px 0 0 rgb(255 255 255 / calc(var(--nav-f) * (1 - var(--nav-o)) * 0.2));
+    transition:box-shadow .35s cubic-bezier(.4,0,.2,1), background .35s cubic-bezier(.4,0,.2,1), backdrop-filter .35s cubic-bezier(.4,0,.2,1);
     transform:translateZ(0);
     backface-visibility:hidden;
     will-change:background;
   }
   header.site-nav.scrolled{
-    background:linear-gradient(180deg, rgba(248,236,201,0.98) 0%, rgba(214,177,94,0.96) 100%);
-    border-bottom-color:rgba(138,108,46,0.4);
-    box-shadow:0 10px 30px -18px rgba(43,36,32,0.35);
+    background:
+      linear-gradient(180deg, rgb(248 236 201 / calc(var(--nav-o) * 0.98)) 0%, rgb(214 177 94 / calc(var(--nav-o) * 0.96)) 100%),
+      linear-gradient(180deg, rgb(255 255 255 / calc(var(--nav-f) * 0.16)) 0%, rgb(255 255 255 / calc(var(--nav-f) * 0.05)) 100%);
+    box-shadow:
+      0 10px 30px -18px rgb(43 36 32 / calc(max(var(--nav-o), var(--nav-f) * 0.55) * 0.35)),
+      inset 0 -1px 0 0 rgb(138 108 46 / calc(var(--nav-o) * 0.4)),
+      inset 0 -1px 0 0 rgb(255 255 255 / calc(var(--nav-f) * (1 - var(--nav-o)) * 0.2));
+  }
+  /* Kills the one-frame flash of a solid header on the homepage.
+     The JS below only sets --nav-o once it runs, so on a fresh load
+     the header briefly rendered fully opaque (--nav-o:1, the default
+     above) before the very first script tick corrected it to 0. The
+     home view starts "active" directly in the HTML markup (no JS
+     needed to know we're on the homepage), so this CSS-only rule can
+     apply the transparent starting state immediately at first paint,
+     before any JS has had a chance to run. It only affects the very
+     top of the page (an inline style from JS - set on first scroll,
+     or once the JS above runs on load - always wins over this once
+     present, so scrolling/other views behave exactly as before).
+     On every other page this rule would also match at first paint
+     (since #view-home keeps its raw-markup "active" class until the
+     deferred main-script init actually swaps it off) - that's covered
+     separately by the early <head> anti-flash script, which forces
+     --nav-o:1 !important on non-home routes before this rule can. */
+  @supports selector(:has(*)){
+    body:has(#view-home.active) header.site-nav:not([style*="--nav-o"]){
+      --nav-o:0;
+      --nav-f:0;
+    }
+  }
+  @media (prefers-reduced-motion:reduce){
+    header.site-nav{transition:none;--nav-o:1 !important;--nav-f:1 !important;}
   }
   .nav-inner{
     max-width:1240px;margin:0 auto;padding:0 32px;
@@ -1011,7 +1165,11 @@ if("serviceWorker" in navigator){
   }
   header.site-nav.scrolled .nav-inner{height:80px;}
   .nav-brand{display:flex;align-items:center;gap:12px;}
-  .nav-brand img{height:58px;width:auto;transition:height .3s cubic-bezier(.4,0,.2,1);}
+  .nav-brand img{
+    height:58px;width:auto;
+    opacity:var(--nav-o);
+    transition:height .3s cubic-bezier(.4,0,.2,1), opacity .3s ease;
+  }
   header.site-nav.scrolled .nav-brand img{height:46px;}
   .nav-brand .brandname{
     font-family:'Rubik','Almoni Neue',sans-serif;
@@ -1021,16 +1179,26 @@ if("serviceWorker" in navigator){
   .nav-brand .brandname span{display:block;font-family:'Rubik','Almoni Neue',sans-serif;font-size:9.5px;letter-spacing:0.28em;color:var(--gold-dark);font-weight:600;text-transform:uppercase;}
   nav.nav-links{
     display:flex;align-items:center;gap:2px;position:relative;
-    background:rgba(255,248,224,0.5);
-    border:1px solid rgba(138,108,46,0.28);
+    background:rgb(255 248 224 / calc(var(--nav-o) * 0.5));
+    border:1px solid rgb(138 108 46 / calc(var(--nav-o) * 0.28));
     border-radius:var(--radius);
     padding:5px;
+    transition:background .3s ease, border-color .3s ease;
   }
+  /* Link color eases between white (readable floating over the hero photo,
+     with a soft shadow for contrast) and the normal gold ink, tracking
+     the same --nav-o used for the rest of the bar. */
   nav.nav-links button, nav.nav-links a{
-    background:none;border:none;color:var(--text-gold);font-size:14.5px;font-weight:600;
+    background:none;border:none;
+    color:color-mix(in srgb, #fff calc((1 - var(--nav-o)) * 100%), var(--text-gold) calc(var(--nav-o) * 100%));
+    text-shadow:
+      0 1px 2px rgb(20 16 12 / calc((1 - var(--nav-o)) * 0.85)),
+      0 0 6px rgb(20 16 12 / calc((1 - var(--nav-o)) * 0.55)),
+      0 1px 8px rgb(20 16 12 / calc((1 - var(--nav-o)) * 0.35));
+    font-size:14.5px;font-weight:600;
     letter-spacing:0.01em;text-decoration:none;cursor:pointer;
     padding:10px 20px;position:relative;z-index:1;border-radius:var(--radius);
-    transition:color .25s ease;
+    transition:color .25s ease, text-shadow .25s ease;
   }
   nav.nav-links button.active, nav.nav-links a.active{color:var(--ivory);}
   .nav-underline{
@@ -1045,13 +1213,17 @@ if("serviceWorker" in navigator){
   .icon-btn{
     background:none;border:none;position:relative;
     display:flex;align-items:center;justify-content:center;
-    width:40px;height:40px;color:var(--text-gold);
+    width:40px;height:40px;
+    color:color-mix(in srgb, #fff calc((1 - var(--nav-o)) * 100%), var(--ink) calc(var(--nav-o) * 100%));
+    filter:
+      drop-shadow(0 1px 2px rgb(20 16 12 / calc((1 - var(--nav-o)) * 0.85)))
+      drop-shadow(0 0 5px rgb(20 16 12 / calc((1 - var(--nav-o)) * 0.5)));
     border-radius:50%;
-    transition:background .25s ease, transform .2s ease, box-shadow .25s ease;
+    transition:background .25s ease, transform .2s ease, box-shadow .25s ease, color .25s ease, filter .25s ease;
   }
   .icon-btn:hover{background:var(--gold-glow);transform:translateY(-1px);}
   .icon-btn:focus-visible{outline:none;box-shadow:0 0 0 2px var(--gold-light);}
-  .icon-btn svg{width:20px;height:20px;stroke:var(--ink);}
+  .icon-btn svg{width:20px;height:20px;stroke:currentColor;}
   .cart-count{
     position:absolute;top:1px;left:1px;
     background:var(--gold-dark);color:#fff;
@@ -1068,8 +1240,12 @@ if("serviceWorker" in navigator){
   }
   .hamburger:hover{background:var(--gold-glow);}
   .hamburger span{
-    position:absolute;width:19px;height:1.6px;background:var(--ink);border-radius:2px;
-    transition:transform .3s ease, opacity .25s ease, top .3s ease;
+    position:absolute;width:19px;height:1.6px;border-radius:2px;
+    background:color-mix(in srgb, #fff calc((1 - var(--nav-o)) * 100%), var(--ink) calc(var(--nav-o) * 100%));
+    filter:
+      drop-shadow(0 1px 2px rgb(20 16 12 / calc((1 - var(--nav-o)) * 0.85)))
+      drop-shadow(0 0 5px rgb(20 16 12 / calc((1 - var(--nav-o)) * 0.5)));
+    transition:transform .3s ease, opacity .25s ease, top .3s ease, background .25s ease;
   }
   .hamburger span:nth-child(1){top:15px;}
   .hamburger span:nth-child(2){top:20px;}
@@ -1133,10 +1309,28 @@ if("serviceWorker" in navigator){
   }
 
   /* ===== HERO ===== */
+  /* Pulled up by the nav's own height so the hero background fills the
+     ENTIRE screen edge-to-edge, from y:0 - the nav (position:sticky,
+     unchanged, still reserves its normal flow height right before this)
+     visually floats on top of it via z-index instead of pushing it down. */
+  .hero-pin-wrap{
+    position:relative;
+    margin-top:-104px;
+    /* Hero and hero-showcase are both position:sticky (see below), so
+       both stay glued to the top of the screen for exactly this much
+       extra scroll room beyond hero's own 100vh. 200vh = hero's 100vh +
+       one more full screen of "curtain" room - the JS-driven translateY
+       on hero-showcase (see the scroll script) maps that range 1:1 to
+       the curtain's position, so the hero never moves a pixel until it's
+       100% covered. */
+    height:200vh;
+  }
   .hero{
-    position:relative;min-height:calc(100vh - 84px);
+    position:sticky;top:0;
+    height:100vh;
     display:flex;align-items:center;justify-content:center;
-    overflow:hidden;background:var(--ink);
+    overflow:hidden;background:#8C837B;
+    z-index:1;
   }
   .hero img.bg{
     position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 30%;
@@ -1154,7 +1348,7 @@ if("serviceWorker" in navigator){
   }
   .hero::after{
     content:"";position:absolute;inset:0;z-index:1;
-    background:linear-gradient(180deg, rgba(20,16,12,0.22) 0%, rgba(20,16,12,0.28) 55%, rgba(20,16,12,0.62) 100%);
+    background:linear-gradient(180deg, rgba(20,16,12,0.34) 0%, rgba(20,16,12,0.24) 18%, rgba(20,16,12,0.28) 55%, rgba(20,16,12,0.62) 100%);
   }
 
   /* ===== HERO LAMPLIGHT — lights glowing on/off inside the bedroom photos ===== */
@@ -1165,6 +1359,7 @@ if("serviceWorker" in navigator){
     filter:blur(18px);
     opacity:0;
     animation:lampPulse 7s ease-in-out infinite;
+    will-change:opacity;
   }
   .light-glow.spot-1{
     left:13%;bottom:24%;width:9vw;height:9vw;min-width:90px;min-height:90px;max-width:170px;max-height:170px;
@@ -1190,15 +1385,51 @@ if("serviceWorker" in navigator){
   @media (prefers-reduced-motion: reduce){
     .light-glow{animation:none;opacity:.55;}
   }
-  .hero-content{position:relative;z-index:3;text-align:center;color:var(--gold-pale);max-width:780px;padding:0 24px;}
-  .hero-content .eyebrow{justify-content:center;color:var(--gold-pale);margin-bottom:22px;}
-  .hero-content .eyebrow::before{background:var(--gold-pale);}
-  .hero-content h1{
-    font-size:clamp(34px,5.5vw,64px);color:var(--gold-pale);line-height:1.18;margin-bottom:22px;
-    background:linear-gradient(135deg, #F6E8BF 0%, var(--gold-pale) 35%, var(--gold-metal) 60%, var(--gold-pale) 100%);
-    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  .hero-brand{
+    position:absolute;z-index:3;right:6vw;left:auto;top:58%;transform:translateY(-50%);
+    width:min(70vw, 900px);text-align:right;pointer-events:none;
   }
-  .hero-content p{font-size:17px;color:var(--ivory);max-width:560px;margin:0 auto 36px;font-weight:300;}
+  .hero-brand-logo{
+    display:block;margin:0 0 14px auto;width:clamp(80px,8.5vw,135px);height:auto;
+    filter:drop-shadow(0 2px 20px rgba(214,177,94,0.35));
+  }
+  .hero-brand-main{
+    display:block;text-align:right;font-family:'Assistant',sans-serif;
+    font-size:clamp(13px,1.4vw,18px);font-weight:300;letter-spacing:0.08em;
+    line-height:1.35;
+    color:var(--cream);
+    filter:drop-shadow(0 1px 2px rgba(0,0,0,0.75)) drop-shadow(0 3px 8px rgba(0,0,0,0.55)) drop-shadow(0 2px 30px rgba(214,177,94,0.4));
+  }
+  @keyframes heroBrandShimmer{
+    0%{background-position:0% 0;}
+    50%{background-position:100% 0;}
+    100%{background-position:0% 0;}
+  }
+  .hero-brand-sub-wrap{
+    position:relative;display:block;margin-top:16px;text-align:right;
+  }
+  .hero-brand-sub{
+    display:block;text-align:right;font-family:'Assistant',sans-serif;font-weight:300;
+    font-size:clamp(30px,4.2vw,54px);letter-spacing:0.03em;
+    color:var(--cream);
+    filter:drop-shadow(0 1px 3px rgba(0,0,0,0.75)) drop-shadow(0 4px 10px rgba(0,0,0,0.55)) drop-shadow(0 2px 30px rgba(214,177,94,0.4));
+    opacity:0.98;
+  }
+  .hero-brand-desc{
+    display:block;text-align:right;font-family:'Assistant',sans-serif;font-weight:300;
+    font-size:clamp(17px,2vw,22px);line-height:1.7;letter-spacing:0.01em;
+    color:var(--ivory);opacity:0.97;
+    text-shadow:0 1px 4px rgba(0,0,0,0.85), 0 2px 6px rgba(0,0,0,0.7), 0 4px 14px rgba(0,0,0,0.55);
+    max-width:560px;margin:16px 0 0 auto;
+  }
+  @media (max-width:860px){
+    .hero-brand{width:90vw;right:5vw;}
+    .hero-brand-logo{width:clamp(64px,17vw,85px);margin-bottom:10px;}
+    .hero-brand-main{font-size:clamp(11px,3vw,14px);}
+    .hero-brand-sub{font-size:clamp(24px,7vw,32px);}
+    .hero-brand-sub-wrap{margin-top:12px;}
+    .hero-brand-desc{font-size:clamp(15px,4vw,18px);max-width:88vw;margin-top:12px;}
+  }
   .btn{
     position:relative;
     display:inline-flex;align-items:center;gap:10px;
@@ -1228,63 +1459,69 @@ if("serviceWorker" in navigator){
   .btn.mail{width:100%;justify-content:center;padding:16px 20px;}
   .btn.mail:hover{background:linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);color:#fff;}
   .btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;box-shadow:none;}
-  .hero-scroll{
-    position:relative;margin:38px auto 0;z-index:3;
-    color:#EDE6D6;font-size:11px;letter-spacing:0.2em;display:flex;flex-direction:column;align-items:center;gap:8px;
+  .hero-scroll-cue{
+    position:absolute;z-index:3;left:50%;bottom:38px;transform:translateX(-50%);
+    display:flex;flex-direction:column;align-items:center;
     opacity:0;transition:opacity 1s ease 1.5s;
+    background:none;border:none;padding:0;cursor:pointer;
   }
-  .hero-scroll .line{position:relative;width:1px;height:34px;background:linear-gradient(180deg, rgba(255,255,255,0.9), transparent);overflow:hidden;}
-  .hero-scroll .dot{position:absolute;top:0;right:-1.5px;width:4px;height:4px;border-radius:50%;background:var(--gold-pale);box-shadow:0 0 6px rgba(238,220,166,0.9);animation:heroScrollDot 1.8s ease-in-out infinite;}
-  .hero.hero-loaded .hero-scroll{animation:heroScrollBounce 2.2s ease-in-out infinite;}
-  @keyframes heroScrollDot{
-    0%{transform:translateY(-4px);opacity:0;}
-    15%{opacity:1;}
-    85%{opacity:1;}
-    100%{transform:translateY(34px);opacity:0;}
+  .hero-scroll-cue .hsc-ring{
+    position:relative;width:42px;height:60px;border-radius:21px;
+    border:1.5px solid rgba(238,220,166,0.6);
+    background:rgba(20,16,12,0.24);
+    backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+    box-shadow:0 12px 28px -14px rgba(20,16,12,0.55), inset 0 1px 0 rgba(255,255,255,0.08);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+    transition:border-color .3s ease, background .3s ease, transform .3s cubic-bezier(.19,1,.22,1), box-shadow .3s ease;
   }
-  @keyframes heroScrollBounce{
-    0%,100%{transform:translateY(0);}
-    50%{transform:translateY(8px);}
+  .hero-scroll-cue:hover .hsc-ring{
+    border-color:rgba(238,220,166,0.95);background:rgba(20,16,12,0.42);transform:scale(1.05);
+    box-shadow:0 16px 34px -14px rgba(20,16,12,0.65), inset 0 1px 0 rgba(255,255,255,0.12);
+  }
+  .hero-scroll-cue .hsc-chevron{
+    width:16px;height:16px;fill:none;stroke:var(--gold-pale);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;
+  }
+  .hero-scroll-cue .hsc-chevron.c2{position:absolute;opacity:0;}
+  .hero.hero-loaded .hero-scroll-cue{opacity:1;}
+  .hero.hero-loaded .hero-scroll-cue .hsc-chevron.c1{animation:hscChevron1 1.8s ease-in-out infinite;}
+  .hero.hero-loaded .hero-scroll-cue .hsc-chevron.c2{animation:hscChevron2 1.8s ease-in-out infinite;}
+  @keyframes hscChevron1{
+    0%{transform:translateY(-11px);opacity:0;}
+    30%{opacity:1;}
+    70%{opacity:1;}
+    100%{transform:translateY(11px);opacity:0;}
+  }
+  @keyframes hscChevron2{
+    0%{transform:translateY(-22px);opacity:0;}
+    30%{opacity:0;}
+    50%{opacity:.55;}
+    100%{transform:translateY(0px);opacity:0;}
+  }
+  @media (max-width:860px){
+    .hero-scroll-cue .hsc-ring{width:38px;height:54px;border-radius:19px;}
   }
   @media (prefers-reduced-motion:reduce){
-    .hero-scroll .dot{animation:none;}
-    .hero.hero-loaded .hero-scroll{animation:none;}
+    .hero-scroll-cue .hsc-chevron{animation:none !important;opacity:1;}
+    .hero-scroll-cue .hsc-chevron.c2{display:none;}
   }
 
   /* ===== LUXURY MOTION: HERO ENTRANCE ===== */
-  .hero-content{will-change:transform,opacity;}
-  .hero-content .rs-mark-img,
-  .hero-content .eyebrow,
-  .hero-content .hero-tagline,
-  .hero-content .hero-subtagline,
-  .hero-content .btn{
+  .hero-brand{will-change:transform,opacity;}
+  .hero-brand-logo,
+  .hero-brand-main,
+  .hero-brand-sub{
     opacity:0;transform:translateY(26px);
-    transition:opacity 1.1s cubic-bezier(.19,1,.22,1), transform 1.1s cubic-bezier(.19,1,.22,1);
+    transition:opacity 1.2s cubic-bezier(.19,1,.22,1), transform 1.2s cubic-bezier(.19,1,.22,1);
   }
-  .hero-content .rs-mark-img{transition-delay:.1s;}
-  .hero-content .eyebrow{transition-delay:.32s;}
-  .hero-content .hero-tagline{transition-delay:.5s;}
-  .hero-content .hero-subtagline{transition-delay:.95s;}
-  .hero-content .btn{transition-delay:1.18s;}
-  .hero.hero-loaded .hero-scroll{opacity:1;}
-  .hero.hero-loaded .hero-content .rs-mark-img,
-  .hero.hero-loaded .hero-content .eyebrow,
-  .hero.hero-loaded .hero-content .hero-tagline,
-  .hero.hero-loaded .hero-content .hero-subtagline,
-  .hero.hero-loaded .hero-content .btn{
+  .hero-brand-logo{transition-delay:0s;}
+  .hero-brand-main{transition-delay:.15s;}
+  .hero-brand-sub{transition-delay:.4s;}
+  .hero.hero-loaded .hero-scroll-cue{opacity:1;}
+  .hero.hero-loaded .hero-brand-logo,
+  .hero.hero-loaded .hero-brand-main,
+  .hero.hero-loaded .hero-brand-sub{
     opacity:1;transform:translateY(0);
   }
-  /* headline: words drift in individually */
-  .hero-tagline{overflow:hidden;}
-  .hero-tagline .rw{display:inline-block;overflow:hidden;vertical-align:top;}
-  .hero-tagline .rw span{display:inline-block;transform:translateY(120%);transition:transform 1s cubic-bezier(.19,1,.22,1);}
-  .hero.hero-loaded .hero-tagline .rw span{transform:translateY(0);}
-  .hero.hero-loaded .hero-tagline .rw:nth-child(1) span{transition-delay:.55s;}
-  .hero.hero-loaded .hero-tagline .rw:nth-child(2) span{transition-delay:.62s;}
-  .hero.hero-loaded .hero-tagline .rw:nth-child(3) span{transition-delay:.69s;}
-  .hero.hero-loaded .hero-tagline .rw:nth-child(4) span{transition-delay:.76s;}
-  .hero.hero-loaded .hero-tagline .rw:nth-child(5) span{transition-delay:.83s;}
-  .hero.hero-loaded .hero-tagline .rw:nth-child(6) span{transition-delay:.9s;}
 
   /* ===== LUXURY MOTION: SCROLL REVEALS ===== */
   .reveal{
@@ -1315,9 +1552,8 @@ if("serviceWorker" in navigator){
   .cta-band .btn.reveal{transition-delay:.28s;}
   @media (prefers-reduced-motion: reduce){
     .reveal,.reveal-scale,.feature-row,
-    .hero-content .rs-mark-img,.hero-content .eyebrow,.hero-content .hero-tagline,
-    .hero-content .hero-subtagline,.hero-content .btn,
-    .hero-tagline .rw span,.hero-scroll{
+    .hero-brand-logo,.hero-brand-main,.hero-brand-sub,.hero-scroll-cue,
+    .bedding-feature .bedding-img,.bedding-feature .bedding-copy{
       transition:none !important;opacity:1 !important;transform:none !important;
     }
   }
@@ -1331,7 +1567,7 @@ if("serviceWorker" in navigator){
   .block-head p{color:var(--taupe);font-size:16px;font-weight:300;}
 
   /* ===== BENEFITS ===== */
-  .benefits{background:var(--ivory);border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
+  .benefits{background:var(--ivory);border-bottom:1px solid var(--line);position:relative;z-index:2;margin-top:-1px;}
   .benefits-grid{
     display:grid;grid-template-columns:repeat(4,1fr);gap:0;
   }
@@ -1348,36 +1584,55 @@ if("serviceWorker" in navigator){
   }
   @media (max-width:480px){.benefits-grid{grid-template-columns:1fr;}}
 
-  /* ===== HERO SHOWCASE — circle strip that peeks up over the hero's bottom edge ===== */
-  .hero-fade{
-    position:absolute;left:0;right:0;bottom:0;height:230px;z-index:2;pointer-events:none;
-    background:linear-gradient(180deg, transparent 0%, rgba(251,247,238,0.5) 58%, #FBF7EE 100%);
-  }
+  /* ===== HERO SHOWCASE — a true curtain rising over the pinned hero =====
+  /* ===== HERO SHOWCASE — a true curtain rising over the pinned hero =====
+     .hero-showcase sits in completely normal document flow, right after
+     .hero, inside the same tall .hero-pin-wrap. That alone is enough: as
+     the visitor scrolls, hero-showcase's own top edge naturally travels
+     from just-below-the-screen up to the very top over EXACTLY one
+     viewport-height of scroll - and that is precisely the same scroll
+     range .hero stays glued in place for (see .hero-pin-wrap comment
+     above), because hero-showcase starts right where hero's own 100vh
+     box ends. No JS needed: the hero never moves a pixel while the
+     curtain rises over it, and it finishes covering at the exact moment
+     hero would otherwise start scrolling away - by then it's already
+     hidden underneath, so that motion is invisible. Scroll exactly
+     halfway through that range and the curtain sits at exactly the
+     middle of the screen. */
   .hero-showcase{
-    position:relative;z-index:5;margin-top:-102px;width:100%;
-    opacity:0;transform:translateY(24px);
-    transition:opacity 1.1s cubic-bezier(.19,1,.22,1) 1.25s, transform 1.1s cubic-bezier(.19,1,.22,1) 1.25s;
+    position:relative;
+    height:100vh;width:100%;z-index:2;
+    background:#FBF7EE;
   }
-  .hero.hero-loaded ~ .hero-showcase{opacity:1;transform:translateY(0);}
+  .hero-showcase-inner{
+    /* Natural content height (NOT height:100%) - the gap-closing script
+       needs to measure how tall this content actually is versus the
+       fixed 100vh of .hero-showcase around it. */
+  }
+
+  .showcase-heading{
+    text-align:center;padding:52px 24px 18px;
+  }
+  .showcase-heading .eyebrow{justify-content:center;margin-bottom:10px;}
+  .showcase-heading h2{
+    font-size:clamp(24px,3.4vw,38px);color:var(--text-gold);line-height:1.2;margin-bottom:4px;
+  }
 
   .circle-strip{
-    position:relative;overflow:hidden;padding:14px 0 10px;direction:ltr;
+    position:relative;overflow:hidden;padding:20px 0 70px;direction:ltr;
     -webkit-mask-image:linear-gradient(90deg, transparent 0, #000 4%, #000 96%, transparent 100%);
     mask-image:linear-gradient(90deg, transparent 0, #000 4%, #000 96%, transparent 100%);
   }
   .circle-track{
-    display:flex;align-items:flex-start;gap:34px;width:max-content;direction:ltr;
+    display:flex;align-items:flex-start;gap:40px;width:max-content;direction:ltr;
     will-change:transform;backface-visibility:hidden;
   }
   .circle-item{
-    flex:0 0 auto;width:152px;display:flex;flex-direction:column;align-items:center;
+    flex:0 0 auto;width:176px;display:flex;flex-direction:column;align-items:center;
     text-align:center;cursor:pointer;text-decoration:none;
-    opacity:0;transform:translateY(18px) scale(.9);
-    transition:opacity .7s cubic-bezier(.19,1,.22,1), transform .7s cubic-bezier(.19,1,.22,1);
   }
-  .hero.hero-loaded ~ .hero-showcase .circle-item{opacity:1;transform:translateY(0) scale(1);}
   .circle-frame{
-    position:relative;width:128px;height:128px;border-radius:50%;
+    position:relative;width:150px;height:150px;border-radius:50%;
     box-shadow:0 18px 36px -14px rgba(43,36,32,0.45);
     transition:transform .5s cubic-bezier(.19,1,.22,1), box-shadow .5s ease;
   }
@@ -1402,20 +1657,27 @@ if("serviceWorker" in navigator){
   .circle-item:hover .circle-frame{transform:translateY(-8px) scale(1.06);box-shadow:0 26px 48px -14px rgba(43,36,32,0.55);}
   .circle-item:hover .circle-frame::after{box-shadow:0 0 0 9px rgba(208,177,94,0.16);}
   .circle-item:hover .circle-img img{transform:scale(1.12);}
-  .circle-name{margin-top:15px;font-size:13.5px;letter-spacing:0.03em;color:var(--text-gold);font-weight:600;white-space:nowrap;transition:letter-spacing .4s ease,color .4s ease;}
-  .circle-item:hover .circle-name{color:var(--gold-dark);letter-spacing:0.06em;}
+  .circle-name-en{
+    position:relative;z-index:2;display:inline-block;margin-top:-17px;padding:4px 13px;
+    font-family:'Rubik','Almoni Neue',sans-serif;
+    font-size:9.5px;letter-spacing:0.16em;font-weight:600;color:var(--gold-dark);
+    background:#FBF7EE;
+    border:1px solid rgba(176,138,62,0.45);border-radius:20px;
+    direction:ltr;white-space:nowrap;
+    transition:letter-spacing .4s ease,color .4s ease;
+  }
+  .circle-item:hover .circle-name-en{color:var(--gold-light);background:var(--gold-dark);letter-spacing:0.2em;}
   @media (max-width:760px){
-    .hero-fade{height:170px;}
-    .hero-showcase{margin-top:-66px;}
-    .circle-strip{padding:10px 0 8px;}
-    .circle-track{gap:22px;}
-    .circle-item{width:108px;}
-    .circle-frame{width:92px;height:92px;}
-    .circle-name{font-size:11.5px;margin-top:12px;}
+    .showcase-heading{padding:34px 24px 12px;}
+    .showcase-heading h2{font-size:22px;}
+    .circle-strip{padding:14px 0 54px;}
+    .circle-track{gap:26px;}
+    .circle-item{width:122px;}
+    .circle-frame{width:108px;height:108px;}
+    .circle-name-en{font-size:8.5px;padding:3px 10px;margin-top:-13px;}
   }
   @media (prefers-reduced-motion: reduce){
     .circle-frame::before{animation:none;}
-    .circle-item{opacity:1;transform:none;transition:none;}
   }
 
   /* ===== FEATURED EDITORIAL ===== */
@@ -1448,6 +1710,49 @@ if("serviceWorker" in navigator){
   }
   .feature-plaque .fname{font-family:'Rubik','Almoni Neue',sans-serif;font-size:16px;}
   .feature-plaque .fprice{font-size:14px;color:var(--gold-dark);font-weight:600;}
+
+  /* ===== BEDDING-ONLY FEATURE — image glides in from the left as it enters
+     view, and glides back out to the right if you scroll back up past it
+     (two-way, not a one-time reveal — matches the reference video). =====
+     position:relative + z-index puts it ABOVE hero-showcase's own empty
+     tail (hero-showcase has to stay a full 100vh tall for the curtain to
+     fully cover the hero while pinned - see .hero-pin-wrap comments - but
+     its actual heading+circles content is shorter than that, leaving
+     blank space below them). A script measures that leftover space and
+     pulls this section up to close it, so the circles flow straight into
+     this section with no dead gap in between. */
+  .bedding-feature{
+    position:relative;z-index:3;
+    padding:100px 0;overflow:hidden;
+    background:linear-gradient(135deg, #7A5E28 0%, #5C4419 100%);
+  }
+  .bedding-feature-inner{
+    display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;
+    transform:translateX(-28px);
+  }
+  .bedding-img{
+    position:relative;opacity:0;transform:translateX(-90px);
+    transition:opacity 1s cubic-bezier(.19,1,.22,1), transform 1s cubic-bezier(.19,1,.22,1);
+  }
+  .bedding-img.in{opacity:1;transform:translateX(0);}
+  .bedding-img img{width:82%;height:auto;display:block;margin:0 auto;filter:drop-shadow(0 26px 46px rgba(20,16,10,0.45));transition:transform .35s cubic-bezier(.19,1,.22,1);will-change:transform;}
+  .bedding-copy{
+    opacity:0;transform:translateX(46px);
+    transition:opacity 1s cubic-bezier(.19,1,.22,1) .12s, transform 1s cubic-bezier(.19,1,.22,1) .12s;
+  }
+  .bedding-copy.in{opacity:1;transform:translateX(0);}
+  .bedding-copy .eyebrow{margin-bottom:18px;color:var(--gold-pale);}
+  .bedding-copy .eyebrow::before{background:var(--gold-pale);}
+  .bedding-copy p{font-size:16px;line-height:1.75;color:var(--gold-pale);opacity:0.88;font-weight:300;max-width:460px;margin-bottom:32px;}
+  @media (max-width:860px){
+    .bedding-feature{padding:64px 0;}
+    .bedding-feature-inner{grid-template-columns:1fr;gap:36px;text-align:center;transform:translateX(-14px);}
+    .bedding-copy p{margin-inline:auto;}
+    .bedding-img{transform:translateX(-50px);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .bedding-img,.bedding-copy{opacity:1;transform:none;transition:none;}
+  }
   .feature-text .eyebrow{margin-bottom:16px;}
   .feature-text h3{font-size:clamp(24px,3vw,32px);margin-bottom:18px;line-height:1.3;}
   .feature-text p{color:var(--taupe);font-size:15.5px;font-weight:300;margin-bottom:28px;}
@@ -1470,15 +1775,15 @@ if("serviceWorker" in navigator){
   /* ===== CTA BAND ===== */
   .cta-band{
     text-align:center;padding:110px 24px;
-    background:var(--ink);color:var(--gold-pale);
+    background:var(--cream);color:var(--ink);
   }
-  .cta-band .eyebrow{justify-content:center;color:var(--gold-pale);margin-bottom:22px;}
-  .cta-band .eyebrow::before{background:var(--gold-pale);}
+  .cta-band .eyebrow{justify-content:center;color:var(--gold-dark);margin-bottom:22px;}
+  .cta-band .eyebrow::before{background:var(--gold-dark);}
   .cta-band h2{
-    color:var(--gold-pale);font-size:clamp(26px,4vw,40px);margin-bottom:30px;
-    background:linear-gradient(135deg, #F6E8BF 0%, var(--gold-pale) 40%, var(--gold-metal) 70%, var(--gold-pale) 100%);
-    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    color:var(--ink);font-size:clamp(26px,4vw,40px);margin-bottom:30px;
   }
+  .cta-band .btn.light{color:var(--ink);border-color:rgba(20,20,20,0.35);}
+  .cta-band .btn.light:hover{background:var(--ink);color:var(--ivory);border-color:var(--ink);}
 
   /* ===== FOOTER ===== */
   footer{
@@ -1598,6 +1903,17 @@ if("serviceWorker" in navigator){
     background:rgba(20,16,12,0.28);
     margin-bottom:2px;
   }
+  /* The photo itself is set via JS (background-image has no "loaded"
+     event of its own to hook into - see setCollectionNavPhotos), so it's
+     faded in on a dedicated class toggled once the photo is actually
+     confirmed loaded, the same way product-card photos fade in, instead
+     of just popping into place the instant the network request finishes. */
+  .collection-btn{background-image:none !important;}
+  .collection-btn .cn-bg{
+    position:absolute;inset:0;z-index:-2;background-size:cover;background-position:center;
+    opacity:0;transition:opacity .5s ease;
+  }
+  .collection-btn .cn-bg.cn-bg-ready{opacity:1;}
   .collection-btn .cn-name{font-size:24px;font-weight:700;letter-spacing:0.03em;text-shadow:0 2px 10px rgba(0,0,0,0.55);}
   .collection-btn .cn-sub{font-size:13px;color:rgba(255,255,255,0.9);font-weight:400;letter-spacing:0.04em;}
   @media (max-width:900px){
@@ -1686,6 +2002,7 @@ if("serviceWorker" in navigator){
     display:grid;grid-template-columns:repeat(3,1fr);gap:44px 32px;
     padding-bottom:110px;
   }
+  #result-count-sale{text-align:center;}
   @media (max-width:960px){.product-grid{grid-template-columns:repeat(2,1fr);}}
   @media (max-width:560px){.product-grid{grid-template-columns:1fr;}}
 
@@ -1743,6 +2060,42 @@ if("serviceWorker" in navigator){
   .card-tag.out-of-stock{background:var(--taupe);left:auto;right:16px;top:16px;border-radius:6px;}
   .product-card.out-of-stock .imgwrap img{opacity:0.55;filter:grayscale(0.4);}
   .product-card.out-of-stock .cprice{opacity:0.55;}
+  /* "התאמה אישית" ribbon - a small classic corner ribbon across the
+     top-right corner of the product photo (inside .card-frame, which
+     clips its overflow), rather than a tall hanging strip - reads as a
+     normal, "in place" boutique corner badge. A diagonal sheen sweep on
+     hover adds a touch of shine without moving the ribbon itself. See
+     customizableRibbonHTML(). */
+  .customizable-ribbon{
+    position:absolute;top:18px;right:-40px;z-index:3;
+    width:150px;
+    transform:rotate(45deg);
+    transform-origin:center;
+    background:linear-gradient(90deg, var(--gold-light) 0%, var(--gold) 50%, var(--gold-dark) 100%);
+    box-shadow:0 3px 10px -2px rgba(43,36,32,0.45), inset 0 1px 0 rgba(255,255,255,0.35);
+    text-align:center;
+    padding:5px 0;
+    overflow:hidden;
+  }
+  .customizable-ribbon span{
+    position:relative;z-index:1;
+    display:inline-block;
+    direction:rtl;
+    color:#fff;font-family:'Rubik','Almoni Neue',sans-serif;
+    font-size:10.5px;font-weight:700;letter-spacing:0.03em;
+    text-shadow:0 1px 2px rgba(0,0,0,0.3);
+  }
+  .customizable-ribbon::after{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(100deg, transparent 35%, rgba(255,255,255,0.6) 50%, transparent 65%);
+    transform:translateX(-160%);
+    transition:transform .7s ease;
+  }
+  .product-card:hover .customizable-ribbon::after{transform:translateX(160%);}
+  @media (max-width:640px){
+    .customizable-ribbon{width:120px;top:14px;right:-36px;padding:4px 0;}
+    .customizable-ribbon span{font-size:9.5px;}
+  }
   .card-body{padding:20px 16px 6px;text-align:center;}
   .card-body .cname{font-size:19px;margin-bottom:8px;}
   .card-body .cspec{font-size:12px;color:var(--taupe);margin-bottom:12px;letter-spacing:0.02em;}
@@ -1754,7 +2107,7 @@ if("serviceWorker" in navigator){
     font-size:12.5px;letter-spacing:0.08em;color:var(--text-gold);border-bottom:1px solid var(--ink);
     padding-bottom:3px;display:inline-block;
   }
-  .empty-state{text-align:center;padding:80px 20px;color:var(--taupe);}
+  .empty-state{text-align:center;padding:80px 20px;color:var(--taupe);grid-column:1 / -1;}
   .empty-state h3{margin-bottom:14px;}
 
   /* ===== PRODUCT DETAIL ===== */
@@ -1781,6 +2134,20 @@ if("serviceWorker" in navigator){
   }
   .pd-plaque .l1{font-family:'Rubik','Almoni Neue',sans-serif;font-size:14px;color:var(--taupe);}
   .pd-plaque .l2{font-size:12px;color:var(--taupe-light);letter-spacing:0.08em;}
+
+  .pd-care-band{
+    margin:56px 0 8px;padding:34px 20px;
+    border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+    text-align:center;
+  }
+  .pd-care-band-label{
+    display:block;font-size:12px;letter-spacing:0.1em;font-weight:600;color:var(--gold-dark);
+    font-family:'Rubik','Almoni Neue',sans-serif;margin-bottom:12px;
+  }
+  .pd-care-band p{
+    max-width:640px;margin:0 auto;font-size:13.5px;line-height:1.8;color:var(--taupe);font-weight:300;
+  }
+  @media (max-width:900px){.pd-care-band{margin:36px 0 8px;padding:26px 16px;}}
 
   .pd-info .eyebrow{margin-bottom:20px;}
   .pd-info h1{font-size:clamp(28px,4vw,40px);margin-bottom:16px;}
@@ -1877,7 +2244,7 @@ if("serviceWorker" in navigator){
   .cart-subhead button svg{width:15px;height:15px;stroke:var(--taupe);}
   .cart-subhead button:hover{color:var(--gold-dark);}
 
-  .cart-items{flex:1;overflow-y:auto;padding:6px 20px;}
+  .cart-items{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:6px 20px;}
   .cart-item{
     display:flex;gap:14px;padding:18px 0;border-bottom:1px solid var(--line);
     align-items:flex-start;
@@ -1901,7 +2268,7 @@ if("serviceWorker" in navigator){
   /* ===== ACCOUNT AUTH (login / register / logged-in summary) ===== */
   .auth-box{
     background:var(--ivory);border:1px solid var(--line);
-    padding:30px 34px;margin-bottom:48px;max-width:440px;
+    padding:30px 34px;margin:0 auto 48px;max-width:440px;
   }
   .auth-tabs{display:flex;gap:6px;margin-bottom:24px;border-bottom:1px solid var(--line);}
   .auth-tab{
@@ -1937,6 +2304,11 @@ if("serviceWorker" in navigator){
     cursor:pointer;padding:0;margin:-10px 0 18px;display:block;text-align:start;
   }
   .auth-forgot-link:hover{color:var(--text-gold);}
+  /* When the link comes right after the submit button (e.g. "שליחת קוד
+     חדש" under the reset-password form) the default negative top margin
+     above would pull it up into the button - give it breathing room
+     instead of overlapping. */
+  .auth-form .btn + .auth-forgot-link{margin-top:16px;}
   .auth-loggedin-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
   .auth-loggedin-hello{font-family:'Rubik','Almoni Neue',sans-serif;font-size:16px;font-weight:600;color:var(--text-gold);}
   .auth-loggedin-email{color:var(--taupe);font-size:13.5px;margin-top:4px;}
@@ -2009,55 +2381,6 @@ if("serviceWorker" in navigator){
   }
   .nav-brand:hover img{transform:translateY(-1px) scale(1.03);filter:drop-shadow(0 4px 14px rgba(173,138,78,0.5));}
 
-  .hero-content .rs-mark-img{
-    display:block;
-    width:clamp(90px,11vw,150px);
-    height:auto;
-    margin:0 auto 26px;
-    filter:drop-shadow(0 4px 18px rgba(0,0,0,0.5)) drop-shadow(0 0 2px rgba(255,238,196,0.5)) drop-shadow(0 0 5px rgba(232,220,194,0.3));
-    animation:logoGlow 3.6s ease-in-out infinite;
-  }
-  @keyframes logoGlow{
-    0%,100%{ filter:drop-shadow(0 4px 18px rgba(0,0,0,0.5)) drop-shadow(0 0 2px rgba(255,238,196,0.45)) drop-shadow(0 0 4px rgba(232,220,194,0.25)); }
-    50%{ filter:drop-shadow(0 4px 18px rgba(0,0,0,0.5)) drop-shadow(0 0 3px rgba(255,238,196,0.55)) drop-shadow(0 0 7px rgba(232,220,194,0.4)); }
-  }
-  @media (prefers-reduced-motion:reduce){
-    .hero-content .rs-mark-img{ animation:none; }
-  }
-  .hero-content .hero-tagline{
-    font-family:'Rubik','Almoni Neue',sans-serif;
-    font-weight:500;
-    font-size:clamp(22px,3.4vw,34px);
-    line-height:1.3;
-    letter-spacing:0.02em;
-    margin-bottom:16px;
-  }
-  .hero-content .hero-tagline .rw span{
-    background:linear-gradient(115deg, #F8ECC4 0%, var(--gold-pale) 22%, var(--gold-metal) 48%, var(--gold-light) 68%, var(--gold-pale) 100%);
-    background-size:220% auto;
-    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:var(--gold-pale);
-    animation:heroGoldShimmer 7s ease-in-out infinite;
-  }
-  @keyframes heroGoldShimmer{
-    0%,100%{background-position:0% center;}
-    50%{background-position:100% center;}
-  }
-  @media (prefers-reduced-motion:reduce){
-    .hero-content .hero-tagline .rw span{animation:none;}
-  }
-  .hero-content .hero-subtagline{
-    font-family:'Rubik','Almoni Neue',sans-serif;
-    font-weight:400;
-    font-size:clamp(13px,1.5vw,16.5px);
-    line-height:1.7;
-    letter-spacing:0.03em;
-    max-width:820px;
-    margin:0 auto 28px;
-    background:linear-gradient(115deg, #F6E8BF 0%, var(--gold-pale) 35%, var(--gold-metal) 65%, var(--gold-pale) 100%);
-    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:var(--gold-pale);
-    filter:drop-shadow(0 4px 16px rgba(0,0,0,0.45));
-  }
-
   /* skip link */
   .skip-link{
     position:absolute;top:-60px;right:16px;z-index:2000;
@@ -2104,18 +2427,40 @@ if("serviceWorker" in navigator){
     align-items:center;justify-content:center;
     background:rgba(20,16,10,0.88);
     padding:56px 24px;cursor:zoom-out;
-    opacity:0;transition:opacity .25s ease;
+    opacity:0;transition:opacity .6s ease;
   }
-  .image-lightbox.open{display:flex;opacity:1;}
+  .image-lightbox.visible{display:flex;}
+  .image-lightbox.open{opacity:1;}
   .image-lightbox img{
     max-width:min(92vw,1100px);max-height:82vh;
     width:auto;height:auto;object-fit:contain;
     box-shadow:0 20px 60px rgba(0,0,0,0.55);
     border:3px solid var(--gold-pale);background:var(--ivory);
     cursor:default;
-    transform:scale(.96);transition:transform .25s ease;
+    opacity:0;
+    transform:scale(.92);
+    transition:transform .7s cubic-bezier(.19,1,.22,1), opacity .55s ease;
   }
-  .image-lightbox.open img{transform:scale(1);}
+  .image-lightbox img.loaded{opacity:1;transform:scale(1);}
+  /* Two-ring gold spinner shown for a beat while the full-size image
+     loads in, before it fades/scales into view. */
+  .lightbox-spinner{
+    position:absolute;width:86px;height:86px;border-radius:50%;
+    border:4px solid rgba(214,177,94,0.22);
+    border-top-color:var(--gold-light);
+    border-right-color:var(--gold-dark);
+    opacity:0;visibility:hidden;transition:opacity .3s ease;
+    animation:lightboxSpin 1s linear infinite;
+  }
+  .lightbox-spinner::after{
+    content:"";position:absolute;inset:11px;border-radius:50%;
+    border:3px solid transparent;
+    border-bottom-color:var(--gold-metal);
+    border-left-color:var(--gold-pale);
+    animation:lightboxSpin 1.5s linear infinite reverse;
+  }
+  .lightbox-spinner.active{opacity:1;visibility:visible;}
+  @keyframes lightboxSpin{to{transform:rotate(360deg);}}
   .lightbox-close{
     position:absolute;top:20px;inset-inline-end:20px;
     width:44px;height:44px;border-radius:50%;
@@ -2131,7 +2476,7 @@ if("serviceWorker" in navigator){
     .lightbox-close{top:12px;inset-inline-end:12px;width:38px;height:38px;font-size:22px;}
   }
   @media (prefers-reduced-motion: reduce){
-    .image-lightbox, .image-lightbox img{transition:none;}
+    .image-lightbox, .image-lightbox img, .lightbox-spinner{transition:none;animation:none;}
   }
   body.lightbox-open{overflow:hidden;}
 
@@ -2308,7 +2653,7 @@ if("serviceWorker" in navigator){
   #search-close-btn{background:none;border:none;color:var(--taupe);width:34px;height:34px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   #search-close-btn svg{width:18px;height:18px;stroke:var(--taupe);}
   #search-close-btn:hover svg{stroke:var(--ink);}
-  #search-results{overflow-y:auto;padding-top:18px;}
+  #search-results{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-top:18px;}
   .search-result-row{
     display:flex;align-items:center;gap:16px;padding:12px 6px;
     border-bottom:1px solid var(--line);cursor:pointer;transition:background .2s ease;
@@ -2333,7 +2678,7 @@ if("serviceWorker" in navigator){
   #payment-modal-overlay.open{opacity:1;pointer-events:auto;}
   #payment-modal{
     position:fixed;top:50%;left:50%;z-index:1001;
-    width:460px;max-width:92vw;max-height:88vh;overflow-y:auto;
+    width:460px;max-width:92vw;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
     background:
       radial-gradient(500px 260px at 100% 0%, rgba(210,175,113,0.18), transparent 60%),
       var(--ivory);
@@ -2378,7 +2723,7 @@ if("serviceWorker" in navigator){
   #success-modal-overlay.open{opacity:1;pointer-events:auto;}
   #success-modal{
     position:fixed;top:50%;left:50%;z-index:1011;
-    width:440px;max-width:90vw;max-height:88vh;overflow-y:auto;
+    width:440px;max-width:90vw;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
     background:
       radial-gradient(500px 260px at 50% 0%, rgba(210,175,113,0.2), transparent 62%),
       var(--ivory);
@@ -2417,6 +2762,7 @@ if("serviceWorker" in navigator){
   .success-modal-title{margin:0 0 10px;font-size:23px;color:var(--text-gold);}
   .success-modal-text{margin:0 0 28px;color:var(--taupe);font-size:14.5px;line-height:1.7;}
   .success-modal-ok{width:100%;justify-content:center;}
+  .success-modal-extra{width:100%;justify-content:center;display:flex;}
   @media (prefers-reduced-motion: reduce){
     #success-modal-overlay, #success-modal{transition:none;}
     .success-modal-icon{animation:none;}
@@ -2430,7 +2776,7 @@ if("serviceWorker" in navigator){
   #newsletter-modal-overlay.open{opacity:1;pointer-events:auto;}
   #newsletter-modal{
     position:fixed;top:50%;left:50%;z-index:1001;
-    width:460px;max-width:92vw;max-height:88vh;overflow-y:auto;
+    width:460px;max-width:92vw;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
     background:linear-gradient(155deg, #322A22 0%, var(--ink) 45%, #241E19 100%);
     border:1px solid rgba(214,177,94,0.4);
     border-radius:4px;
@@ -2516,6 +2862,176 @@ if("serviceWorker" in navigator){
     #cookie-consent-accept{width:100%;}
   }
 
+  /* "Collection" shortcut button — sits under the hero text block,
+     aligned to the right so it lines up with the right-aligned text. */
+  #collection-fab{
+    position:relative;z-index:5;pointer-events:auto;
+    margin:68px 0 0;
+    display:inline-flex;align-items:center;justify-content:center;gap:9px;width:fit-content;
+    padding:13px 20px 13px 16px;border-radius:999px;border:1px solid rgba(238,220,166,0.55);
+    background:linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 45%, var(--gold-dark) 100%);
+    color:#fff;font-family:'Rubik','Almoni Neue',sans-serif;font-size:13.5px;font-weight:700;letter-spacing:0.01em;
+    cursor:pointer;white-space:nowrap;box-shadow:0 10px 26px -8px rgba(20,16,12,0.5);
+    opacity:0;transform:translateY(18px) scale(.94);
+    transition:transform .5s cubic-bezier(.19,1,.22,1), opacity .5s ease, box-shadow .3s ease, filter .3s ease;
+    animation:fabFloat 3.6s ease-in-out infinite;
+    animation-play-state:paused;
+  }
+  .hero.hero-loaded #collection-fab{
+    opacity:1;transform:translateY(0) scale(1);animation-play-state:running;
+    transition-delay:.55s;
+  }
+  #collection-fab:hover{filter:brightness(1.07);box-shadow:0 14px 32px -8px rgba(20,16,12,0.6);}
+  #collection-fab .fab-ring{
+    position:absolute;inset:0;border-radius:999px;border:1.5px solid rgba(238,220,166,0.85);
+    opacity:0;animation:fabPulse 2.8s cubic-bezier(.19,1,.22,1) infinite;
+  }
+  #collection-fab .fab-icon{
+    width:20px;height:20px;flex-shrink:0;fill:none;stroke:#fff;stroke-width:1.6;
+  }
+  @keyframes fabFloat{
+    0%,100%{transform:translateY(0) scale(1);}
+    50%{transform:translateY(-6px) scale(1);}
+  }
+  @keyframes fabPulse{
+    0%{opacity:.55;transform:scale(1);}
+    100%{opacity:0;transform:scale(1.28);}
+  }
+  @media (max-width:860px){
+    #collection-fab{padding:11px 16px 11px 13px;font-size:12.5px;margin-top:48px;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    #collection-fab{animation:none;}
+    #collection-fab .fab-ring{animation:none;display:none;}
+  }
+
+  /* ===== HERO "SIMPLE / WHITE" MODE =====
+     Toggled from the admin panel's "עמוד הבית" panel (a single on/off
+     button) via the site_content key hero_simple_mode - see
+     applyHeroSimpleMode() near applyContentOverrides() below, which adds
+     or removes this class on <body>. When it's on, the hero's photo
+     slides, ken-burns zoom, lamp glows and dark photo overlay are all
+     replaced with the site's normal off-white background, and every
+     hero-only animation/transition is switched off - the same "no
+     motion" treatment the prefers-reduced-motion:reduce rules above
+     already give the hero, just opt-in from the admin panel instead of
+     tied to the visitor's OS setting. Text that was tuned for white-on-
+     photo switches to the site's normal dark ink so it stays readable on
+     white, and the nav bar skips its transparent-over-photo phase and
+     stays solid gold throughout, since there's no photo left to float
+     over. */
+  body.hero-simple header.site-nav{--nav-o:1 !important;--nav-f:1 !important;}
+  body.hero-simple .hero{background:#FBF7EE;}
+  body.hero-simple .hero img.bg,
+  body.hero-simple .hero-lights{display:none !important;}
+  body.hero-simple .hero::after{display:none;}
+  body.hero-simple .hero-brand-main,
+  body.hero-simple .hero-brand-sub{
+    color:var(--text-gold);
+    filter:none;
+    text-shadow:none;
+  }
+  body.hero-simple .hero-brand-desc{
+    color:var(--taupe);
+    text-shadow:none;
+  }
+  body.hero-simple .hero-scroll-cue .hsc-ring{
+    border-color:rgb(138 108 46 / 0.3);
+    background:rgba(255,255,255,0.7);
+  }
+  body.hero-simple .hero-scroll-cue .hsc-chevron{stroke:var(--gold-dark);}
+  body.hero-simple .reveal,
+  body.hero-simple .reveal-scale,
+  body.hero-simple .feature-row,
+  body.hero-simple .hero-brand-logo,
+  body.hero-simple .hero-brand-main,
+  body.hero-simple .hero-brand-sub,
+  body.hero-simple .hero-scroll-cue,
+  body.hero-simple #collection-fab,
+  body.hero-simple .bedding-feature .bedding-img,
+  body.hero-simple .bedding-feature .bedding-copy{
+    transition:none !important;opacity:1 !important;transform:none !important;
+  }
+  body.hero-simple .hero img.bg,
+  body.hero-simple .light-glow,
+  body.hero-simple #collection-fab,
+  body.hero-simple #collection-fab .fab-ring{
+    animation:none !important;
+  }
+
+  /* ===== HERO BANNER IMAGE MODE =====
+     A different way to customize the hero, alongside "SIMPLE / WHITE"
+     above: instead of blanking the hero to plain white, the admin
+     uploads one ready-made promotional image (sale text/graphics baked
+     into the image itself, like a print ad) that fills the hero in
+     place of the photo slides/lamp glow/dark overlay/brand text/scroll
+     cue/collection button - see applyHeroBanner() near
+     applyContentOverrides() below, driven by the site_content keys
+     hero_banner_enabled/_image/_link_url. Takes priority over
+     hero-simple when both are somehow on (applyHeroBanner() clears the
+     hero-simple class). The "הקולקציות שלנו" curtain below still rises
+     over it exactly as before - only .hero's own content changes. The
+     nav bar also stays solid gold throughout, same reasoning as
+     hero-simple: the uploaded image already carries its own text/
+     branding, so there's no clean photo to float transparent nav text
+     over. */
+  body.hero-banner header.site-nav{--nav-o:1 !important;--nav-f:1 !important;}
+  body.hero-banner .hero img.bg,
+  body.hero-banner .hero-lights,
+  body.hero-banner .hero-brand,
+  body.hero-banner .hero-scroll-cue{
+    display:none !important;
+  }
+  body.hero-banner .hero::after{display:none;}
+  .hero-banner-link{
+    position:absolute;inset:0;z-index:2;display:block;
+  }
+  .hero-banner-link img{
+    position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;
+  }
+
+  /* ===== PROMO BANNER =====
+     A slim announcement strip above the header (sale, shipping promo,
+     etc.), fully optional. Populated from the admin panel's "עמוד הבית"
+     panel via the site_content keys promo_banner_enabled/_text/
+     _link_url/_link_text - see applyPromoBanner() near
+     applyContentOverrides() below. Hidden by default (inline
+     style="display:none" in the markup) until JS confirms it's enabled
+     and has text to show. Sits in normal document flow above the sticky
+     header, so it scrolls away with the first bit of scrolling rather
+     than permanently eating into the header's space. */
+  .promo-banner{
+    background:linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 50%, var(--gold-dark) 100%);
+    position:relative;z-index:600;
+  }
+  .promo-banner-inner{
+    max-width:1240px;margin:0 auto;
+    display:flex;align-items:center;justify-content:center;gap:6px 14px;flex-wrap:wrap;
+    padding:10px 46px;position:relative;
+  }
+  .promo-banner-text{
+    color:#fff;font-family:'Rubik','Almoni Neue',sans-serif;
+    font-size:13.5px;font-weight:600;letter-spacing:0.01em;text-align:center;
+  }
+  .promo-banner-link{
+    color:#fff;font-family:'Rubik','Almoni Neue',sans-serif;
+    font-size:13.5px;font-weight:700;text-decoration:underline;text-underline-offset:3px;
+    white-space:nowrap;
+  }
+  .promo-banner-link:hover{opacity:.82;}
+  .promo-banner-close{
+    position:absolute;inset-inline-end:12px;top:50%;transform:translateY(-50%);
+    background:none;border:none;color:#fff;opacity:.8;cursor:pointer;
+    width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:50%;
+    transition:background .2s ease, opacity .2s ease;
+  }
+  .promo-banner-close:hover{background:rgba(255,255,255,0.2);opacity:1;}
+  .promo-banner-close svg{width:13px;height:13px;stroke:currentColor;stroke-width:2;stroke-linecap:round;}
+  @media (max-width:640px){
+    .promo-banner-inner{padding:9px 40px;}
+    .promo-banner-text, .promo-banner-link{font-size:12.5px;}
+  }
+
   /* Accessibility widget */
   #a11y-toggle{
     position:fixed;bottom:26px;left:22px;z-index:980;
@@ -2561,6 +3077,56 @@ if("serviceWorker" in navigator){
   body.a11y-grayscale{filter:grayscale(1);}
   body.a11y-spacing, body.a11y-spacing *{letter-spacing:0.06em !important;word-spacing:0.15em !important;line-height:1.9 !important;}
   body.a11y-readable, body.a11y-readable *{font-family:Arial, Verdana, sans-serif !important;}
+
+  /* ===== Floating WhatsApp button - bottom-right, always available,
+     no form to fill in - just opens a chat with the business number. ===== */
+  #wa-float{
+    position:fixed;bottom:26px;right:22px;z-index:1150;
+    width:58px;height:58px;border-radius:50%;
+    background:var(--green-wa);color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 10px 26px -6px rgba(20,16,12,0.5);
+    text-decoration:none;
+    transition:transform .3s ease, box-shadow .3s ease;
+    touch-action:none;user-select:none;-webkit-user-select:none;
+  }
+  #wa-float.wa-dragging{transition:none;}
+  #wa-float:hover{transform:scale(1.08);box-shadow:0 14px 32px -6px rgba(20,16,12,0.55);}
+  #wa-float svg{width:30px;height:30px;fill:#fff;}
+  #wa-float::before{
+    /* soft pulsing ring so the button reads as "alive" without being
+       obnoxious - stops after a few cycles via animation-iteration-count */
+    content:"";position:absolute;inset:0;border-radius:50%;
+    box-shadow:0 0 0 0 rgba(63,167,114,0.55);
+    animation:waPulse 2.2s ease-out 4;
+  }
+  @keyframes waPulse{
+    0%{box-shadow:0 0 0 0 rgba(63,167,114,0.55);}
+    100%{box-shadow:0 0 0 18px rgba(63,167,114,0);}
+  }
+  #wa-float-tip{
+    position:fixed;bottom:36px;right:90px;z-index:979;
+    background:#fff;color:var(--ink);font-size:13px;
+    padding:10px 16px;border-radius:12px;white-space:nowrap;
+    box-shadow:0 10px 26px -8px rgba(20,16,12,0.35);
+    opacity:0;transform:translateX(8px);pointer-events:none;
+    transition:opacity .35s ease, transform .35s ease;
+  }
+  #wa-float-tip.show{opacity:1;transform:translateX(0);}
+  #wa-float-tip::after{
+    content:"";position:absolute;top:50%;right:-6px;transform:translateY(-50%);
+    width:0;height:0;border-style:solid;
+    border-width:6px 0 6px 6px;border-color:transparent transparent transparent #fff;
+  }
+  @media (max-width:640px){
+    #wa-float{bottom:18px;right:16px;width:52px;height:52px;}
+    #wa-float svg{width:26px;height:26px;}
+    #wa-float-tip{display:none;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    #wa-float::before{animation:none;}
+    #wa-float-tip{transition:none;}
+  }
 </style>
 </head>
 <body>
@@ -2571,19 +3137,31 @@ if("serviceWorker" in navigator){
 <div id="page-transition-bar" aria-hidden="true"></div>
 <div id="image-lightbox" class="image-lightbox" role="dialog" aria-modal="true" aria-hidden="true">
   <button type="button" class="lightbox-close" aria-label="סגירה">&times;</button>
+  <div id="lightbox-spinner" class="lightbox-spinner" aria-hidden="true"></div>
   <img id="lightbox-img" src="" alt="">
 </div>
 <a href="#main-content" class="skip-link">דלג לתוכן הראשי</a>
 
+<div class="promo-banner" id="promo-banner" style="display:none;" role="region" aria-label="מודעת מבצע">
+  <div class="promo-banner-inner">
+    <span class="promo-banner-text" id="promo-banner-text"></span>
+    <a href="#" class="promo-banner-link" id="promo-banner-link" style="display:none;"></a>
+    <button type="button" class="promo-banner-close" id="promo-banner-close" aria-label="סגירת ההודעה">
+      <svg viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
+    </button>
+  </div>
+</div>
+
 <header class="site-nav" role="banner">
   <div class="nav-inner">
     <div class="nav-brand">
-      <img src="/images/site/logo-nav.png" alt="רפאוז סטייל">
+      <img src="/images/site/logo-nav.png" alt="רפאוז סטייל" width="513" height="310">
     </div>
     <nav class="nav-links" role="navigation" aria-label="ניווט ראשי">
       <a data-nav="home" href="/" class="active">בית</a>
       <a data-nav="shop" href="/shop">מצעים</a>
       <a data-nav="towels" href="/towels">מגבות</a>
+      <a data-nav="sale" href="/sale">מבצעים</a>
       <a data-nav="about" href="/about">אודות</a>
       <a data-nav="contact" href="/contact">צור קשר</a>
       <span class="nav-underline" id="nav-underline"></span>
@@ -2612,6 +3190,7 @@ if("serviceWorker" in navigator){
     <a data-nav="home" href="/">בית</a>
     <a data-nav="shop" href="/shop">מצעים</a>
     <a data-nav="towels" href="/towels">מגבות</a>
+    <a data-nav="sale" href="/sale">מבצעים</a>
     <a data-nav="about" href="/about">אודות</a>
     <a data-nav="contact" href="/contact">צור קשר</a>
   </div>
@@ -2622,33 +3201,66 @@ if("serviceWorker" in navigator){
 <!-- ============ HOME VIEW ============ -->
 <section class="view active" id="view-home">
 
+  <div class="hero-pin-wrap">
   <div class="hero">
-    <img class="bg slide active" data-content-key="hero_slide_1" src="/images/site/hero-slide-1.jpg" alt="מצעי רפאוז סטייל דגם יהלום - עיצוב שמנת וזהב עם רקמת מדליון RS, חדר שינה יוקרתי" loading="eager">
-    <img class="bg slide" data-content-key="hero_slide_2" src="/images/site/hero-slide-2.jpg" alt="מצעי רפאוז סטייל דגם לונדון - סאטן שמנת עדין על מיטה עם מסגרת זהב" loading="lazy">
-    <img class="bg slide" data-content-key="hero_slide_3" src="/images/site/hero-slide-3.jpg" alt="מצעי רפאוז סטייל דגם סטאר - הדפס אבסטרקטי בגווני כחול-אפור" loading="lazy">
-    <img class="bg slide" data-content-key="hero_slide_4" src="/images/site/hero-slide-4.jpg" alt="מצעי רפאוז סטייל דגם פוקסיה - הדפס מברשת בגוון פוקסיה על רקע לבן" loading="lazy">
-    <img class="bg slide" data-content-key="hero_slide_5" src="/images/site/hero-slide-5.jpg" alt="מצעי רפאוז סטייל דגם קלאסיק - גווני מוב ואפרסק עדינים" loading="lazy">
-    <img class="bg slide" data-content-key="hero_slide_6" src="/images/site/hero-slide-6.jpg" alt="מצעי רפאוז סטייל דגם רויאל - מצעי סאטן שמנת יוקרתיים עם רקמה בגוון זהב" loading="lazy">
+    <img class="bg slide active" data-content-key="hero_slide_1" src="/images/site/hero-new/hero-bg-1.jpg" alt="חדר שינה יוקרתי רפאוז סטייל - מיטה עם מצעי שמנת וזהב" loading="eager" fetchpriority="high">
+    <img class="bg slide" data-content-key="hero_slide_2" src="/images/site/hero-new/hero-bg-2.jpg" alt="חדר שינה יוקרתי רפאוז סטייל - עיצוב מודרני בגווני שמנת" loading="lazy">
+    <img class="bg slide" data-content-key="hero_slide_3" src="/images/site/hero-new/hero-bg-3.jpg" alt="חדר שינה יוקרתי רפאוז סטייל - תאורה חמה ועיצוב עץ" loading="lazy">
+    <img class="bg slide" data-content-key="hero_slide_4" src="/images/site/hero-new/hero-bg-4.jpg" alt="חדר שינה יוקרתי רפאוז סטייל - סוויטה מרווחת בגווני חום ושמנת" loading="lazy">
+    <img class="bg slide" data-content-key="hero_slide_5" src="/images/site/hero-new/hero-bg-5.jpg" alt="חדר שינה יוקרתי רפאוז סטייל - עיצוב עדין בגווני עץ בהיר" loading="lazy">
+
+    <a id="hero-banner-link" class="hero-banner-link" style="display:none;" aria-label="באנר מבצע">
+      <img id="hero-banner-img" src="" alt="מבצע">
+    </a>
 
     <div class="hero-lights" aria-hidden="true">
       <span class="light-glow spot-1"></span>
       <span class="light-glow spot-2"></span>
       <span class="light-glow spot-3"></span>
     </div>
-    <div class="hero-fade" aria-hidden="true"></div>
-    <div class="hero-content">
-<img class="rs-mark-img" src="/images/site/rs-mark.png" alt="רפאוז סטייל - RS">
-      <div class="eyebrow">רפאוז סטייל · קולקציית מצעים יוקרתית</div>
-      <p class="hero-tagline" data-content-key="hero_tagline"><span class="rw"><span>יוקרה</span></span> <span class="rw"><span>שתעצב</span></span> <span class="rw"><span>לכם</span></span> <span class="rw"><span>את</span></span> <span class="rw"><span>הבית</span></span></p>
-      <p class="hero-subtagline" data-content-key="hero_subtagline">בדי סאטן 100% כותנה, צפיפות חוט גבוהה ועיצוב שנולד להעניק לחדר השינה שלכם נוכחות של מלון בוטיק — לילה אחר לילה</p>
-      <button class="btn" data-nav="shop">לקולקציה</button>
-      <div class="hero-scroll"><span>גללו</span><div class="line"><div class="dot"></div></div></div>
+    <div class="hero-brand" dir="rtl">
+      <span class="hero-brand-main" aria-hidden="true">קולקציית קיץ 2026</span>
+      <span class="hero-brand-sub-wrap">
+        <span class="hero-brand-sub" aria-hidden="true" data-content-key="hero_tagline">יוקרה שתעצב לכם את הבית</span>
+        <span class="hero-brand-desc" aria-hidden="true" data-content-key="hero_subtagline">מצעים ומוצרי טקסטיל ברמה הגבוהה ביותר,<br>עם בדים מובחרים ועיצוב מושלם לכל חדר בבית</span>
+        <button type="button" id="collection-fab" data-nav="shop" dir="rtl">
+          <span class="fab-ring" aria-hidden="true"></span>
+          <svg class="fab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/></svg>
+          <span>לקולקציה שלנו</span>
+        </button>
+      </span>
     </div>
+    <button type="button" class="hero-scroll-cue" id="hero-scroll-cue" aria-label="גללו למטה">
+      <span class="hsc-ring" aria-hidden="true">
+        <svg class="hsc-chevron c1" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        <svg class="hsc-chevron c2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+      </span>
+    </button>
   </div>
 
   <div class="hero-showcase" id="hero-showcase">
-    <div class="circle-strip">
-      <div class="circle-track" id="circle-track"></div>
+    <div class="hero-showcase-inner" id="hero-showcase-inner">
+      <div class="showcase-heading" id="showcase-heading">
+        <div class="eyebrow">רפאוז סטייל</div>
+        <h2>הקולקציות שלנו</h2>
+      </div>
+      <div class="circle-strip">
+        <div class="circle-track" id="circle-track"></div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <div class="bedding-feature">
+    <div class="container bedding-feature-inner">
+      <div class="bedding-img" id="bedding-img">
+        <img src="/images/site/bedding-only.png" alt="רפאוז סטייל - כלי מיטה בלבד, מצעי סאטן יוקרתיים" loading="lazy">
+      </div>
+      <div class="bedding-copy" id="bedding-copy">
+        <div class="eyebrow">רפאוז סטייל · קולקציית מצעים יוקרתית</div>
+        <p>בדי סאטן 100% כותנה, צפיפות חוט גבוהה ועיצוב שנולד להעניק לחדר השינה שלכם נוכחות של מלון בוטיק — לילה אחר לילה</p>
+        <button class="btn" data-nav="shop">קח אותי לחנות <span aria-hidden="true">←</span></button>
+      </div>
     </div>
   </div>
 
@@ -2695,10 +3307,6 @@ if("serviceWorker" in navigator){
     </div>
   </section>
 
-  <div class="promo reveal-scale">
-    <p>כל סט נארז ידנית באריזת <span>רפאוז סטייל</span> · תשומת לב לכל פרט, מהבד ועד הקופסה</p>
-  </div>
-
   <div class="cta-band">
     <div class="eyebrow reveal">מוכנים לשדרג את חדר השינה?</div>
     <h2 class="reveal">מצאו את הסט המושלם בשבילכם</h2>
@@ -2717,14 +3325,17 @@ if("serviceWorker" in navigator){
       <p>כל הסטים מיוצרים מבדי כותנה באריגת סאטן, בגימור המעניק לחדר השינה שלכם מראה של מלון יוקרה.</p>
       <div class="collection-nav">
         <button class="collection-btn" data-nav="shop-renaissance" data-collection="renaissance">
+          <span class="cn-bg" aria-hidden="true"></span>
           <span class="cn-name">Renaissance</span>
           <span class="cn-sub">כותנה 100% · 400 חוט</span>
         </button>
         <button class="collection-btn" data-nav="shop-bloom" data-collection="bloom">
+          <span class="cn-bg" aria-hidden="true"></span>
           <span class="cn-name">Bloom</span>
           <span class="cn-sub">כותנה 100% · 400 חוט</span>
         </button>
         <button class="collection-btn" data-nav="shop-heritage" data-collection="heritage">
+          <span class="cn-bg" aria-hidden="true"></span>
           <span class="cn-name">Heritage</span>
           <span class="cn-sub">כותנה 50% · 250 חוט</span>
         </button>
@@ -2829,6 +3440,28 @@ if("serviceWorker" in navigator){
 </div>
 </section>
 
+<!-- ============ SALE VIEW ============ -->
+<section class="view" id="view-sale">
+<div class="view-frame">
+  <div class="container">
+    <div class="breadcrumb">
+      <button data-nav="home">בית</button>
+      <span class="sep">/</span>
+      <span class="current">מבצעים</span>
+    </div>
+    <div class="shop-header collection-page-header">
+      <div class="eyebrow">רפאוז סטייל</div>
+      <h1>מבצעים</h1>
+      <p>הדגמים שנמצאים כרגע במבצע - במחיר מוזל לזמן מוגבל.</p>
+    </div>
+  </div>
+  <div class="container">
+    <p class="result-count" id="result-count-sale" style="margin-bottom:24px;"></p>
+    <div class="product-grid" id="sale-grid"></div>
+  </div>
+</div>
+</section>
+
 <!-- ============ PRODUCT DETAIL VIEW ============ -->
 <section class="view" id="view-product">
   <div class="container">
@@ -2872,9 +3505,8 @@ if("serviceWorker" in navigator){
         </div>
 
         <div id="pd-embroidery" style="display:none;margin:0 0 20px;padding:16px 18px;background:var(--ivory);border:1px solid var(--line);">
-          <label for="pd-embroidery-input" style="display:block;font-size:13px;letter-spacing:0.03em;font-weight:600;color:var(--gold-dark);margin-bottom:8px;">דגם זה ניתן להתאמה אישית - רקמת ראשי תיבות (בתוספת 200 ₪)</label>
+          <label for="pd-embroidery-input" id="pd-embroidery-label" style="display:block;font-size:13px;letter-spacing:0.03em;font-weight:600;color:var(--gold-dark);margin-bottom:8px;">דגם זה ניתן להתאמה אישית - רקמת ראשי תיבות (בתוספת 200 ₪)</label>
           <input type="text" id="pd-embroidery-input" maxlength="3" placeholder="לדוגמה: א.כ" style="width:100%;max-width:220px;padding:9px 12px;border:1px solid var(--line);font-family:inherit;font-size:14px;">
-          <div style="font-size:12px;color:var(--text-muted,#7a7a7a);margin-top:8px;">מי שמעוניין באותיות באנגלית - נא לציין אם רוצים אותיות קטנות או גדולות</div>
           <p style="font-size:12px;color:var(--taupe);margin:8px 0 0;">השאירו ריק אם אינכם מעוניינים ברקמה</p>
         </div>
 
@@ -2909,9 +3541,19 @@ if("serviceWorker" in navigator){
       </div>
     </div>
 
+    <div class="pd-care-band">
+      <span class="pd-care-band-label">הוראות כביסה</span>
+      <p>לפני השימוש יש לבדוק את המוצר. אח"כ לכבס - אריגים צבעוניים לכבס בנפרד, במים פושרים (30 מעלות) ובאבקה או נוזל עדינים, המיועדים לכביסה צבעונית בלבד. ללא כלור וללא סחיטה.</p>
+    </div>
+
     <div class="related">
       <h3>עוד מהקולקציה</h3>
       <div class="product-grid" id="related-grid"></div>
+    </div>
+
+    <div class="related" id="popular-products-section" style="display:none;">
+      <h3>לקוחות שרכשו מוצר זה, אהבו גם:</h3>
+      <div class="product-grid" id="popular-products-grid"></div>
     </div>
   </div>
 </section>
@@ -3358,8 +4000,8 @@ if("serviceWorker" in navigator){
 <!-- ============ ACCOUNT VIEW ============ -->
 <section class="view" id="view-account">
   <div class="container" style="padding-top:50px;padding-bottom:100px;">
-    <h1 class="serif" style="margin-bottom:8px;">האזור האישי שלי</h1>
-    <p style="color:var(--taupe);margin-bottom:34px;">ההזמנות שביצעת, המועדפים שלך והעגלה השמורה — הכל במקום אחד.</p>
+    <h1 class="serif" style="margin-bottom:8px;text-align:center;">האזור האישי שלי</h1>
+    <p style="color:var(--taupe);margin-bottom:34px;text-align:center;">ההזמנות שביצעת, המועדפים שלך והעגלה השמורה — הכל במקום אחד.</p>
 
     <!-- Logged-out: login / register tabs. Logged-in: short account summary
          with a logout button. Toggled by renderAccountAuth() based on
@@ -3418,26 +4060,31 @@ if("serviceWorker" in navigator){
         </form>
 
         <!-- "שכחתי סיסמה" mini-form - hidden until "auth-forgot-open" is
-             clicked. Sends a reset link by email (api/auth?action=forgot),
-             always with the same success message so the endpoint can't be
-             used to check which emails have an account. -->
+             clicked. Sends a 6-digit reset code by email
+             (api/auth?action=forgot), always with the same success
+             message so the endpoint can't be used to check which emails
+             have an account. -->
         <form id="auth-form-forgot" class="auth-form" novalidate>
-          <p style="color:var(--taupe);font-size:13.5px;margin-bottom:16px;">נשלח אליכם קישור לאיפוס הסיסמה בדוא"ל.</p>
+          <p style="color:var(--taupe);font-size:13.5px;margin-bottom:16px;">נשלח אליכם קוד בן 6 ספרות לאיפוס הסיסמה בדוא"ל.</p>
           <div class="auth-form-error" id="auth-forgot-error" role="alert"></div>
-          <div class="auth-form-success" id="auth-forgot-success" role="status">נשלח קישור לאיפוס הסיסמה, בדקו את תיבת הדוא"ל.</div>
           <div class="form-group">
             <label for="auth-forgot-email">דוא"ל</label>
             <input type="email" id="auth-forgot-email" name="email" required maxlength="150" autocomplete="email">
           </div>
-          <button type="submit" class="btn">שליחת קישור לאיפוס</button>
+          <button type="submit" class="btn">שליחת קוד לאיפוס</button>
           <button type="button" class="auth-forgot-link" id="auth-forgot-cancel">חזרה להתחברות</button>
         </form>
 
-        <!-- Set-a-new-password form - only shown when the page loads with
-             ?reset_token=... in the URL (the link from the reset email). -->
+        <!-- Set-a-new-password form - shown right after a reset code is
+             sent; the visitor enters the 6-digit code from the email
+             together with a new password (no link/token in the URL). -->
         <form id="auth-form-reset" class="auth-form" novalidate>
-          <p style="color:var(--taupe);font-size:13.5px;margin-bottom:16px;">בחרו סיסמה חדשה לחשבון שלכם.</p>
+          <p style="color:var(--taupe);font-size:13.5px;margin-bottom:16px;">קיבלתם קוד בן 6 ספרות בדוא"ל <strong id="auth-reset-email-label"></strong>. הזינו אותו וקבעו סיסמה חדשה.</p>
           <div class="auth-form-error" id="auth-reset-error" role="alert"></div>
+          <div class="form-group">
+            <label for="auth-reset-code">קוד בן 6 ספרות</label>
+            <input type="text" id="auth-reset-code" name="code" required inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" style="letter-spacing:6px;text-align:center;font-size:20px;">
+          </div>
           <div class="form-group">
             <label for="auth-reset-password">סיסמה חדשה</label>
             <div class="auth-password-wrap">
@@ -3449,6 +4096,7 @@ if("serviceWorker" in navigator){
             <div class="auth-hint">לפחות 8 תווים</div>
           </div>
           <button type="submit" class="btn">שמירת סיסמה חדשה</button>
+          <button type="button" class="auth-forgot-link" id="auth-reset-resend">שליחת קוד חדש</button>
         </form>
       </div>
 
@@ -3463,14 +4111,16 @@ if("serviceWorker" in navigator){
       </div>
     </div>
 
-    <h2 class="serif" style="font-size:22px;margin-bottom:16px;">ההזמנות שלי</h2>
-    <div id="account-orders" style="margin-bottom:56px;"></div>
+    <div id="account-content" style="display:none;">
+      <h2 class="serif" style="font-size:22px;margin-bottom:16px;">ההזמנות שלי</h2>
+      <div id="account-orders" style="margin-bottom:56px;"></div>
 
-    <h2 class="serif" style="font-size:22px;margin-bottom:16px;">מועדפים שלי</h2>
-    <div id="account-wishlist" class="account-grid" style="margin-bottom:56px;"></div>
+      <h2 class="serif" style="font-size:22px;margin-bottom:16px;">מועדפים שלי</h2>
+      <div id="account-wishlist" class="account-grid" style="margin-bottom:56px;"></div>
 
-    <h2 class="serif" style="font-size:22px;margin-bottom:16px;">עגלה שמורה (טרם שולם)</h2>
-    <div id="account-cart" class="account-grid"></div>
+      <h2 class="serif" style="font-size:22px;margin-bottom:16px;">עגלה שמורה (טרם שולם)</h2>
+      <div id="account-cart" class="account-grid"></div>
+    </div>
   </div>
 </section>
 
@@ -3520,6 +4170,7 @@ if("serviceWorker" in navigator){
           <li><a data-nav="home" href="/">בית</a></li>
           <li><a data-nav="shop" href="/shop">מצעים</a></li>
           <li><a data-nav="towels" href="/towels">מגבות</a></li>
+          <li><a data-nav="sale" href="/sale">מבצעים</a></li>
           <li><a data-nav="about" href="/about">אודות</a></li>
           <li><a data-nav="contact" href="/contact">צור קשר</a></li>
         </ul>
@@ -3595,6 +4246,12 @@ if("serviceWorker" in navigator){
     <div id="search-results"></div>
   </div>
 </div>
+
+<!-- ============ FLOATING WHATSAPP BUTTON ============ -->
+<div id="wa-float-tip" role="status">דברו איתנו בוואטסאפ 👋</div>
+<a id="wa-float" href="#" target="_blank" rel="noopener" draggable="false" aria-label="פתיחת שיחת וואטסאפ">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12.004 2C6.478 2 2 6.477 2 12c0 1.87.512 3.622 1.404 5.126L2 22l4.994-1.352A9.945 9.945 0 0 0 12.004 22C17.53 22 22 17.523 22 12S17.53 2 12.004 2zm0 18.05c-1.72 0-3.336-.492-4.7-1.34l-.337-.202-3.19.863.85-3.11-.22-.32A8.003 8.003 0 0 1 4 12c0-4.418 3.582-8 8.004-8C16.42 4 20 7.582 20 12s-3.58 8.05-7.996 8.05z"/></svg>
+</a>
 
 <!-- ============ NEWSLETTER POPUP ============ -->
 <!-- ============ ACCESSIBILITY WIDGET ============ -->
@@ -3724,6 +4381,7 @@ if("serviceWorker" in navigator){
   </div>
   <h3 class="success-modal-title serif" id="success-modal-title">פנייתכם התקבלה בהצלחה!</h3>
   <p class="success-modal-text" id="success-modal-text">תודה רבה, נחזור אליכם בהקדם האפשרי.</p>
+  <a class="btn outline success-modal-extra" id="success-modal-extra" href="#" target="_blank" rel="noopener" style="display:none;margin-bottom:12px;"></a>
   <button type="button" class="btn success-modal-ok" id="success-modal-ok">מעולה, תודה!</button>
 </div>
 
@@ -3761,7 +4419,7 @@ function escapeHTML(str){
    ============================================================ */
 (function(){
   const hero = document.querySelector('.hero');
-  const heroContent = document.querySelector('.hero-content');
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   if(hero){
     requestAnimationFrame(function(){
@@ -3769,26 +4427,15 @@ function escapeHTML(str){
     });
   }
 
-  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  function heroParallax(){
-    if(!hero || !heroContent || reduceMotion) return;
-    if(hero.offsetParent === null) return;
-    const rect = hero.getBoundingClientRect();
-    if(rect.bottom < 0 || rect.top > window.innerHeight) return;
-    const progress = Math.min(Math.max(-rect.top / Math.max(rect.height, 1), 0), 1);
-    heroContent.style.transform = 'translateY(' + (progress * 90) + 'px)';
-    heroContent.style.opacity = String(1 - progress * 1.15);
+  const scrollCue = document.getElementById('hero-scroll-cue');
+  if(scrollCue){
+    scrollCue.addEventListener('click', function(){
+      window.scrollTo({
+        top: window.innerHeight * 0.92,
+        behavior: reduceMotion ? 'auto' : 'smooth'
+      });
+    });
   }
-  let heroRafPending = false;
-  function queueHeroParallax(){
-    if(heroRafPending) return;
-    heroRafPending = true;
-    requestAnimationFrame(function(){ heroRafPending = false; heroParallax(); });
-  }
-  window.addEventListener('scroll', queueHeroParallax, {passive:true});
-  window.addEventListener('resize', queueHeroParallax);
-  heroParallax();
 
   let revealObserver;
   if('IntersectionObserver' in window){
@@ -3812,6 +4459,52 @@ function escapeHTML(str){
     });
   };
   initScrollReveal();
+
+  /* ---- Bedding-feature image: two-way reveal ----
+     Unlike the one-shot .reveal elements above, this observer never
+     unobserves - it toggles the "in" class on and off every time the
+     section crosses the viewport threshold, so the image glides in from
+     the left on the way down AND glides back out to the right if you
+     scroll back up past it, per the reference video. */
+  if('IntersectionObserver' in window){
+    const beddingObserver = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        entry.target.classList.toggle('in', entry.isIntersecting);
+      });
+    }, {threshold:0.22});
+    document.querySelectorAll('.bedding-img, .bedding-copy').forEach(function(el){
+      beddingObserver.observe(el);
+    });
+  } else {
+    document.querySelectorAll('.bedding-img, .bedding-copy').forEach(function(el){
+      el.classList.add('in');
+    });
+  }
+
+  /* Subtle cursor-follow parallax on the bedding photo: moving the
+     mouse anywhere on the screen nudges the image a little toward
+     the cursor (right side of screen -> image shifts right, top ->
+     shifts up, etc). Purely cosmetic, so it's skipped for
+     reduced-motion and touch-only visitors (no mousemove there). */
+  const beddingParallaxImg = document.querySelector('.bedding-img img');
+  if(beddingParallaxImg && !window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    const MAX_X = 22, MAX_Y = 16;
+    let parallaxRaf = false, lastX = 0, lastY = 0;
+    const applyParallax = ()=>{
+      parallaxRaf = false;
+      beddingParallaxImg.style.transform = `translate(${lastX.toFixed(1)}px, ${lastY.toFixed(1)}px)`;
+    };
+    window.addEventListener('mousemove', function(e){
+      const nx = (e.clientX / window.innerWidth) * 2 - 1;   // -1 (left) .. 1 (right)
+      const ny = (e.clientY / window.innerHeight) * 2 - 1;  // -1 (top) .. 1 (bottom)
+      lastX = nx * MAX_X;
+      lastY = ny * MAX_Y;
+      if(!parallaxRaf){
+        parallaxRaf = true;
+        requestAnimationFrame(applyParallax);
+      }
+    }, {passive:true});
+  }
 })();
 
 /* ============================================================
@@ -3884,75 +4577,76 @@ const DESC_OKEANOS = `מערכת מצעים יוקרתית מבדי אריגת �
 
 const PRODUCTS = [
   {
-    id:"prachim", name:"אביב", price:1080,
+    id:"prachim", name:"אביב", nameEn:"AVIV", price:1080,
     bg:"linear-gradient(145deg,#F7E4E4,#EAC9C2)",
     cotton:100, thread:400, bedType:"twin", tier:"premium", collection:"bloom",
     img:"/images/products/prachim.jpg", desc:1,
     tag:"רב מכר"
   },
   {
-    id:"simfonia", name:"סימפוניה", price:700,
+    id:"simfonia", name:"סימפוניה", nameEn:"SIMFONIA", price:700,
     bg:"linear-gradient(145deg,#FBDDE1,#F3AFAE)",
     cotton:50, thread:250, bedType:"twin", tier:"classic", collection:"heritage",
     img:"/images/products/simfonia.jpg", desc:3
   },
   {
-    id:"rakefet", name:"רקפת", price:890,
+    id:"rakefet", name:"רקפת", nameEn:"RAKEFET", price:890,
     bg:"linear-gradient(145deg,#EBD8DD,#C9A9B0)",
     cotton:100, thread:400, bedType:"twin", tier:"premium", collection:"bloom",
     img:"/images/products/rakefet.jpg", desc:1
   },
   {
-    id:"yahalom", name:"יהלום", price:1490,
+    id:"yahalom", name:"יהלום", nameEn:"YAHALOM", price:1490,
     bg:"linear-gradient(145deg,#F3ECDD,#D9C79A)",
     cotton:100, thread:400, bedType:"twin", tier:"premium", collection:"renaissance",
+    customizable:true, embroideryFree:true, embroideryMaxLetters:2,
     img:"/images/products/yahalom.jpg", desc:2,
-    tag:"פרימיום"
+    tag:"פרימיום", pillowsIncluded:true
   },
   {
-    id:"london", name:"לונדון", price:690,
+    id:"london", name:"לונדון", nameEn:"LONDON", price:690,
     bg:"linear-gradient(145deg,#F5EEDF,#E3D3AC)",
     cotton:100, thread:400, bedType:"twin", tier:"premium", collection:"renaissance", customizable:true,
     img:"/images/products/london.jpg", desc:1
   },
   {
-    id:"royal", name:"רויאל", price:1190,
+    id:"royal", name:"רויאל", nameEn:"ROYAL", price:1190,
     bg:"linear-gradient(145deg,#EDE1C2,#C9A968)",
     cotton:100, thread:400, bedType:"twin", tier:"premium", collection:"renaissance",
-    img:"/images/products/royal.jpg", desc:2
+    img:"/images/products/royal.jpg", desc:2, pillowsIncluded:true
   },
   {
-    id:"star", name:"סטאר", price:680,
+    id:"star", name:"סטאר", nameEn:"STAR", price:680,
     bg:"linear-gradient(145deg,#DCE7E6,#A9C1BE)",
     cotton:50, thread:250, bedType:"twin", tier:"classic", collection:"heritage",
     img:"/images/products/star.jpg", desc:1
   },
   {
-    id:"okeanos", name:"אוקיינוס", price:590,
+    id:"okeanos", name:"אוקיינוס", nameEn:"OKEANOS", price:590,
     bg:"linear-gradient(145deg,#DCE6F2,#9FB6D6)",
     cotton:50, thread:250, bedType:"twin", tier:"classic", collection:"heritage",
     img:"/images/products/okeanos.jpg", desc:3
   },
   {
-    id:"classic", name:"קלאסיק", price:665,
+    id:"classic", name:"קלאסיק", nameEn:"CLASSIC", price:665,
     bg:"linear-gradient(145deg,#E4E1EC,#B7AEC9)",
     cotton:50, thread:250, bedType:"twin", tier:"classic", collection:"heritage",
     img:"/images/products/classic.jpg", desc:1
   },
   {
-    id:"aviv", name:"סימפוניה פרימיום", price:1080,
+    id:"aviv", name:"סימפוניה פרימיום", nameEn:"SIMFONIA PREMIUM", price:1080,
     bg:"linear-gradient(145deg,#F6E1E7,#E3B9C3)",
     cotton:100, thread:400, bedType:"twin", tier:"premium", collection:"renaissance",
-    img:"/images/products/aviv.jpg", desc:2
+    img:"/images/products/aviv.jpg", desc:2, pillowsIncluded:true
   },
   {
-    id:"simfonia-premium", name:"פוקסיה", price:1000,
+    id:"simfonia-premium", name:"פוקסיה", nameEn:"FUCHSIA", price:1000,
     bg:"linear-gradient(145deg,#F6F1EA,#D8C2A6)",
     cotton:100, thread:400, bedType:"twin", tier:"premium", collection:"bloom",
     img:"/images/products/simfonia-premium.jpg", desc:1
   },
   {
-    id:"elegantia", name:"מלודיה", price:700,
+    id:"elegantia", name:"מלודיה", nameEn:"MELODY", price:700,
     bg:"linear-gradient(145deg,#F2E9D6,#D6BE87)",
     cotton:50, thread:250, bedType:"twin", tier:"classic", collection:"heritage",
     img:"/images/products/elegantia.jpg", desc:3
@@ -3963,6 +4657,7 @@ const DESC_TOWEL = `מגבות כותנה איכותיות ורכות במיוח
 מיוצרות מכותנה מובחרת בצפיפות גבוהה, לתחושה מפנקת של ספא בכל שימוש.
 עמידות לכביסות חוזרות תוך שמירה על רכות ואיכות הבד לאורך זמן.`;
 function getDesc(p){
+  if(p.customDesc) return p.customDesc;
   if(p.category === "towel") return DESC_TOWEL;
   if(p.id === "okeanos") return DESC_OKEANOS;
   if(p.desc === 1) return DESC_1;
@@ -3972,6 +4667,13 @@ function getDesc(p){
 function displayName(p){
   return p.category === "towel" ? p.name : `דגם ${p.name}`;
 }
+/* Whether a product currently has an active sale - compareAtPrice set by
+   the admin via the "מבצע" field, and higher than the current price. Used
+   both for the strikethrough price display and to decide which products
+   show up on the /sale page, so the two always agree. */
+function isOnSale(p){
+  return !!(p.compareAtPrice && Number(p.compareAtPrice) > p.price);
+}
 /* Renders a product's price as HTML - if a sale is active (compareAtPrice
    set by the admin via the "מבצע" fields, and higher than the current
    price), shows the old price with a strikethrough plus a "מבצע" badge
@@ -3980,9 +4682,9 @@ function displayName(p){
    so a sale set in the admin panel appears consistently across the site. */
 function priceHTML(p){
   const price = p.price.toLocaleString('he-IL');
-  if(p.compareAtPrice && Number(p.compareAtPrice) > p.price){
+  if(isOnSale(p)){
     const was = Number(p.compareAtPrice).toLocaleString('he-IL');
-    return `<span class="was-price"><span class="was-num">${was}</span> ₪</span>${price} ₪<span class="sale-badge">✦ מבצע</span>`;
+    return `<span class="was-price"><span class="was-num">${was}</span></span> ${price} ₪<span class="sale-badge">✦ מבצע</span>`;
   }
   return `${price} ₪`;
 }
@@ -4043,6 +4745,7 @@ const VIEW_SEO = {
   "shop-bloom":      { path:"/shop/bloom",     title:"קולקציית Bloom | רפאוז סטייל", desc:"קולקציית Bloom ממבחר מצעי היוקרה של רפאוז סטייל." },
   "shop-heritage":   { path:"/shop/heritage",  title:"קולקציית Heritage | רפאוז סטייל", desc:"קולקציית Heritage ממבחר מצעי היוקרה של רפאוז סטייל." },
   "towels":          { path:"/towels",         title:"מגבות יוקרה | רפאוז סטייל", desc:"מגבות יוקרה איכותיות מבית רפאוז סטייל — רכות, סופגות ועמידות לאורך זמן." },
+  "sale":            { path:"/sale",           title:"מבצעים | רפאוז סטייל", desc:"הדגמים שנמצאים כרגע במבצע אצל רפאוז סטייל — במחיר מוזל לזמן מוגבל." },
   "about":           { path:"/about",          title:"אודות | רפאוז סטייל", desc:"על רפאוז סטייל — הסיפור שמאחורי המותג, הערכים והדרך בה אנו בונים כל סט מצעים." },
   "contact":         { path:"/contact",        title:"צור קשר | רפאוז סטייל", desc:"צרו קשר עם צוות רפאוז סטייל בכל שאלה או בקשה." },
   "shipping":        { path:"/shipping",       title:"משלוחים והחזרות | רפאוז סטייל", desc:"מדיניות המשלוחים וההחזרות של רפאוז סטייל." },
@@ -4055,6 +4758,18 @@ const VIEW_SEO = {
   "account":         { path:"/account",        title:"האזור האישי שלי | רפאוז סטייל", desc:"ההזמנות, המועדפים והעגלה השמורה שלך ברפאוז סטייל." }
 };
 const SITE_ORIGIN = "https://reposestyle.com";
+
+/* ============================================================
+   "האתגר הכללי" - the trivia/points challenge micro-site (see
+   the separate project you uploaded). It's a different, separately
+   deployed site - not part of this file - so all we need here is
+   its live URL, to link to it (with the order id) after a
+   successful purchase. Replace with the real URL once you deploy
+   it (e.g. to a subdomain like challenge.reposestyle.com, or its
+   own Vercel URL). Until it's set, the "200 points" line/button
+   in the order-success popup simply doesn't show. */
+const CHALLENGE_URL = "";
+const CHALLENGE_CONFIGURED = !!CHALLENGE_URL;
 
 /* ============================================================
    TRANZILA SECURE PAYMENT (see TRANZILA-SETUP.md)
@@ -4182,6 +4897,9 @@ function renderViewNow(name, updateHistory, productId){
     const key = name.replace("shop-", "");
     document.getElementById(`view-${name}`).classList.add("active");
     renderCollectionPage(key);
+  } else if(name === "sale"){
+    document.getElementById("view-sale").classList.add("active");
+    renderSalePage();
   } else if(name === "product"){
     const p = productId ? PRODUCTS.find(x=>x.id===productId) : null;
     if(p){
@@ -4207,6 +4925,35 @@ function renderViewNow(name, updateHistory, productId){
     renderAccountPage();
   }
   window.scrollTo({top:0, behavior:"instant"});
+  /* Kill the "elements slide/fade up into place" scroll-reveal effect
+     for anything that's already inside the viewport the instant a new
+     view appears - e.g. the "benefit" icon row near the top of the shop
+     page. Those elements were bound to the reveal IntersectionObserver
+     back when the page first loaded (while their view was still
+     display:none, so the observer never fired for them), and switching
+     to their view via a nav button/link is what first makes them
+     visible - which is exactly when the observer would fire and animate
+     them in a frame later, looking like the whole page "drops down" or
+     shifts on arrival. Marking them "in" immediately, in the same tick
+     as the view swap, means the browser only ever paints their final
+     state - nothing to animate. Content further down the page that's
+     still off-screen is left alone, so scrolling down still reveals it
+     normally, same as before. */
+  (function(){
+    const activeView = document.querySelector(".view.active");
+    if(!activeView) return;
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+    activeView.querySelectorAll(".reveal, .reveal-scale, .feature-row").forEach(el=>{
+      if(el.classList.contains("in")) return;
+      const rect = el.getBoundingClientRect();
+      if(rect.top < vh){
+        el.classList.add("in");
+        el.dataset.revealBound = "1";
+        if(typeof revealObserver !== "undefined" && revealObserver) revealObserver.unobserve(el);
+      }
+    });
+  })();
+  document.dispatchEvent(new Event("app:view-changed"));
   const navHighlight = name.startsWith("shop") ? "shop" : name;
   document.querySelectorAll("nav.nav-links button, nav.nav-links a").forEach(b=>{
     b.classList.toggle("active", b.dataset.nav === navHighlight);
@@ -4399,64 +5146,191 @@ if(siteNav){
   siteNav.classList.toggle("scrolled", navScrolled);
 
   window.addEventListener("scroll", queueNavScrolledUpdate, {passive:true});
-}
 
-/* לחיצה על מוצר = ניווט מיידי בתוך האפליקציה (בלי רענון עמוד מלא).
-   ה-URL בסרגל הכתובות עדיין מתעדכן באמת (showView עושה pushState),
-   כך שקישור ישיר, "פתח בלשונית חדשה", וכפתורי קדימה/אחורה בדפדפן
-   ממשיכים לעבוד בדיוק כמו קודם - רק בלי להמתין לרענון עמוד מלא בכל
-   קליק. (בעבר זה עשה window.location.href, מה שגרם לדפדפן להוריד
-   ולהריץ מחדש את כל הדף - כולל שתי קריאות רשת - בכל ניווט; זה מה
-   שגרם לעיכוב של כמה שניות בכל לחיצה.) */
-function goToProduct(id){
-  showView("product", true, id);
-}
+  /* ---- Transparent-over-hero nav (home page only) ----
+     At scrollY 0 on the homepage the bar has no background, no border,
+     no blur and no logo - only the nav links and icon buttons float
+     directly on top of the hero, still fully clickable. That first
+     state is controlled by two independent flags, both read as CSS
+     custom properties (see header.site-nav in the CSS above):
 
-/* גלגל טעינה זהוב שמופיע לרגע (1.25 שניות) בכל לחיצה על כפתורי
-   הקולקציות בעמוד המצעים (Renaissance / Bloom / Heritage), לפני
-   שהניווט בפועל קורה - נותן תחושת "טעינה" מפנקת. */
-const collectionLoadingOverlay = document.getElementById("collection-loading-overlay");
-function navigateWithCollectionLoader(navTarget){
-  if(!collectionLoadingOverlay){ showView(navTarget); return; }
-  collectionLoadingOverlay.classList.add("active");
-  collectionLoadingOverlay.setAttribute("aria-hidden","false");
-  setTimeout(()=>{
-    collectionLoadingOverlay.classList.remove("active");
-    collectionLoadingOverlay.setAttribute("aria-hidden","true");
-    showView(navTarget);
-  }, 1250);
-}
+     --nav-f ("floating"): flips to 1 the moment the visitor scrolls
+     even a few px. It gives the bar a distinct frosted-glass edge -
+     blur, a faint neutral (colorless) tint and a soft shadow - so it
+     reads as its own separate strip, while staying see-through and
+     NOT yet gold.
 
-document.querySelectorAll("[data-nav]").forEach(el=>{
-  el.addEventListener("click", (e)=>{
-    // קישורים אמיתיים (<a href>): קליק "רגיל" (עכבר שמאלי, בלי מקש
-    // מאפנן) מנווט מיידית בתוך האפליקציה. קליק עם Ctrl/Cmd/Shift/Alt
-    // או קליק אמצעי (פתיחה בלשונית/חלון חדשים) ממשיך להתנהג באופן
-    // טבעי של הדפדפן, כי אז אין טעם (ואי אפשר) לדלג על רענון עמוד.
-    if(el.tagName === "A" && el.getAttribute("href")){
-      if(e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    }
-    e.preventDefault();
-    if(el.classList.contains("collection-btn")){
-      navigateWithCollectionLoader(el.dataset.nav);
+     --nav-o ("gold"): stays 0 until the "רפאוז סטייל / הקולקציות שלנו"
+     heading further down the page (#showcase-heading) actually
+     scrolls up to meet the bottom edge of the bar. Only then does the
+     bar turn the normal solid gold. Every part of the bar (background,
+     border, shadow, logo, pill, text/icon color) reads from these two
+     variables in the CSS above, so it all changes "as one piece".
+
+     On every other page (and as a safe default) both variables simply
+     stay at their CSS default of 1, i.e. the normal full gold header. */
+  const NAV_FLOAT_ON = 2;   // px of scroll before the bar turns "floating"
+  const NAV_FLOAT_OFF = 0;  // px of scroll before it turns back off
+  const NAV_GOLD_GAP_ON = 0;   // extra px past the bar before gold turns on
+  const NAV_GOLD_GAP_OFF = 28; // extra px of slack before gold turns back off
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const showcaseHeading = document.getElementById("showcase-heading");
+
+  function isHomeViewActive(){
+    const homeView = document.getElementById("view-home");
+    return !!homeView && homeView.classList.contains("active");
+  }
+
+  let navFloating = false;
+  let navGold = false;
+  let navHeroRaf = false;
+  function applyNavHeroProgress(){
+    navHeroRaf = false;
+    if(prefersReducedMotion || !isHomeViewActive()){
+      siteNav.style.removeProperty("--nav-f");
+      siteNav.style.removeProperty("--nav-o");
       return;
     }
-    showView(el.dataset.nav);
+    const y = window.scrollY;
+    navFloating = navFloating ? y > NAV_FLOAT_OFF : y > NAV_FLOAT_ON;
+    siteNav.style.setProperty("--nav-f", navFloating ? 1 : 0);
+
+    // Has the heading's top edge reached the bottom of the bar yet?
+    let meetsBar = navGold; // no heading found (shouldn't happen) - hold state
+    if(showcaseHeading){
+      const navHeight = siteNav.offsetHeight;
+      const top = showcaseHeading.getBoundingClientRect().top;
+      meetsBar = navGold
+        ? top <= navHeight + NAV_GOLD_GAP_OFF
+        : top <= navHeight + NAV_GOLD_GAP_ON;
+    }
+    navGold = meetsBar;
+    siteNav.style.setProperty("--nav-o", navGold ? 1 : 0);
+  }
+  function queueNavHeroProgress(){
+    if(navHeroRaf) return;
+    navHeroRaf = true;
+    requestAnimationFrame(applyNavHeroProgress);
+  }
+  window.addEventListener("scroll", queueNavHeroProgress, {passive:true});
+  window.addEventListener("resize", queueNavHeroProgress);
+  document.addEventListener("app:view-changed", queueNavHeroProgress);
+  applyNavHeroProgress();
+}
+
+/* לחיצה על מוצר = ניווט אמיתי בדפדפן (רענון עמוד מלא), בכוונה: כך
+   שגלגל הטעינה המובנה של הדפדפן בטאב אכן רץ, בדיוק כמו באתר רב-עמודי
+   רגיל. ה-middleware בצד השרת (ראו middleware.mjs, PAGE_LOAD_DELAY_MS)
+   מוסיף השהיה מכוונת של כ-1.25 שניות לפני שהתשובה חוזרת, כך שהספינר
+   מספיק להיראות בבירור בכל ניווט - במקום קפיצה כמעט-מיידית. */
+function goToProduct(id){
+  window.location.href = productPath(id);
+}
+
+/* גלגל טעינה זהוב שמסתובב בדיוק 1.5 שניות (GOLD_LOADER_MS) לפני
+   שהניווט האמיתי בדפדפן מופעל בפועל - על כפתורי הקולקציות
+   (Renaissance/Bloom/Heritage) ובקישור לעמוד המגבות. ה-1.5 שניות
+   האלה הן טיימר עצמאי משלה, לא תלוי במשך הטעינה האמיתית של הדף
+   (ה-middleware בצד השרת מוסיף עוד כ-1.25 שניות משלו אחרי זה, ראו
+   middleware.mjs) - כך שהספינר תמיד יסתובב בול שניה וחצי, בלי קשר
+   למהירות השרת. */
+const GOLD_LOADER_MS = 1500;
+const collectionLoadingOverlay = document.getElementById("collection-loading-overlay");
+function navigateWithGoldLoader(url, collectionKey){
+  if(!collectionLoadingOverlay){ window.location.href = url; return; }
+  collectionLoadingOverlay.classList.add("active");
+  collectionLoadingOverlay.setAttribute("aria-hidden","false");
+  /* Earlier version of this just started warming the browser's image
+     cache during the spinner's fixed 1.5s wait and navigated regardless
+     of whether that finished - but the moment window.location.href
+     actually runs, the browser tears down this document and cancels any
+     of ITS still-in-flight requests, including these warm-up downloads.
+     On a slow connection, or with several photos in one collection, that
+     1.5s isn't always enough, so some photos would lose their head start
+     and still arrive uncached on the new page - which is exactly the
+     still-flickering photos being reported. Now the navigation itself
+     waits on the photos actually finishing (up to a safety cap so a
+     single stuck image can never leave someone stuck on the spinner),
+     so every photo is either fully cached or the page waits for it -
+     never a race that can be lost. */
+  const MIN_MS = GOLD_LOADER_MS;   // spinner always shows at least this long, even if photos are already cached
+  const MAX_MS = 5000;             // never make anyone wait longer than this - navigate anyway past this point
+  const startedAt = Date.now();
+  let navigated = false;
+  function go(){
+    if(navigated) return;
+    navigated = true;
+    window.location.href = url;
+  }
+  function goAfterMinimum(){
+    const waited = Date.now() - startedAt;
+    setTimeout(go, Math.max(0, MIN_MS - waited));
+  }
+  const imgUrls = collectionKey
+    ? PRODUCTS.filter(p=>p.collection===collectionKey).map(p=>p.img).filter(Boolean)
+    : [];
+  if(imgUrls.length === 0){
+    goAfterMinimum();
+  } else {
+    let remaining = imgUrls.length;
+    imgUrls.forEach(src=>{
+      const warmer = new Image();
+      warmer.onload = warmer.onerror = ()=>{
+        remaining--;
+        if(remaining <= 0) goAfterMinimum();
+      };
+      warmer.src = src;
+    });
+    setTimeout(go, MAX_MS); // safety net if a photo never finishes loading/erroring
+  }
+}
+/* אם מטיילים לאחור לדף שהיה שמור ב-bfcache באמצע ניווט כזה, לוודא
+   שהשכבה לא נשארת תקועה גלויה. */
+window.addEventListener("pageshow", ()=>{
+  if(!collectionLoadingOverlay) return;
+  collectionLoadingOverlay.classList.remove("active");
+  collectionLoadingOverlay.setAttribute("aria-hidden","true");
+});
+
+/* כל ניווט = ניווט אמיתי בדפדפן, בכוונה (לא SPA) - כך שגלגל הטעינה
+   המובנה של הדפדפן בטאב אכן רץ בכל מעבר עמוד, בדיוק כמו באתר רב-עמודי
+   רגיל. ה-middleware (middleware.mjs) מוסיף השהיה מכוונת של כ-1.25
+   שניות בצד השרת. אלמנטים שהם <a href> אמיתיים (רוב פריטי התפריט,
+   כולל "מגבות") לא נוגעים בהם כלל - הדפדפן מנווט אליהם בעצמו, כולל
+   תמיכה טבעית ב-Ctrl/Cmd/קליק אמצעי לפתיחה בלשונית חדשה, בלי שכבת
+   הספינר הזהוב (זו רק לכפתורי הקולקציות - ראו navigateWithGoldLoader
+   למעלה - שאין להם href אמיתי לנווט אליו בעצמם, לכן הם ממילא צריכים
+   טיפול ב-JS; קישור אמיתי כמו "מגבות" לא צריך את זה, ושכבת ה-1.5
+   שניות שלה רק עיכבה אותו בלי סיבה מעל השהיית השרת עצמה). כפתורים
+   בלי href אמיתי (כפתורי הקולקציות) מקבלים ניווט דרך JS ישירות,
+   לאותה כתובת בדיוק שהיו מקבלים כ-<a>. */
+document.querySelectorAll("[data-nav]").forEach(el=>{
+  if(el.tagName === "A" && el.getAttribute("href")) return; // קישור אמיתי - הדפדפן כבר מטפל בניווט עצמו
+  el.addEventListener("click", (e)=>{
+    e.preventDefault();
+    if(el.classList.contains("collection-btn")){ navigateWithGoldLoader(pathForView(el.dataset.nav), el.dataset.collection); return; }
+    window.location.href = pathForView(el.dataset.nav);
   });
   el.addEventListener("keydown", (e)=>{
     if(e.key !== "Enter" && e.key !== " ") return;
     e.preventDefault();
-    if(el.classList.contains("collection-btn")){
-      navigateWithCollectionLoader(el.dataset.nav);
-      return;
-    }
-    showView(el.dataset.nav);
+    if(el.classList.contains("collection-btn")){ navigateWithGoldLoader(pathForView(el.dataset.nav), el.dataset.collection); return; }
+    window.location.href = pathForView(el.dataset.nav);
   });
 });
 
 /* ============================================================
    RENDER: PRODUCT CARD
    ============================================================ */
+/* "ניתן להתאמה אישית" ribbon shown on the product card's photo itself
+   (not the card body) for customizable models - a shopper should see
+   this before even opening the product. See .customizable-ribbon CSS. */
+function customizableRibbonHTML(p){
+  return p.customizable
+    ? '<div class="customizable-ribbon"><span>✦ התאמה אישית</span></div>'
+    : "";
+}
+
 function productCardHTML(p){
   if(p.hidden) return "";
   const isWished = wishlist.includes(p.id);
@@ -4464,10 +5338,11 @@ function productCardHTML(p){
   <div class="product-card ${p.outOfStock ? "out-of-stock" : ""}" data-id="${p.id}" tabindex="0" role="button" aria-label="לצפייה במוצר ${p.name}">
     <div class="card-frame" style="background:var(--ivory)">
       ${p.outOfStock ? `<span class="card-tag out-of-stock">אזל מהמלאי</span>` : (p.tag ? `<span class="card-tag">${p.tag}</span>` : "")}
+      ${customizableRibbonHTML(p)}
       <button class="wish-btn ${isWished ? "active" : ""}" data-id="${p.id}" aria-label="${isWished ? "הסרה מהמועדפים" : "הוספה למועדפים"}" aria-pressed="${isWished}">
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-4.35-9.5-8.8C.7 8.3 2.2 4.3 6.2 4.3c2 0 3.5 1 5.8 2.5 2.3-1.5 3.8-2.5 5.8-2.5 4 0 5.5 4 3.5 7.9C19 16.65 12 21 12 21z"/></svg>
       </button>
-      <div class="imgwrap"><img src="${p.img}" alt="${p.name}" loading="lazy"></div>
+      <div class="imgwrap"><img src="${p.img}" alt="${p.name}" loading="lazy" decoding="async"></div>
     </div>
     <div class="card-body">
       ${p.category !== "towel" && p.bedType === "twin" ? `<div class="cspec">2 סט מצעים יחיד 90/200</div>` : ""}
@@ -4493,6 +5368,26 @@ function attachCardClicks(container){
       e.stopPropagation();
       toggleWishlist(btn.dataset.id);
     });
+  });
+  /* Product photos start at opacity:0 and fade in on the image's
+     "load" event (see the shimmer placeholder CSS on .imgwrap and the
+     global load/error listener below). That event always fires on the
+     next tick at the earliest - even for an image the browser already
+     has fully cached - so on a page like /towels or a collection page,
+     where every card's photo is typically already cached from a
+     previous visit, every photo on the grid would still blank out for
+     an instant and then pop in together right after render, reading as
+     a one-time "flicker" across the whole page. Catching the
+     already-cached case here, synchronously, right when the cards are
+     inserted (before the browser paints), marks those images visible
+     immediately with no transition - only a genuinely new/uncached
+     image still uses the async load event and its fade-in. */
+  container.querySelectorAll(".imgwrap img").forEach(img=>{
+    if(img.complete && img.naturalWidth > 0){
+      img.classList.add("img-loaded");
+      const wrap = img.closest(".imgwrap");
+      if(wrap) wrap.classList.add("img-ready");
+    }
   });
 }
 
@@ -4540,6 +5435,103 @@ PRODUCTS.push(...TOWELS_DATA);
    visitor on every device, not just the browser that made the change.
    Called once during INIT, before the first render, so the very first
    paint already shows the correct price - see the INIT section below. */
+/* Local cache key for the last-known admin overrides (see
+   applyAdminOverrides()/applyCachedAdminOverrides() below). Bump the
+   suffix if the shape of the cached payload ever changes, so old,
+   incompatible cache entries are ignored instead of half-applied. */
+const ADMIN_OVERRIDES_CACHE_KEY = "rs_admin_overrides_cache_v1";
+
+/* Applies a /api/products-shaped payload (either freshly fetched or read
+   back from localStorage) onto PRODUCTS: brand-new admin-added products,
+   price/name/image overrides on existing ones, and admin deletions.
+   Pulled out of applyAdminOverrides() so the exact same logic can run
+   synchronously from a local cache (see applyCachedAdminOverrides())
+   before the very first paint, instead of only after the network
+   round-trip - that's what removes the old-photo/new-photo flash on
+   collection pages, since returning visitors then see the already-current
+   image immediately rather than the stale built-in one first. Safe to
+   call more than once with the same or newer data: adding a product
+   that's already there, or re-applying the same price/name/image, is a
+   no-op each subsequent time. */
+function applyOverridesData(data){
+  const overrides = {};
+  (Array.isArray(data.products) ? data.products : []).forEach(function(o){ overrides[o.id] = o; });
+
+  /* Admin-added brand-new products (ids that don't exist anywhere in the
+     built-in catalog above) - built from the saved override row plus its
+     "details" JSON (see the admin panel's "הוספת מוצר חדש" form and
+     api/products.js), then pushed into PRODUCTS so they render in the
+     shop/towel grids, search, and product page exactly like a built-in
+     product. Existing-product overrides (price/name/image changes) are
+     still applied by the PRODUCTS.forEach below, same as always. */
+  Object.keys(overrides).forEach(function(id){
+    const o = overrides[id];
+    if(PRODUCTS.some(function(p){ return p.id === id; })) return; // existing product, not a new one
+    if(o.active === false) return; // saved but turned off
+    if(!o.name || o.price === undefined || o.price === null || o.price === "") return; // incomplete row - skip rather than show a broken card
+    const d = (o.details && typeof o.details === "object") ? o.details : {};
+    const isTowel = o.category === "towel";
+    PRODUCTS.push({
+      id: id,
+      name: o.name,
+      price: Number(o.price),
+      compareAtPrice: (o.compare_at_price !== undefined && o.compare_at_price !== null && o.compare_at_price !== "") ? Number(o.compare_at_price) : null,
+      img: o.image || "/images/site/logo-shop.png",
+      category: isTowel ? "towel" : undefined,
+      cotton: d.cotton != null && d.cotton !== "" ? Number(d.cotton) : 100,
+      thread: d.thread != null && d.thread !== "" ? Number(d.thread) : 300,
+      weight: d.weight != null && d.weight !== "" ? Number(d.weight) : 600,
+      bedType: d.bedType === "double" ? "double" : "twin",
+      tier: d.tier === "premium" ? "premium" : "classic",
+      collection: !isTowel ? (d.collection || "heritage") : undefined,
+      tag: d.tag || undefined,
+      customDesc: d.desc || "",
+      pillowsIncluded: !!d.pillowsIncluded,
+      outOfStock: !!o.out_of_stock,
+      isCustom: true
+    });
+  });
+
+  PRODUCTS.forEach(function(p){
+    const o = overrides[p.id];
+    if(!o) return;
+    if(o.price !== undefined && o.price !== null && o.price !== "") p.price = Number(o.price);
+    if(o.name !== undefined && o.name !== null && o.name !== "") p.name = o.name;
+    if(o.image !== undefined && o.image !== null && o.image !== "") p.img = o.image;
+    p.compareAtPrice = (o.compare_at_price !== undefined && o.compare_at_price !== null && o.compare_at_price !== "") ? Number(o.compare_at_price) : null;
+    p.outOfStock = !!o.out_of_stock;
+  });
+
+  // Admin can permanently delete a built-in catalog product from the
+  // "ניהול מוצרים" tab - that's saved as an override row with
+  // active:false (there's no built-in fallback to "reset to" the way
+  // there is for price/name, so unlike those fields this one actually
+  // removes the product from every grid, search result, and direct link
+  // instead of just resetting a value).
+  for(let i = PRODUCTS.length - 1; i >= 0; i--){
+    const o = overrides[PRODUCTS[i].id];
+    if(o && o.active === false) PRODUCTS.splice(i, 1);
+  }
+
+  syncProductStructuredData();
+}
+
+/* Reads yesterday's (or five-minutes-ago's) admin overrides straight from
+   localStorage and applies them to PRODUCTS synchronously, with no network
+   wait at all. Meant to run once, before the very first renderCurrentView()
+   call at INIT below, so a returning visitor's first paint already shows
+   whatever photo/price/name is actually current - instead of the built-in
+   default first and the real one a moment later. Same "raw=1" opt-out as
+   applyAdminOverrides(), so the admin panel still gets pristine defaults. */
+function applyCachedAdminOverrides(){
+  try{
+    if(new URLSearchParams(location.search).get("raw") === "1") return;
+    const cached = localStorage.getItem(ADMIN_OVERRIDES_CACHE_KEY);
+    if(!cached) return;
+    applyOverridesData(JSON.parse(cached));
+  }catch(e){ /* no cache yet, or it's corrupt/from an old format - just skip it */ }
+}
+
 async function applyAdminOverrides(){
   try{
     if(new URLSearchParams(location.search).get("raw") === "1") return; // admin panel requests pristine defaults
@@ -4553,19 +5545,12 @@ async function applyAdminOverrides(){
     }
     if(!res.ok) return;
     const data = await res.json();
-    const overrides = {};
-    (Array.isArray(data.products) ? data.products : []).forEach(function(o){ overrides[o.id] = o; });
-    PRODUCTS.forEach(function(p){
-      const o = overrides[p.id];
-      if(!o) return;
-      if(o.price !== undefined && o.price !== null && o.price !== "") p.price = Number(o.price);
-      if(o.name !== undefined && o.name !== null && o.name !== "") p.name = o.name;
-      if(o.image !== undefined && o.image !== null && o.image !== "") p.img = o.image;
-      p.compareAtPrice = (o.compare_at_price !== undefined && o.compare_at_price !== null && o.compare_at_price !== "") ? Number(o.compare_at_price) : null;
-      p.outOfStock = !!o.out_of_stock;
-    });
-    syncProductStructuredData();
-  }catch(e){ /* network error/timeout - fall back to the built-in catalog */ }
+    applyOverridesData(data);
+    // Remember this response for next time, so the *next* page load can
+    // apply it synchronously (via applyCachedAdminOverrides above) before
+    // the first paint instead of after a network round-trip.
+    try{ localStorage.setItem(ADMIN_OVERRIDES_CACHE_KEY, JSON.stringify(data)); }catch(e){ /* storage full/blocked - not worth failing the page over */ }
+  }catch(e){ /* network error/timeout - fall back to the built-in catalog (or the cache already applied above) */ }
 }
 
 /* Keeps the Product/ItemList structured data (see <script id="product-list-ld">
@@ -4595,6 +5580,27 @@ function syncProductStructuredData(){
   }catch(e){ /* malformed/missing block - leave the static defaults in place */ }
 }
 
+/* Swaps an <img>'s src only after the new image has finished downloading
+   in the background, instead of pointing the visible element straight at
+   an unfetched URL. Setting el.src directly makes the browser clear the
+   element and show it half-decoded/blank while the new file streams in -
+   this is what caused the hero photo (and any admin-uploaded content
+   image) to sometimes flash or look blurry for a moment on first load.
+   Preloading off-screen first means the swap only happens once the image
+   is already sitting in the browser cache, so it appears instantly, with
+   no in-between frame. Same technique already used by the product-photo
+   lightbox above (see openImageLightbox). Skipped entirely if the value
+   already matches what's showing, so nothing re-downloads for no reason. */
+function preloadThenSetSrc(el, val){
+  if(!el || !val) return;
+  let resolved = val;
+  try{ resolved = new URL(val, location.href).href; }catch(e){}
+  if(el.src === resolved) return;
+  const pre = new Image();
+  pre.onload = pre.onerror = function(){ el.src = val; };
+  pre.src = val;
+}
+
 /* Applies text/image overrides saved from the admin panel's "עריכת תוכן"
    tab (see api/content.js) onto any element in the page marked with a
    data-content-key attribute - the homepage hero title/subtitle/slides
@@ -4622,19 +5628,97 @@ async function applyContentOverrides(){
       const val = content[key];
       if(val === undefined || val === null || val === "") return;
       if(el.tagName === "IMG"){
-        el.src = val;
-      } else if(key === "hero_tagline"){
-        /* Rebuild the word-by-word spans the hero's reveal animation
-           relies on (see CSS .rw), instead of just swapping textContent
-           and losing the animation. */
-        el.innerHTML = String(val).split(" ").map(function(w){
-          return `<span class="rw"><span>${escapeHTML(w)}</span></span>`;
-        }).join(" ");
+        preloadThenSetSrc(el, val);
       } else {
         el.textContent = val;
       }
     });
+    applyHeroSimpleMode(content);
+    applyHeroBanner(content);
+    applyPromoBanner(content);
   }catch(e){ /* network error/timeout - keep the built-in defaults */ }
+}
+
+/* Admin panel "עמוד הבית" toggle: hero_simple_mode === "1" switches the
+   hero to the plain white/no-animation look - see the "HERO SIMPLE /
+   WHITE MODE" CSS above. Just a class toggle; everything else is CSS. */
+function applyHeroSimpleMode(content){
+  document.body.classList.toggle("hero-simple", content.hero_simple_mode === "1");
+}
+
+/* Admin panel "עמוד הבית" panel: hero_banner_enabled/_image/_link_url
+   swap the hero for one uploaded promotional image - see the "HERO
+   BANNER IMAGE MODE" CSS above. Takes priority over hero_simple_mode if
+   both are somehow on, since an uploaded banner is a stronger, more
+   deliberate choice than the plain-white fallback. */
+function applyHeroBanner(content){
+  const enabled = content.hero_banner_enabled === "1";
+  const imageUrl = (content.hero_banner_image || "").trim();
+  const active = enabled && !!imageUrl;
+  document.body.classList.toggle("hero-banner", active);
+  const linkEl = document.getElementById("hero-banner-link");
+  const imgEl = document.getElementById("hero-banner-img");
+  if(!linkEl || !imgEl) return;
+  if(!active){
+    linkEl.style.display = "none";
+    return;
+  }
+  document.body.classList.remove("hero-simple"); // banner image wins if both are on
+  preloadThenSetSrc(imgEl, imageUrl);
+  const linkUrl = (content.hero_banner_link_url || "").trim();
+  if(linkUrl){
+    linkEl.href = linkUrl;
+    linkEl.style.pointerEvents = "";
+    linkEl.style.cursor = "pointer";
+  } else {
+    linkEl.removeAttribute("href");
+    linkEl.style.pointerEvents = "none";
+    linkEl.style.cursor = "default";
+  }
+  linkEl.style.display = "block";
+}
+
+/* Admin panel "עמוד הבית" panel: promo_banner_enabled/_text/_link_url/
+   _link_text drive the slim announcement strip above the header (see
+   the "PROMO BANNER" CSS above and the markup right before
+   header.site-nav). A visitor who closes it with the × won't see that
+   exact message again this browser session (sessionStorage) - if the
+   admin later changes the text, it's treated as a new message and
+   shows again. */
+function applyPromoBanner(content){
+  const banner = document.getElementById("promo-banner");
+  if(!banner) return;
+  const enabled = content.promo_banner_enabled === "1";
+  const text = (content.promo_banner_text || "").trim();
+  if(!enabled || !text){
+    banner.style.display = "none";
+    return;
+  }
+  const dismissKey = "rs-promo-dismissed:" + text;
+  if(sessionStorage.getItem(dismissKey) === "1"){
+    banner.style.display = "none";
+    return;
+  }
+  document.getElementById("promo-banner-text").textContent = text;
+  const linkEl = document.getElementById("promo-banner-link");
+  const linkUrl = (content.promo_banner_link_url || "").trim();
+  const linkText = (content.promo_banner_link_text || "").trim();
+  if(linkUrl && linkText){
+    linkEl.href = linkUrl;
+    linkEl.textContent = linkText;
+    linkEl.style.display = "";
+  } else {
+    linkEl.style.display = "none";
+  }
+  banner.style.display = "";
+  const closeBtn = document.getElementById("promo-banner-close");
+  if(closeBtn && !closeBtn.dataset.bound){
+    closeBtn.dataset.bound = "1";
+    closeBtn.addEventListener("click", function(){
+      banner.style.display = "none";
+      try{ sessionStorage.setItem(dismissKey, "1"); }catch(e){}
+    });
+  }
 }
 
 function renderTowels(){
@@ -4714,7 +5798,7 @@ function renderCircleStrip(){
           <img src="${p.img}" alt="${p.name}" loading="eager" decoding="async" fetchpriority="low">
         </div>
       </div>
-      <span class="circle-name">${p.name}</span>
+      <span class="circle-name-en">${p.nameEn || ""}</span>
     </div>`
   ).join("");
 
@@ -4725,9 +5809,6 @@ function renderCircleStrip(){
 
   const nodes = track.querySelectorAll(".circle-item");
   nodes.forEach((el, i)=>{
-    /* Staggered entrance — each circle fades/scales in a beat after the
-       previous one, so the whole row cascades open instead of popping at once. */
-    el.style.transitionDelay = `${1.3 + (i % setCount) * 0.05}s`;
     const open = ()=>goToProduct(el.dataset.id);
     el.addEventListener("click", open);
     el.addEventListener("keydown", (e)=>{
@@ -4843,6 +5924,31 @@ function renderCollectionPage(key){
   attachCardClicks(grid);
 }
 
+/* ============================================================
+   RENDER: SALE PAGE
+   ============================================================ */
+/* Not a fixed collection - pulls in whichever products currently have an
+   active sale (see isOnSale above), across every category. So the moment
+   a sale price is set (or removed) for a product in the admin panel, it
+   automatically appears (or disappears) here - nothing else to configure. */
+function renderSalePage(){
+  const grid = document.getElementById("sale-grid");
+  const countEl = document.getElementById("result-count-sale");
+  if(!grid) return;
+  const items = PRODUCTS.filter(isOnSale);
+  if(!items.length){
+    countEl.textContent = "";
+    grid.innerHTML = `<div class="empty-state">
+      <h3 class="serif">אין כרגע מוצרים במבצע</h3>
+      <p>בקרו שוב בקרוב - מבצעים חדשים מתעדכנים מעת לעת.</p>
+    </div>`;
+    return;
+  }
+  countEl.textContent = `מציג ${items.length} דגמים במבצע`;
+  grid.innerHTML = items.map(productCardHTML).join("");
+  attachCardClicks(grid);
+}
+
 document.querySelectorAll("[data-filter-size]").forEach(btn=>{
   btn.addEventListener("click", ()=>{
     document.querySelectorAll("[data-filter-size]").forEach(b=>b.classList.remove("active"));
@@ -4859,6 +5965,28 @@ document.getElementById("sort-select").addEventListener("change", (e)=>{
 /* ============================================================
    RENDER: PRODUCT DETAIL
    ============================================================ */
+/* Renders the "לקוחות שרכשו מוצר זה, אהבו גם:" row - a fixed, curated
+   list of models (not driven by real sales data), excluding whichever
+   product page is currently open. */
+const FEATURED_RELATED_IDS = ["yahalom", "prachim", "simfonia", "royal", "rakefet", "star"];
+function renderPopularProducts(currentId){
+  const section = document.getElementById("popular-products-section");
+  const grid = document.getElementById("popular-products-grid");
+  if(!section || !grid) return;
+  const items = FEATURED_RELATED_IDS
+    .filter(function(id){ return id !== currentId; })
+    .map(function(id){ return PRODUCTS.find(function(p){ return p.id === id; }); })
+    .filter(Boolean)
+    .slice(0, 8);
+  if(!items.length){
+    section.style.display = "none";
+    return;
+  }
+  section.style.display = "block";
+  grid.innerHTML = items.map(productCardHTML).join("");
+  attachCardClicks(grid);
+}
+
 function renderProductDetail(){
   const p = PRODUCTS.find(x=>x.id===currentProductId);
   if(!p) return;
@@ -4910,10 +6038,17 @@ function renderProductDetail(){
 
   const embroideryBox = document.getElementById("pd-embroidery");
   const embroideryInput = document.getElementById("pd-embroidery-input");
+  const embroideryLabel = document.getElementById("pd-embroidery-label");
   if(embroideryBox && embroideryInput){
     embroideryBox.style.display = p.customizable ? "block" : "none";
     embroideryInput.value = "";
-    embroideryInput.placeholder = p.id === "london" ? "לדוגמא: R&S" : "לדוגמה: א.כ";
+    embroideryInput.placeholder = p.id === "london" ? "לדוגמא: R&S" : (p.embroideryMaxLetters === 2 ? "לדוגמה: RS" : "לדוגמה: א.כ");
+    embroideryInput.maxLength = p.embroideryMaxLetters ? p.embroideryMaxLetters : 3;
+    if(embroideryLabel){
+      embroideryLabel.textContent = p.embroideryFree
+        ? "דגם זה ניתן להתאמה אישית - רקמת ראשי תיבות (ללא תוספת מחיר)"
+        : "דגם זה ניתן להתאמה אישית - רקמת ראשי תיבות (בתוספת 200 ₪)";
+    }
   }
 
   const includesBox = document.getElementById("pd-includes");
@@ -4937,6 +6072,8 @@ function renderProductDetail(){
   const relGrid = document.getElementById("related-grid");
   relGrid.innerHTML = relatedFill.map(productCardHTML).join("");
   attachCardClicks(relGrid);
+
+  renderPopularProducts(p.id);
 
   initMagnifier();
 }
@@ -5038,23 +6175,69 @@ function initMagnifier(){
 
 /* ============================================================
    IMAGE LIGHTBOX (פתיחת תמונת המוצר בגודל מלא בלחיצה)
+   פותח לאט: שנייה אחת של גלגל טעינה זהוב מרשים, ואז התמונה נכנסת
+   בהדרגה (עמעום + הגדלה איטית). נסגר גם הוא בהדרגה, לא בבת אחת.
    ============================================================ */
+let lightboxHideTimer = null;
 function openImageLightbox(src, alt){
   const lightbox = document.getElementById("image-lightbox");
   const lbImg = document.getElementById("lightbox-img");
+  const spinner = document.getElementById("lightbox-spinner");
   if(!lightbox || !lbImg || !src) return;
-  lbImg.src = src;
-  lbImg.alt = alt || "";
-  lightbox.classList.add("open");
+
+  clearTimeout(lightboxHideTimer);
+  const reducedMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  lbImg.classList.remove("loaded");
+  lbImg.removeAttribute("src");
+  lightbox.classList.add("visible");
   lightbox.setAttribute("aria-hidden", "false");
   document.body.classList.add("lightbox-open");
+  if(spinner) spinner.classList.add("active");
+  // Two rAFs so the browser paints the "visible" (display:flex) state
+  // first, then starts the opacity transition on the next frame -
+  // otherwise the fade-in gets skipped entirely.
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{ lightbox.classList.add("open"); });
+  });
+
+  const startedAt = Date.now();
+  const MIN_SPINNER_MS = reducedMotion ? 0 : 1000;
+  const preload = new Image();
+  preload.onload = preload.onerror = ()=>{
+    const wait = Math.max(0, MIN_SPINNER_MS - (Date.now() - startedAt));
+    setTimeout(()=>{
+      if(spinner) spinner.classList.remove("active");
+      lbImg.src = src;
+      lbImg.alt = alt || "";
+      requestAnimationFrame(()=>{
+        requestAnimationFrame(()=>{ lbImg.classList.add("loaded"); });
+      });
+    }, wait);
+  };
+  preload.src = src;
 }
 function closeImageLightbox(){
   const lightbox = document.getElementById("image-lightbox");
+  const lbImg = document.getElementById("lightbox-img");
+  const spinner = document.getElementById("lightbox-spinner");
   if(!lightbox) return;
+  const reducedMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   lightbox.classList.remove("open");
+  if(lbImg) lbImg.classList.remove("loaded");
+  if(spinner) spinner.classList.remove("active");
   lightbox.setAttribute("aria-hidden", "true");
   document.body.classList.remove("lightbox-open");
+
+  // Keep display:flex until the slow fade/scale-out transition has
+  // actually finished, so it visibly closes gradually instead of
+  // vanishing the instant the class is removed.
+  clearTimeout(lightboxHideTimer);
+  lightboxHideTimer = setTimeout(()=>{
+    lightbox.classList.remove("visible");
+    if(lbImg) lbImg.removeAttribute("src");
+  }, reducedMotion ? 0 : 650);
 }
 (function initLightboxControls(){
   const lightbox = document.getElementById("image-lightbox");
@@ -5079,7 +6262,13 @@ document.getElementById("qty-plus").addEventListener("click", ()=>{
 function renderIncludesList(size){
   const includesList = document.getElementById("pd-includes-list");
   if(!includesList) return;
-  const items = size === "single" ? DESC_1_INCLUDES_SINGLE : DESC_1_INCLUDES;
+  const items = (size === "single" ? DESC_1_INCLUDES_SINGLE : DESC_1_INCLUDES).slice();
+  // Free decorative pillows are a fixed gift with the model, not something
+  // that scales with the "יחיד/זוג" size choice - see PRODUCTS' pillowsIncluded.
+  const p = PRODUCTS.find(x=>x.id===currentProductId);
+  if(p && p.pillowsIncluded){
+    items.push("2 כריות נוי מתנה");
+  }
   includesList.innerHTML = items.map(item=>`
     <li><svg class="icon" viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg>${item}</li>
   `).join("");
@@ -5148,7 +6337,7 @@ function updateWishlistUI(){
         <button class="btn outline" id="empty-wishlist-btn">לצפייה בקולקציה</button>
       </div>`;
     const btn = document.getElementById("empty-wishlist-btn");
-    if(btn) btn.addEventListener("click", ()=>{ closeWishlist(); showView("shop"); });
+    if(btn) btn.addEventListener("click", ()=>{ closeWishlist(); window.location.href = pathForView("shop"); });
     return;
   }
   itemsWrap.innerHTML = wishlist.map(id=>{
@@ -5265,7 +6454,7 @@ function cartLineKey(c){
 function cartItemUnitPrice(c, p){
   if(!p) return 0;
   const variant = productForSize(p, c.size);
-  return variant.price + (p.customizable && c.embroidery ? EMBROIDERY_SURCHARGE : 0);
+  return variant.price + (p.customizable && c.embroidery && !p.embroideryFree ? EMBROIDERY_SURCHARGE : 0);
 }
 function addToCart(id, qty, embroidery, size){
   embroidery = embroidery || null;
@@ -5319,7 +6508,7 @@ function updateCartUI(){
       </div>`;
     footWrap.style.display = "none";
     const btn = document.getElementById("empty-shop-btn");
-    if(btn) btn.addEventListener("click", ()=>{ closeCart(); showView("shop"); });
+    if(btn) btn.addEventListener("click", ()=>{ closeCart(); window.location.href = pathForView("shop"); });
   } else {
     footWrap.style.display = "block";
     itemsWrap.innerHTML = cart.map(c=>{
@@ -5331,7 +6520,7 @@ function updateCartUI(){
         <img src="${p.img}" alt="${p.name}" loading="lazy" decoding="async">
         <div class="ci-info">
         <div class="ci-name serif">${displayName(p)}</div>
-          <div class="ci-spec">${specLabel(p, c.size)}${c.embroidery ? ` · רקמת ראשי תיבות: ${escapeHTML(c.embroidery)} (+${EMBROIDERY_SURCHARGE.toLocaleString('he-IL')} ₪)` : ""}</div>
+          <div class="ci-spec">${specLabel(p, c.size)}${c.embroidery ? ` · רקמת ראשי תיבות: ${escapeHTML(c.embroidery)}${p.embroideryFree ? "" : ` (+${EMBROIDERY_SURCHARGE.toLocaleString('he-IL')} ₪)`}` : ""}</div>
           <div class="ci-bottom">
             <span class="ci-priceline">${cartItemUnitPrice(c,p).toLocaleString('he-IL')} ₪ X <span class="ci-price">${(cartItemUnitPrice(c,p)*c.qty).toLocaleString('he-IL')} ₪</span></span>
             <div class="ci-qty">
@@ -5365,7 +6554,7 @@ function closeCart(){
   document.getElementById("cart-overlay").classList.remove("open");
 }
 document.getElementById("cart-open-btn").addEventListener("click", openCart);
-document.getElementById("account-open-btn").addEventListener("click", ()=>{ showView("account"); });
+document.getElementById("account-open-btn").addEventListener("click", ()=>{ window.location.href = pathForView("account"); });
 document.getElementById("cart-close-btn").addEventListener("click", closeCart);
 document.getElementById("cart-overlay").addEventListener("click", closeCart);
 
@@ -5391,7 +6580,7 @@ document.getElementById("cart-share-btn").addEventListener("click", ()=>{
 document.getElementById("checkout-btn").addEventListener("click", ()=>{
   if(cart.length === 0) return;
   closeCart();
-  showView("checkout");
+  window.location.href = pathForView("checkout");
 });
 
 function checkoutShippingPrice(){
@@ -5460,21 +6649,16 @@ function renderCheckoutSummary(){
   document.getElementById("checkout-total").textContent = `${Math.max(0, subtotal - discount + shipping).toLocaleString('he-IL')} ₪`;
 }
 
-// Captured once when the account page notices ?reset_token= in the URL -
-// the INIT bootstrap below replaces the URL without the query string
-// shortly after, so the "set new password" form can't just re-read
-// location.search when it submits; it needs this instead.
-// Captured once when the account page notices ?reset_token= in the URL -
-// the INIT bootstrap below replaces the URL without the query string
-// shortly after, so the "set new password" form can't just re-read
-// location.search when it submits; it needs this instead.
-let pendingResetToken = null;
+// Captured once the "שכחתי סיסמה" form is submitted successfully, so the
+// "set new password" step (which only asks for the code + new password)
+// knows which account the code belongs to.
+let pendingResetEmail = null;
 
 /* ============================================================
    ACCOUNT LOGIN / REGISTER (see api/auth.js + CUSTOMER-AUTH-SETUP.sql)
    ============================================================ */
 // Which of the four auth forms is visible: "login", "register", "forgot",
-// or "reset" (the last one only ever shown via a ?reset_token= link).
+// or "reset" (shown right after a code is emailed via the forgot form).
 function setAuthTab(tab){
   document.getElementById("auth-tab-login").classList.toggle("active", tab === "login");
   document.getElementById("auth-tab-register").classList.toggle("active", tab === "register");
@@ -5504,26 +6688,19 @@ function showLoggedInAccount(customer){
   loggedIn.style.display = "";
   document.getElementById("auth-loggedin-name").textContent = customer.name || "";
   document.getElementById("auth-loggedin-email").textContent = customer.email || "";
+  document.getElementById("account-content").style.display = "";
 }
 
 function showLoggedOutAccount(){
   document.getElementById("account-auth-loggedin").style.display = "none";
   document.getElementById("account-auth-loggedout").style.display = "";
+  document.getElementById("account-content").style.display = "none";
 }
 
 /* Checks the signed HttpOnly session cookie against the server (the
    cookie itself is never readable from JS) and swaps the account page
-   between the login/register tabs and the logged-in summary. If the URL
-   carries a ?reset_token= (from the "forgot password" email), the
-   set-new-password form takes priority over both. */
+   between the login/register tabs and the logged-in summary. */
 async function renderAccountAuth(){
-  const resetToken = new URLSearchParams(window.location.search).get("reset_token");
-  if(resetToken){
-    pendingResetToken = resetToken;
-    showLoggedOutAccount();
-    setAuthTab("reset");
-    return;
-  }
   try{
     const res = await fetch("/api/auth?action=me", { credentials:"same-origin" });
     if(res.ok){
@@ -5614,7 +6791,6 @@ function initAuthBox(){
   document.getElementById("auth-form-forgot").addEventListener("submit", async (e)=>{
     e.preventDefault();
     showAuthError("auth-forgot-error", "");
-    document.getElementById("auth-forgot-success").classList.remove("show");
     const email = document.getElementById("auth-forgot-email").value.trim();
     const btn = e.target.querySelector("button[type=submit]");
     btn.disabled = true;
@@ -5627,7 +6803,11 @@ function initAuthBox(){
       const data = await res.json();
       if(!res.ok){ showAuthError("auth-forgot-error", data.error || "אירעה שגיאה. נסו שוב."); return; }
       document.getElementById("auth-form-forgot").reset();
-      document.getElementById("auth-forgot-success").classList.add("show");
+      pendingResetEmail = email;
+      document.getElementById("auth-reset-email-label").textContent = email;
+      showAuthError("auth-reset-error", "");
+      document.getElementById("auth-form-reset").reset();
+      setAuthTab("reset");
     } catch(err){
       showAuthError("auth-forgot-error", "בעיית תקשורת. בדקו את החיבור ונסו שוב.");
     } finally {
@@ -5638,8 +6818,11 @@ function initAuthBox(){
   document.getElementById("auth-form-reset").addEventListener("submit", async (e)=>{
     e.preventDefault();
     showAuthError("auth-reset-error", "");
+    const code = document.getElementById("auth-reset-code").value.trim();
     const password = document.getElementById("auth-reset-password").value;
-    const token = pendingResetToken;
+    const email = pendingResetEmail;
+    if(!email){ showAuthError("auth-reset-error", "בקשו קוד לאיפוס סיסמה מחדש."); setAuthTab("forgot"); return; }
+    if(!/^\d{6}$/.test(code)){ showAuthError("auth-reset-error", "נא להזין קוד בן 6 ספרות."); return; }
     if(password.length < 8){ showAuthError("auth-reset-error", "הסיסמה חייבת להכיל לפחות 8 תווים."); return; }
     const btn = e.target.querySelector("button[type=submit]");
     btn.disabled = true;
@@ -5647,18 +6830,38 @@ function initAuthBox(){
       const res = await fetch("/api/auth?action=reset", {
         method:"POST", credentials:"same-origin",
         headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ token, password }),
+        body: JSON.stringify({ email, code, password }),
       });
       const data = await res.json();
       if(!res.ok){ showAuthError("auth-reset-error", data.error || "אירעה שגיאה. נסו שוב."); return; }
       document.getElementById("auth-form-reset").reset();
-      pendingResetToken = null;
-      // Drop ?reset_token from the URL (it may already be gone - see
-      // pendingResetToken above) now that it's used either way.
-      const url = new URL(window.location.href);
-      url.searchParams.delete("reset_token");
-      window.history.replaceState(window.history.state, "", url.pathname + url.search);
+      pendingResetEmail = null;
       showLoggedInAccount(data.customer);
+    } catch(err){
+      showAuthError("auth-reset-error", "בעיית תקשורת. בדקו את החיבור ונסו שוב.");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById("auth-reset-resend").addEventListener("click", async ()=>{
+    const email = pendingResetEmail;
+    if(!email){ setAuthTab("forgot"); return; }
+    showAuthError("auth-reset-error", "");
+    const btn = document.getElementById("auth-reset-resend");
+    btn.disabled = true;
+    try{
+      const res = await fetch("/api/auth?action=forgot", {
+        method:"POST", credentials:"same-origin",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if(!res.ok){ showAuthError("auth-reset-error", data.error || "אירעה שגיאה. נסו שוב."); return; }
+      document.getElementById("auth-reset-code").value = "";
+      showAuthError("auth-reset-error", "");
+      btn.textContent = "קוד חדש נשלח!";
+      setTimeout(()=>{ btn.textContent = "שליחת קוד חדש"; }, 3000);
     } catch(err){
       showAuthError("auth-reset-error", "בעיית תקשורת. בדקו את החיבור ונסו שוב.");
     } finally {
@@ -5752,9 +6955,20 @@ function renderAccountPage(){
    of falsely telling the customer the order went through. */
 async function saveOrder(paymentConfirmationCode){
   if(cart.length === 0) return null;
+  /* IMPORTANT: size and embroidery are sent as their own fields (not just
+     folded into the display `name` string) for two reasons:
+     1) /api/orders independently recomputes the price server-side from
+        these fields (see unitPrice() in api/_lib/pricing.js) - without
+        them it would price every item at plain full price, mismatching
+        the already-verified total from /api/checkout-total and failing
+        to save an order that was just successfully charged.
+     2) The admin panel's order detail view (renderOrderDetail() in
+        admin.html) reads them directly to show a clear "רקמה: א.כ" /
+        "חצי סט" field instead of the admin having to spot it inside a
+        sentence. `name` is kept too, purely as the human-readable label. */
   const items = cart.map(c=>{
     const p = PRODUCTS.find(x=>x.id===c.id);
-    return p ? { id:p.id, name:displayName(p) + (c.size === "single" ? ` (סט יחיד)` : "") + (c.embroidery ? ` (רקמת ראשי תיבות: ${escapeHTML(c.embroidery)})` : ""), qty:c.qty, price:cartItemUnitPrice(c, p) } : null;
+    return p ? { id:p.id, name:displayName(p) + (c.size === "single" ? ` (סט יחיד)` : "") + (c.embroidery ? ` (רקמת ראשי תיבות: ${escapeHTML(c.embroidery)})` : ""), qty:c.qty, price:cartItemUnitPrice(c, p), size:c.size || null, embroidery:c.embroidery || null } : null;
   }).filter(Boolean);
   /* Reuse the server-verified numbers from openPaymentModal() rather than
      recomputing from cartTotal() again - that keeps the saved order in
@@ -5869,6 +7083,35 @@ document.getElementById("ck-coupon-apply").addEventListener("click", async ()=>{
   renderCheckoutSummary();
 });
 
+/* Auto-fills and auto-applies a coupon code arriving via ?coupon=CODE in
+   the URL - e.g. a visitor coming from the "האתגר הכללי" trivia
+   mini-site, which shows them a code after finishing the quiz and links
+   back here with it attached. Only ever pre-fills the field and clicks
+   the same "אישור" button a visitor would click themselves - the actual
+   validation still goes through fetchActiveCoupons()/api/coupons.js
+   above like any manually-typed code, so an invalid or inactive code
+   still shows the normal "אינו תקף" message rather than silently
+   applying a discount. Runs once on load; harmless if the param is
+   absent or the visitor isn't on the checkout page yet (the click just
+   waits for them to get there). */
+(function(){
+  try{
+    const code = new URLSearchParams(location.search).get("coupon");
+    if(!code) return;
+    const input = document.getElementById("ck-coupon");
+    const applyBtn = document.getElementById("ck-coupon-apply");
+    if(!input || !applyBtn) return;
+    input.value = code;
+    document.addEventListener("app:view-changed", function tryApply(){
+      if(document.getElementById("view-checkout").classList.contains("active")){
+        applyBtn.click();
+        document.removeEventListener("app:view-changed", tryApply);
+      }
+    });
+    if(document.getElementById("view-checkout").classList.contains("active")) applyBtn.click();
+  }catch(e){}
+})();
+
 /* Timestamp used as a lightweight bot-defense signal on the public forms
    below (contact, checkout, checkout mini-contact, newsletter): a
    genuine visitor needs at least a couple of seconds to fill in a form,
@@ -5877,11 +7120,30 @@ document.getElementById("ck-coupon-apply").addEventListener("click", async ()=>{
    below - this needs no third-party CAPTCHA service. */
 const RS_PAGE_LOAD_TS = Date.now();
 
-/* Sends the newsletter signup through /api/notify (best-effort email via
-   Resend - low stakes, no need to persist these in the admin panel). */
+/* How long this visitor has been browsing the site (across pages, in
+   this browser tab) before they reach out - sent along with inquiries
+   and form drafts as time_on_site_seconds, so the admin panel can show
+   a "🔥 חם / ❄️ קר" badge (see renderInquiries/renderDrafts in
+   admin.html). sessionStorage keeps the same start time across page
+   navigations within the visit, but resets in a new tab or once the
+   tab is closed. */
+function rsTimeOnSiteSeconds(){
+  const KEY = "rs_session_start";
+  let start = sessionStorage.getItem(KEY);
+  if(!start){
+    start = String(Date.now());
+    sessionStorage.setItem(KEY, start);
+  }
+  return Math.max(0, Math.round((Date.now() - Number(start)) / 1000));
+}
+
+/* Sends the newsletter signup through /api/inquiries (merged in from the
+   old /api/notify - see api/inquiries.js - purely to stay under Vercel's
+   Hobby-plan 12-function cap; still best-effort email via Resend, low
+   stakes, no need to persist these in the admin panel). */
 async function sendNotify(type, fields){
   try{
-    const res = await fetch("/api/notify", {
+    const res = await fetch("/api/inquiries", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type, ...fields })
@@ -5914,6 +7176,71 @@ async function submitInquiry(type, fields){
   return payload && payload.inquiry;
 }
 
+/* ============================================================
+   LIVE FORM DRAFTS - captures what a visitor types into the contact
+   form / checkout mini-contact form even if they never press submit,
+   so it shows up in the admin panel's "טיוטות פניות" tab (see
+   api/form-drafts.js). Each browser tab gets its own random draftId
+   (kept in sessionStorage so a page refresh mid-typing still updates
+   the same row instead of creating a new one); the draft is deleted
+   the moment the visitor actually submits the real form. Entirely
+   best-effort - never shown to the visitor, never blocks anything. */
+function rsDraftId(formKey){
+  const storageKey = "rs_draft_id_" + formKey;
+  let id = sessionStorage.getItem(storageKey);
+  if(!id){
+    id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now() + "-" + Math.random().toString(36).slice(2));
+    sessionStorage.setItem(storageKey, id);
+  }
+  return id;
+}
+function rsNewDraftId(formKey){
+  const storageKey = "rs_draft_id_" + formKey;
+  sessionStorage.removeItem(storageKey);
+  return rsDraftId(formKey);
+}
+function rsWireDraftCapture(formKey, type, fieldIds){
+  const form = document.getElementById(formKey);
+  if(!form) return;
+  let timer = null;
+  function scheduleSave(){
+    clearTimeout(timer);
+    timer = setTimeout(()=>{
+      const fields = {};
+      fieldIds.forEach(fid=>{
+        const el = document.getElementById(fid.id);
+        if(el) fields[fid.field] = el.value;
+      });
+      fetch("/api/form-drafts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ draftId: rsDraftId(formKey), type, time_on_site_seconds: rsTimeOnSiteSeconds(), ...fields })
+      }).catch(()=>{ /* best-effort, never surfaced */ });
+    }, 1200);
+  }
+  fieldIds.forEach(fid=>{
+    const el = document.getElementById(fid.id);
+    if(el) el.addEventListener("input", scheduleSave);
+  });
+}
+function rsClearDraft(formKey){
+  const id = rsDraftId(formKey);
+  fetch("/api/form-drafts?draftId=" + encodeURIComponent(id), { method: "DELETE" }).catch(()=>{});
+  rsNewDraftId(formKey);
+}
+rsWireDraftCapture("contact-form", "contact", [
+  { id: "ct-name", field: "name" },
+  { id: "ct-phone", field: "phone" },
+  { id: "ct-email", field: "email" },
+  { id: "ct-message", field: "message" },
+]);
+rsWireDraftCapture("checkout-mini-contact-form", "checkout_contact", [
+  { id: "mc-name", field: "name" },
+  { id: "mc-email", field: "email" },
+  { id: "mc-phone", field: "phone" },
+  { id: "mc-message", field: "message" },
+]);
+
 document.getElementById("checkout-mini-contact-form").addEventListener("submit", async (e)=>{
   e.preventDefault();
   const form = e.target;
@@ -5928,10 +7255,12 @@ document.getElementById("checkout-mini-contact-form").addEventListener("submit",
     phone: form.phone.value,
     message: form.message ? form.message.value : "",
     hp_website: hpEl ? hpEl.value : "",
-    hp_ts: RS_PAGE_LOAD_TS
+    hp_ts: RS_PAGE_LOAD_TS,
+    time_on_site_seconds: rsTimeOnSiteSeconds()
   };
   try{
     await submitInquiry("checkout_contact", fields);
+    rsClearDraft("checkout-mini-contact-form");
     form.reset();
     showSuccessModal("פנייתכם התקבלה בהצלחה!", "הפרטים שלכם נשלחו אלינו, ניצור איתכם קשר בהקדם האפשרי.");
   } catch(err){
@@ -6035,9 +7364,18 @@ document.getElementById("payment-modal-overlay").addEventListener("click", close
    ============================================================ */
 let _successModalOnClose = null;
 
-function showSuccessModal(title, text, onClose){
+function showSuccessModal(title, text, onClose, extraCta){
   document.getElementById("success-modal-title").textContent = title || "פנייתכם התקבלה בהצלחה!";
   document.getElementById("success-modal-text").textContent = text || "תודה רבה, נחזור אליכם בהקדם האפשרי.";
+  const extraEl = document.getElementById("success-modal-extra");
+  if(extraCta && extraCta.href && extraCta.label){
+    extraEl.textContent = extraCta.label;
+    extraEl.href = extraCta.href;
+    extraEl.style.display = "flex";
+  } else {
+    extraEl.style.display = "none";
+    extraEl.removeAttribute("href");
+  }
   _successModalOnClose = typeof onClose === "function" ? onClose : null;
   document.getElementById("success-modal-overlay").classList.add("open");
   document.getElementById("success-modal").classList.add("open");
@@ -6164,11 +7502,14 @@ window.addEventListener("message", async (event)=>{
     if(couponMsgEl) couponMsgEl.textContent = "";
     _tranzilaHandlingResult = false;
     const orderText = completedOrder
-      ? `מספר הזמנה #${completedOrder.id}. שלחנו אישור למייל שלכם — נעדכן אתכם כשההזמנה תישלח.`
+      ? `מספר הזמנה #${completedOrder.id}. שלחנו אישור למייל שלכם — נעדכן אתכם כשההזמנה תישלח.${CHALLENGE_CONFIGURED ? " בנוסף, קיבלתם 200 נקודות זכות באתגר הכללי שלנו!" : ""}`
       : "שלחנו אישור למייל שלכם — נעדכן אתכם כשההזמנה תישלח.";
+    const challengeCta = (CHALLENGE_CONFIGURED && completedOrder)
+      ? { label: "לצפייה ב-200 הנקודות שלי באתגר ←", href: CHALLENGE_URL.replace(/\/$/, "") + "/index.html?purchase=" + encodeURIComponent(completedOrder.id) }
+      : null;
     showSuccessModal("ההזמנה התקבלה בהצלחה!", orderText, ()=>{
-      showView("home");
-    });
+      window.location.href = pathForView("home");
+    }, challengeCta);
   }, 1300);
 });
 
@@ -6189,10 +7530,12 @@ document.getElementById("contact-form").addEventListener("submit", async (e)=>{
     email: form.email.value,
     message: form.message.value,
     hp_website: hpEl ? hpEl.value : "",
-    hp_ts: RS_PAGE_LOAD_TS
+    hp_ts: RS_PAGE_LOAD_TS,
+    time_on_site_seconds: rsTimeOnSiteSeconds()
   };
   try{
     await submitInquiry("contact", fields);
+    rsClearDraft("contact-form");
     form.reset();
     showSuccessModal("פנייתכם התקבלה בהצלחה!", "תודה רבה שפניתם אלינו, ניצור איתכם קשר בהקדם האפשרי.");
   } catch(err){
@@ -6318,7 +7661,21 @@ function setCollectionNavPhotos(){
     document.querySelectorAll(".collection-btn[data-collection]").forEach(btn=>{
       const key = btn.dataset.collection;
       const p = PRODUCTS.find(x=>x.id === featuredByCollection[key]);
-      if(p && p.img){ btn.style.backgroundImage = `url("${p.img}")`; }
+      const bg = btn.querySelector(".cn-bg");
+      if(!p || !p.img || !bg) return;
+      if(bg.dataset.src === p.img) return; // already set (or already loading) - avoid re-requesting on repeat calls
+      bg.dataset.src = p.img;
+      /* Preload via a plain Image() so we get a real "loaded" moment to fade
+         in on (background-image has no load event of its own). If it's
+         already cached, the browser resolves this on the next tick anyway,
+         so cached photos still appear essentially instantly - just never as
+         a hard, placeholder-less pop. */
+      const loader = new Image();
+      loader.onload = ()=>{
+        bg.style.backgroundImage = `url("${p.img}")`;
+        bg.classList.add("cn-bg-ready");
+      };
+      loader.src = p.img;
     });
   }catch(e){ console.error("setCollectionNavPhotos failed:", e); }
 }
@@ -6329,6 +7686,177 @@ if(document.readyState !== "complete"){
   window.addEventListener("load", setCollectionNavPhotos);
 }
 document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
+
+/* ============================================================
+   FLOATING WHATSAPP BUTTON
+   ============================================================ */
+(function(){
+  const btn = document.getElementById("wa-float");
+  const tip = document.getElementById("wa-float-tip");
+  if(!btn) return;
+
+  // Same business number already used in the footer's tel: link
+  // (055-6713828) - normalized to the international digits-only format
+  // wa.me needs.
+  const WA_NUMBER = "972556713828";
+  const greeting = 'היי, הגעתי מהאתר ואשמח לעזרה 🙂';
+  btn.href = "https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent(greeting);
+
+  // Shows a small "דברו איתנו" tooltip once per visit, a few seconds
+  // after the page settles, so the button doesn't feel like it's
+  // shouting from the first frame.
+  // Guarded: some browsers block sessionStorage entirely (e.g. when a
+  // page is opened directly as a local file rather than via a server).
+  // Without this try/catch, that throws here and silently kills every
+  // line of script after it in this block - including the drag setup
+  // below - which is what made the button seem stuck/undraggable.
+  try{
+    if(tip && !sessionStorage.getItem("rs_wa_tip_shown")){
+      setTimeout(()=>{
+        tip.classList.add("show");
+        try{ sessionStorage.setItem("rs_wa_tip_shown", "1"); }catch(e){}
+        setTimeout(()=> tip.classList.remove("show"), 5000);
+      }, 2500);
+    }
+  }catch(e){}
+  if(tip){
+    btn.addEventListener("mouseenter", ()=> tip.classList.add("show"));
+    btn.addEventListener("mouseleave", ()=> tip.classList.remove("show"));
+  }
+
+  /* ---- Drag to reposition ----
+     Lets visitors drag the button out of the way (e.g. when it covers
+     the checkout/payment panel on the right). This is session-only:
+     every fresh page load / refresh resets it to the default
+     bottom-right spot. It can be dragged freely in any direction,
+     including further down toward the bottom edge.
+
+     Normally a short press-and-hold arms drag mode (so a plain click
+     still opens WhatsApp). Two ways to skip that wait and drag right
+     away: double-click/double-tap the button, or hold Shift while
+     pressing it. */
+  const HOLD_MS = 350; // how long to press before drag mode kicks in
+  const DBLCLICK_MS = 350; // max gap between presses to count as a double-click/tap
+  let dragging = false, moved = false, holdTimer = null, pressed = false;
+  let startX = 0, startY = 0, startLeft = 0, startTop = 0;
+  let lastPressTime = 0;
+
+  // Belt-and-suspenders: some browsers try to start a native
+  // "drag this link" operation on an <a>. Block it outright so it
+  // never interferes with our own drag handling below.
+  btn.addEventListener("dragstart", function(e){ e.preventDefault(); });
+
+  function clamp(val, min, max){ return Math.min(Math.max(val, min), max); }
+
+  function placeAt(left, top){
+    const w = btn.offsetWidth || 58;
+    const h = btn.offsetHeight || 58;
+    left = clamp(left, 4, window.innerWidth - w - 4);
+    top = clamp(top, 4, window.innerHeight - h - 4);
+    btn.style.left = left + "px";
+    btn.style.top = top + "px";
+    btn.style.right = "auto";
+    btn.style.bottom = "auto";
+    positionTip();
+    return {left, top};
+  }
+
+  function positionTip(){
+    if(!tip) return;
+    const r = btn.getBoundingClientRect();
+    tip.style.left = "auto";
+    tip.style.bottom = "auto";
+    tip.style.right = (window.innerWidth - r.left + 10) + "px";
+    tip.style.top = (r.top + r.height/2 - tip.offsetHeight/2) + "px";
+  }
+
+  function armDrag(){
+    dragging = true;
+    btn.classList.add("wa-dragging");
+    if(tip) tip.classList.remove("show");
+  }
+
+  function startPress(clientX, clientY, instant){
+    pressed = true; moved = false; dragging = false;
+    const r = btn.getBoundingClientRect();
+    startLeft = r.left; startTop = r.top;
+    startX = clientX; startY = clientY;
+    clearTimeout(holdTimer);
+
+    const now = Date.now();
+    const isDoublePress = (now - lastPressTime) < DBLCLICK_MS;
+    lastPressTime = now;
+
+    if(instant || isDoublePress){
+      armDrag();
+    } else {
+      holdTimer = setTimeout(armDrag, HOLD_MS);
+    }
+  }
+
+  function movePress(clientX, clientY){
+    if(!pressed) return;
+    if(!dragging){
+      const dx = clientX - startX, dy = clientY - startY;
+      // Pointer wandered before the hold fired - that's a normal
+      // click, not a press-and-hold. Cancel the pending drag.
+      if(Math.abs(dx) > 6 || Math.abs(dy) > 6){ clearTimeout(holdTimer); }
+      return;
+    }
+    const dx = clientX - startX, dy = clientY - startY;
+    if(Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
+    if(moved){ placeAt(startLeft + dx, startTop + dy); }
+  }
+
+  function endPress(){
+    clearTimeout(holdTimer);
+    pressed = false;
+    if(!dragging) return;
+    dragging = false;
+    btn.classList.remove("wa-dragging");
+  }
+
+  // Mouse
+  btn.addEventListener("mousedown", function(e){
+    if(e.button !== 0) return;
+    startPress(e.clientX, e.clientY, e.shiftKey);
+  });
+  window.addEventListener("mousemove", function(e){ movePress(e.clientX, e.clientY); });
+  window.addEventListener("mouseup", endPress);
+
+  // Touch (double-tap is handled the same way as double-click, via
+  // the lastPressTime gap check in startPress - there's no shiftKey
+  // equivalent on touch, so only the double-tap shortcut applies)
+  btn.addEventListener("touchstart", function(e){
+    const t = e.touches[0];
+    if(t) startPress(t.clientX, t.clientY, false);
+  }, {passive:true});
+  window.addEventListener("touchmove", function(e){
+    if(!dragging) return;
+    const t = e.touches[0];
+    if(t){ movePress(t.clientX, t.clientY); e.preventDefault(); }
+  }, {passive:false});
+  window.addEventListener("touchend", endPress);
+  window.addEventListener("touchcancel", endPress);
+
+  // Safety net: force-stop dragging if the tab loses focus mid-drag,
+  // so it can never get stuck.
+  window.addEventListener("blur", endPress);
+
+  window.addEventListener("resize", function(){
+    // Only reclamp if it was actually dragged this session (i.e. left/top
+    // were set) - otherwise leave the original CSS bottom/right in place.
+    if(btn.style.left){
+      const r = btn.getBoundingClientRect();
+      placeAt(r.left, r.top);
+    }
+  });
+
+  btn.addEventListener("click", function(e){
+    if(moved){ e.preventDefault(); moved = false; }
+    else if(tip){ tip.classList.remove("show"); }
+  });
+})();
 
 /* ============================================================
    ACCESSIBILITY WIDGET
@@ -6401,7 +7929,7 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
   statementBtn.addEventListener("click", ()=>{
     panel.classList.remove("open");
     toggleBtn.setAttribute("aria-expanded", "false");
-    showView("accessibility");
+    window.location.href = pathForView("accessibility");
   });
 
   resetBtn.addEventListener("click", ()=>{
@@ -6419,9 +7947,55 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
 /* ============================================================
    INIT
    ============================================================ */
-applyAdminOverrides().finally(function(){
-  renderFeatured();
-  renderCircleStrip();
+/* Renders the current page (whichever view/product/collection the URL
+   points at) using whatever is in PRODUCTS right now. Runs once
+   immediately below - using the built-in catalog baked into this file -
+   so the first paint never waits on a network round-trip, and runs again
+   once applyAdminOverrides() resolves so any admin-panel changes
+   (price/image overrides, brand-new products) still get picked up.
+   Safe to call twice: showView/
+   renderViewNow, history.replaceState and initScrollReveal are all
+   idempotent. */
+function renderCurrentView(){
+  /* renderFeatured()/renderCircleStrip() (and the gap-closing measurement
+     right after them) only build/adjust markup that lives inside the
+     home view - but this function used to run them unconditionally on
+     EVERY page load, home or not. On a lightweight page like /contact,
+     that meant a burst of extra DOM building plus a forced synchronous
+     layout (getBoundingClientRect/scrollHeight) for a hidden home-page
+     section had to finish before the visible page settled, which is
+     exactly the "delay and jump before the content/form render properly"
+     - so it's now skipped entirely on any page other than home. */
+  const isHomeView = (window.location.pathname.replace(/\/+$/, "") || "/") === "/";
+  if(isHomeView){
+    renderFeatured();
+    renderCircleStrip();
+
+    /* Close the dead space between the circle showcase and the section
+       after it (see the .bedding-feature CSS comment for why that gap
+       exists) by measuring how much of hero-showcase's 100vh is actually
+       unused once its content is laid out, then pulling the next section
+       up by exactly that much. Re-measured on resize/font-load since both
+       the 100vh figure and the content's own height change with viewport
+       size and font rendering. */
+    (function(){
+      const showcase = document.getElementById("hero-showcase");
+      const inner = document.getElementById("hero-showcase-inner");
+      const beddingFeature = document.querySelector(".bedding-feature");
+      if(!showcase || !inner || !beddingFeature) return;
+      function closeGap(){
+        const showcaseH = showcase.getBoundingClientRect().height;
+        const innerH = inner.scrollHeight;
+        const gap = showcaseH - innerH;
+        beddingFeature.style.marginTop = gap > 0 ? ("-" + gap + "px") : "0";
+      }
+      closeGap();
+      window.addEventListener("resize", closeGap);
+      window.addEventListener("load", closeGap);
+      if(document.fonts && document.fonts.ready) document.fonts.ready.then(closeGap);
+      setTimeout(closeGap, 400); // catch any late image/layout settling
+    })();
+  }
 
   updateCartUI();
   updateWishlistUI();
@@ -6445,7 +8019,10 @@ applyAdminOverrides().finally(function(){
   const initStyle = document.getElementById("rs-initial-view-style");
   if(initStyle) initStyle.remove();
   if(window.initScrollReveal){ window.initScrollReveal(); }
-});
+}
+applyCachedAdminOverrides(); // apply last-known admin photos/prices synchronously, before the first paint - see its comment above for why
+renderCurrentView();
+Promise.all([applyAdminOverrides()]).finally(renderCurrentView);
 applyContentOverrides();
 </script>
 
