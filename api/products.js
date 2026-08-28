@@ -73,6 +73,10 @@ module.exports = async (req, res) => {
     if (error) {
       return res.status(500).json({ error: error.message });
     }
+    // Same reasoning as /api/content: cache at the edge so every visitor
+    // doesn't wait on a fresh Supabase round-trip. Price/availability
+    // changes still show up within ~60s.
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=3600');
     return res.status(200).json({ products: data });
   }
 

@@ -25,6 +25,11 @@ module.exports = async (req, res) => {
     if (error) {
       return res.status(500).json({ error: error.message });
     }
+    // Cache at Vercel's edge so repeat visits don't wait on a fresh
+    // Supabase round-trip every time. Admin edits show up within ~60s
+    // (stale-while-revalidate keeps serving the cached copy instantly
+    // while a fresh one is fetched in the background).
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=3600');
     return res.status(200).json({ content: data });
   }
 
