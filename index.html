@@ -3081,14 +3081,16 @@ if("serviceWorker" in navigator){
   /* ===== Floating WhatsApp button - bottom-right, always available,
      no form to fill in - just opens a chat with the business number. ===== */
   #wa-float{
-    position:fixed;bottom:26px;right:22px;z-index:980;
+    position:fixed;bottom:26px;right:22px;z-index:1150;
     width:58px;height:58px;border-radius:50%;
     background:var(--green-wa);color:#fff;
     display:flex;align-items:center;justify-content:center;
     box-shadow:0 10px 26px -6px rgba(20,16,12,0.5);
     text-decoration:none;
     transition:transform .3s ease, box-shadow .3s ease;
+    touch-action:none;user-select:none;-webkit-user-select:none;
   }
+  #wa-float.wa-dragging{transition:none;}
   #wa-float:hover{transform:scale(1.08);box-shadow:0 14px 32px -6px rgba(20,16,12,0.55);}
   #wa-float svg{width:30px;height:30px;fill:#fff;}
   #wa-float::before{
@@ -4247,7 +4249,7 @@ if("serviceWorker" in navigator){
 
 <!-- ============ FLOATING WHATSAPP BUTTON ============ -->
 <div id="wa-float-tip" role="status">דברו איתנו בוואטסאפ 👋</div>
-<a id="wa-float" href="#" target="_blank" rel="noopener" aria-label="פתיחת שיחת וואטסאפ">
+<a id="wa-float" href="#" target="_blank" rel="noopener" draggable="false" aria-label="פתיחת שיחת וואטסאפ">
   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12.004 2C6.478 2 2 6.477 2 12c0 1.87.512 3.622 1.404 5.126L2 22l4.994-1.352A9.945 9.945 0 0 0 12.004 22C17.53 22 22 17.523 22 12S17.53 2 12.004 2zm0 18.05c-1.72 0-3.336-.492-4.7-1.34l-.337-.202-3.19.863.85-3.11-.22-.32A8.003 8.003 0 0 1 4 12c0-4.418 3.582-8 8.004-8C16.42 4 20 7.582 20 12s-3.58 8.05-7.996 8.05z"/></svg>
 </a>
 
@@ -7703,18 +7705,157 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
   // Shows a small "דברו איתנו" tooltip once per visit, a few seconds
   // after the page settles, so the button doesn't feel like it's
   // shouting from the first frame.
-  if(tip && !sessionStorage.getItem("rs_wa_tip_shown")){
-    setTimeout(()=>{
-      tip.classList.add("show");
-      sessionStorage.setItem("rs_wa_tip_shown", "1");
-      setTimeout(()=> tip.classList.remove("show"), 5000);
-    }, 2500);
-  }
+  // Guarded: some browsers block sessionStorage entirely (e.g. when a
+  // page is opened directly as a local file rather than via a server).
+  // Without this try/catch, that throws here and silently kills every
+  // line of script after it in this block - including the drag setup
+  // below - which is what made the button seem stuck/undraggable.
+  try{
+    if(tip && !sessionStorage.getItem("rs_wa_tip_shown")){
+      setTimeout(()=>{
+        tip.classList.add("show");
+        try{ sessionStorage.setItem("rs_wa_tip_shown", "1"); }catch(e){}
+        setTimeout(()=> tip.classList.remove("show"), 5000);
+      }, 2500);
+    }
+  }catch(e){}
   if(tip){
     btn.addEventListener("mouseenter", ()=> tip.classList.add("show"));
     btn.addEventListener("mouseleave", ()=> tip.classList.remove("show"));
-    btn.addEventListener("click", ()=> tip.classList.remove("show"));
   }
+
+  /* ---- Drag to reposition ----
+     Lets visitors drag the button out of the way (e.g. when it covers
+     the checkout/payment panel on the right). This is session-only:
+     every fresh page load / refresh resets it to the default
+     bottom-right spot. It can be dragged freely in any direction,
+     including further down toward the bottom edge.
+
+     Normally a short press-and-hold arms drag mode (so a plain click
+     still opens WhatsApp). Two ways to skip that wait and drag right
+     away: double-click/double-tap the button, or hold Shift while
+     pressing it. */
+  const HOLD_MS = 350; // how long to press before drag mode kicks in
+  const DBLCLICK_MS = 350; // max gap between presses to count as a double-click/tap
+  let dragging = false, moved = false, holdTimer = null, pressed = false;
+  let startX = 0, startY = 0, startLeft = 0, startTop = 0;
+  let lastPressTime = 0;
+
+  // Belt-and-suspenders: some browsers try to start a native
+  // "drag this link" operation on an <a>. Block it outright so it
+  // never interferes with our own drag handling below.
+  btn.addEventListener("dragstart", function(e){ e.preventDefault(); });
+
+  function clamp(val, min, max){ return Math.min(Math.max(val, min), max); }
+
+  function placeAt(left, top){
+    const w = btn.offsetWidth || 58;
+    const h = btn.offsetHeight || 58;
+    left = clamp(left, 4, window.innerWidth - w - 4);
+    top = clamp(top, 4, window.innerHeight - h - 4);
+    btn.style.left = left + "px";
+    btn.style.top = top + "px";
+    btn.style.right = "auto";
+    btn.style.bottom = "auto";
+    positionTip();
+    return {left, top};
+  }
+
+  function positionTip(){
+    if(!tip) return;
+    const r = btn.getBoundingClientRect();
+    tip.style.left = "auto";
+    tip.style.bottom = "auto";
+    tip.style.right = (window.innerWidth - r.left + 10) + "px";
+    tip.style.top = (r.top + r.height/2 - tip.offsetHeight/2) + "px";
+  }
+
+  function armDrag(){
+    dragging = true;
+    btn.classList.add("wa-dragging");
+    if(tip) tip.classList.remove("show");
+  }
+
+  function startPress(clientX, clientY, instant){
+    pressed = true; moved = false; dragging = false;
+    const r = btn.getBoundingClientRect();
+    startLeft = r.left; startTop = r.top;
+    startX = clientX; startY = clientY;
+    clearTimeout(holdTimer);
+
+    const now = Date.now();
+    const isDoublePress = (now - lastPressTime) < DBLCLICK_MS;
+    lastPressTime = now;
+
+    if(instant || isDoublePress){
+      armDrag();
+    } else {
+      holdTimer = setTimeout(armDrag, HOLD_MS);
+    }
+  }
+
+  function movePress(clientX, clientY){
+    if(!pressed) return;
+    if(!dragging){
+      const dx = clientX - startX, dy = clientY - startY;
+      // Pointer wandered before the hold fired - that's a normal
+      // click, not a press-and-hold. Cancel the pending drag.
+      if(Math.abs(dx) > 6 || Math.abs(dy) > 6){ clearTimeout(holdTimer); }
+      return;
+    }
+    const dx = clientX - startX, dy = clientY - startY;
+    if(Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
+    if(moved){ placeAt(startLeft + dx, startTop + dy); }
+  }
+
+  function endPress(){
+    clearTimeout(holdTimer);
+    pressed = false;
+    if(!dragging) return;
+    dragging = false;
+    btn.classList.remove("wa-dragging");
+  }
+
+  // Mouse
+  btn.addEventListener("mousedown", function(e){
+    if(e.button !== 0) return;
+    startPress(e.clientX, e.clientY, e.shiftKey);
+  });
+  window.addEventListener("mousemove", function(e){ movePress(e.clientX, e.clientY); });
+  window.addEventListener("mouseup", endPress);
+
+  // Touch (double-tap is handled the same way as double-click, via
+  // the lastPressTime gap check in startPress - there's no shiftKey
+  // equivalent on touch, so only the double-tap shortcut applies)
+  btn.addEventListener("touchstart", function(e){
+    const t = e.touches[0];
+    if(t) startPress(t.clientX, t.clientY, false);
+  }, {passive:true});
+  window.addEventListener("touchmove", function(e){
+    if(!dragging) return;
+    const t = e.touches[0];
+    if(t){ movePress(t.clientX, t.clientY); e.preventDefault(); }
+  }, {passive:false});
+  window.addEventListener("touchend", endPress);
+  window.addEventListener("touchcancel", endPress);
+
+  // Safety net: force-stop dragging if the tab loses focus mid-drag,
+  // so it can never get stuck.
+  window.addEventListener("blur", endPress);
+
+  window.addEventListener("resize", function(){
+    // Only reclamp if it was actually dragged this session (i.e. left/top
+    // were set) - otherwise leave the original CSS bottom/right in place.
+    if(btn.style.left){
+      const r = btn.getBoundingClientRect();
+      placeAt(r.left, r.top);
+    }
+  });
+
+  btn.addEventListener("click", function(e){
+    if(moved){ e.preventDefault(); moved = false; }
+    else if(tip){ tip.classList.remove("show"); }
+  });
 })();
 
 /* ============================================================
