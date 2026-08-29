@@ -7735,25 +7735,27 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
      checkout - so now the button (and its tooltip) simply hides itself
      for as long as any of these panels is open, and reappears the
      moment they're all closed again. */
+  /* Re-checked on a plain interval (instead of a MutationObserver) and
+     looked up fresh by ID on every single check - deliberately, so this
+     can never go stale: it doesn't matter if a panel's element gets
+     replaced/rebuilt later, or if this runs many times across a single
+     page visit - every check starts from scratch and reflects exactly
+     what's open on the page at that moment, every time, not just the
+     first time. */
   const WA_HIDE_BEHIND_IDS = [
     "cart-drawer", "wishlist-drawer", "search-panel",
     "newsletter-modal", "payment-modal", "success-modal", "mobile-menu"
   ];
-  const waHideBehindEls = WA_HIDE_BEHIND_IDS
-    .map((id)=>document.getElementById(id))
-    .filter(Boolean);
   function updateWaFloatVisibility(){
-    const anyPanelOpen = waHideBehindEls.some((el)=>el.classList.contains("open"));
+    const anyPanelOpen = WA_HIDE_BEHIND_IDS.some((id)=>{
+      const el = document.getElementById(id);
+      return el && el.classList.contains("open");
+    });
     btn.style.display = anyPanelOpen ? "none" : "";
     if(tip) tip.style.display = anyPanelOpen ? "none" : "";
   }
-  if(waHideBehindEls.length){
-    const waVisibilityObserver = new MutationObserver(updateWaFloatVisibility);
-    waHideBehindEls.forEach((el)=>{
-      waVisibilityObserver.observe(el, { attributes:true, attributeFilter:["class"] });
-    });
-    updateWaFloatVisibility();
-  }
+  updateWaFloatVisibility();
+  setInterval(updateWaFloatVisibility, 200);
 
   /* ---- Drag to reposition ----
      Lets visitors drag the button out of the way (e.g. when it covers
