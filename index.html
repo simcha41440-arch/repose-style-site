@@ -7724,6 +7724,37 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
     btn.addEventListener("mouseleave", ()=> tip.classList.remove("show"));
   }
 
+  /* ---- Auto-hide behind open panels ----
+     The button is fixed bottom-right on every page, with a z-index high
+     enough to always be clickable - which meant it could sit ON TOP of
+     the cart, wishlist, search, newsletter, payment and success panels
+     whenever one of those opened underneath it (worst case: covering
+     part of the payment panel during checkout). The drag-to-reposition
+     feature below was a manual workaround for this, but a visitor
+     shouldn't have to notice and drag a button out of the way mid
+     checkout - so now the button (and its tooltip) simply hides itself
+     for as long as any of these panels is open, and reappears the
+     moment they're all closed again. */
+  const WA_HIDE_BEHIND_IDS = [
+    "cart-drawer", "wishlist-drawer", "search-panel",
+    "newsletter-modal", "payment-modal", "success-modal", "mobile-menu"
+  ];
+  const waHideBehindEls = WA_HIDE_BEHIND_IDS
+    .map((id)=>document.getElementById(id))
+    .filter(Boolean);
+  function updateWaFloatVisibility(){
+    const anyPanelOpen = waHideBehindEls.some((el)=>el.classList.contains("open"));
+    btn.style.display = anyPanelOpen ? "none" : "";
+    if(tip) tip.style.display = anyPanelOpen ? "none" : "";
+  }
+  if(waHideBehindEls.length){
+    const waVisibilityObserver = new MutationObserver(updateWaFloatVisibility);
+    waHideBehindEls.forEach((el)=>{
+      waVisibilityObserver.observe(el, { attributes:true, attributeFilter:["class"] });
+    });
+    updateWaFloatVisibility();
+  }
+
   /* ---- Drag to reposition ----
      Lets visitors drag the button out of the way (e.g. when it covers
      the checkout/payment panel on the right). This is session-only:
