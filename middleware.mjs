@@ -124,7 +124,36 @@ export default async function middleware(request) {
   const meta = ROUTE_SEO[path];
   if (!meta) return; // Not a static SEO route - pass through untouched (still delayed above).
 
-  const origin = await fetch(new URL("/index.html", request.url));
+  /* -----------------------------------------------------------------
+   * BUGFIX: this middleware runs on EVERY real navigation to one of
+   * the routes in `matcher` below (home, /shop, /towels, every
+   * product page, /checkout, /account, ...) - and it used to `await`
+   * an internal fetch back to this site's own /index.html, with NO
+   * timeout, before it could respond at all. If that internal
+   * request was ever slow (a cold function start, a network hiccup
+   * between Vercel's edge and the origin, anything) there was no
+   * limit on how long it could hang - the visitor's whole page load
+   * would just sit there with nothing on screen, on every page
+   * except the ones the browser had already cached from a previous
+   * visit (which is why the homepage tended to feel fine while other
+   * pages, reached via a real link click, would sometimes hang for a
+   * very long time). The SEO title/canonical rewrite below is a
+   * nice-to-have for search engines - it must never be able to block
+   * a real visitor from seeing the page. Now it gives up after 2.5s
+   * and simply serves the page unmodified instead of hanging.
+   * ----------------------------------------------------------------- */
+  const controller = new AbortController();
+  const abortTimer = setTimeout(() => controller.abort(), 2500);
+
+  let origin;
+  try {
+    origin = await fetch(new URL("/index.html", request.url), { signal: controller.signal });
+  } catch (err) {
+    return; // Timed out, or the internal fetch failed - pass through untouched.
+  } finally {
+    clearTimeout(abortTimer);
+  }
+
   if (!origin.ok) return; // Fall back to normal handling if index.html can't be fetched.
 
   let html = await origin.text();
