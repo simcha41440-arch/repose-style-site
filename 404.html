@@ -3197,6 +3197,13 @@ if("serviceWorker" in navigator){
   .perfume-copy p{font-size:16px;line-height:1.75;color:var(--taupe);margin:0 0 26px;}
   @media (max-width:760px){.perfume-showcase{grid-template-columns:1fr;gap:24px;}.perfume-copy{text-align:center;}}
 </style>
+<style>
+  #rs-toast{position:fixed;left:50%;bottom:90px;transform:translate(-50%,20px);z-index:100000;
+    background:#2B2420;color:#FBF7EE;border:1px solid rgba(208,177,94,.7);border-radius:30px;
+    padding:12px 24px;font-size:14px;direction:rtl;box-shadow:0 12px 30px -10px rgba(0,0,0,.5);
+    opacity:0;pointer-events:none;transition:opacity .3s ease,transform .3s ease;max-width:90vw;text-align:center;}
+  #rs-toast.show{opacity:1;transform:translate(-50%,0);}
+</style>
 </head>
 <body>
 
@@ -3386,7 +3393,7 @@ if("serviceWorker" in navigator){
         </span>
       </a>
       <a class="home-tile tile-perfume" data-nav="perfume" href="/perfume">
-        <img src="/images/site/perfume-device.jpg" alt="מכשירי בישום - רפאוז סטייל" loading="eager" decoding="async">
+        <img src="/images/site/perfume-device-v2.jpg" alt="מכשירי בישום - רפאוז סטייל" loading="eager" decoding="async">
         <span class="home-tile-text">
           <h2>מכשירי בישום</h2>
           <span class="home-tile-cta">לרכישה <span class="arr" aria-hidden="true">←</span></span>
@@ -3670,7 +3677,7 @@ if("serviceWorker" in navigator){
       <p>מכשירי בישום אלגנטיים בגימור לבן וזהב, שנותנים לבית ניחוח עדין ויוקרתי בכל חדר.</p>
     </div>
     <div class="perfume-showcase">
-      <div class="perfume-photo"><img src="/images/site/perfume-device.jpg" alt="מכשיר בישום לבן עם מסגרת זהב - רפאוז סטייל" width="749" height="764" loading="lazy" decoding="async"></div>
+      <div class="perfume-photo"><img src="/images/site/perfume-device-v2.jpg" alt="מכשיר בישום לבן עם מסגרת זהב - רפאוז סטייל" width="749" height="764" loading="lazy" decoding="async"></div>
       <div class="perfume-copy">
         <h2>מכשיר בישום רפאוז סטייל</h2>
         <p>לפרטים, מחירים והזמנה אפשר לפנות אלינו ונשמח לעזור.</p>
@@ -5860,6 +5867,7 @@ const FEATURE_EYEBROW_LABELS = {
 function renderFeatured(){
   const featuredIds = ["yahalom","prachim","okeanos"];
   const wrap = document.getElementById("featured-container");
+  if(!wrap) return; // the "featured" section was replaced by the home tiles - nothing to render, and must NOT stop renderCircleStrip() that runs right after
   wrap.innerHTML = featuredIds.map((id, i)=>{
     const p = PRODUCTS.find(x=>x.id===id);
     const reverseClass = i % 2 === 1 ? "reverse" : "";
@@ -5898,6 +5906,11 @@ function renderCircleStrip(){
   const track = document.getElementById("circle-track");
   if(!track) return;
   const strip = track.closest(".circle-strip");
+
+  /* renderCurrentView() calls this twice on load (immediately, then again
+     once admin overrides arrive). Stop the previous run's animation loop and
+     listeners first, so two loops never fight over the same track. */
+  if(track._csCleanup){ track._csCleanup(); track._csCleanup = null; }
 
   /* Only bedding models (PRODUCTS) — towels live in a separate TOWELS_DATA
      list and are explicitly excluded here so the strip never shows them. */
@@ -5948,7 +5961,7 @@ function renderCircleStrip(){
   const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function measure(){
-    if(nodes.length < setCount*2) return;
+    if(!setCount || nodes.length < setCount*2) return;
     const a = nodes[0].getBoundingClientRect().left;
     const b = nodes[setCount].getBoundingClientRect().left;
     const w = b - a;
@@ -5962,11 +5975,15 @@ function renderCircleStrip(){
     if(!img.complete) img.addEventListener("load", measure, { once:true });
   });
 
+  let rafId = 0, stopped = false;
+  const onEnter = ()=>{ paused = true; };
+  const onLeave = ()=>{ paused = false; };
   if(strip && !reduceMotion){
-    strip.addEventListener("mouseenter", ()=>{ paused = true; });
-    strip.addEventListener("mouseleave", ()=>{ paused = false; });
+    strip.addEventListener("mouseenter", onEnter);
+    strip.addEventListener("mouseleave", onLeave);
 
     function tick(ts){
+      if(stopped) return;
       if(lastTs === null) lastTs = ts;
       const dt = Math.min((ts - lastTs) / 1000, 0.1); // clamp to avoid huge jumps after a tab is backgrounded
       lastTs = ts;
@@ -5974,10 +5991,21 @@ function renderCircleStrip(){
         offset = (offset + speed * dt) % setWidth;
         track.style.transform = `translateX(${-offset}px)`;
       }
-      requestAnimationFrame(tick);
+      rafId = requestAnimationFrame(tick);
     }
-    requestAnimationFrame(tick);
+    rafId = requestAnimationFrame(tick);
   }
+
+  track._csCleanup = function(){
+    stopped = true;
+    if(rafId) cancelAnimationFrame(rafId);
+    window.removeEventListener("resize", measure);
+    window.removeEventListener("load", measure);
+    if(strip){
+      strip.removeEventListener("mouseenter", onEnter);
+      strip.removeEventListener("mouseleave", onLeave);
+    }
+  };
 }
 
 /* ============================================================
@@ -6676,16 +6704,121 @@ document.getElementById("cart-clear-btn").addEventListener("click", ()=>{
   cart = [];
   updateCartUI();
 });
-document.getElementById("cart-copy-link-btn").addEventListener("click", ()=>{
-  navigator.clipboard?.writeText(window.location.href).catch(()=>{});
-});
-document.getElementById("cart-share-btn").addEventListener("click", ()=>{
-  if(navigator.share){
-    navigator.share({title:document.title, url:window.location.href}).catch(()=>{});
-  } else {
-    navigator.clipboard?.writeText(window.location.href).catch(()=>{});
+/* ---- Share cart / copy cart link ----
+   The link is  <site>/?cart=<encoded cart lines>  - opening it restores
+   those items into the visitor's cart (see importSharedCart below). */
+function rsToast(msg){
+  let t = document.getElementById("rs-toast");
+  if(!t){
+    t = document.createElement("div");
+    t.id = "rs-toast";
+    t.setAttribute("role","status");
+    t.setAttribute("aria-live","polite");
+    document.body.appendChild(t);
   }
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(rsToast._t);
+  rsToast._t = setTimeout(()=>t.classList.remove("show"), 2600);
+}
+function buildCartShareUrl(){
+  const lines = cart.map(c=>({
+    i:c.id, q:c.qty,
+    s:(c.size && c.size !== "pair") ? c.size : undefined,
+    e:c.embroidery || undefined,
+    c:((typeof cartColorId === "function") ? cartColorId(c) : c.color) || undefined
+  }));
+  const json = JSON.stringify(lines);
+  const b64 = btoa(unescape(encodeURIComponent(json))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+  return window.location.origin + "/?cart=" + b64;
+}
+async function copyTextToClipboard(text){
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  }catch(e){}
+  try{ // fallback for older browsers / non-secure contexts
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly","");
+    ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;";
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  }catch(e){ return false; }
+}
+document.getElementById("cart-copy-link-btn").addEventListener("click", async ()=>{
+  if(cart.length === 0){ rsToast("הסל ריק - אין מה לשתף"); return; }
+  const ok = await copyTextToClipboard(buildCartShareUrl());
+  rsToast(ok ? "קישור הסל הועתק" : "לא הצלחנו להעתיק את הקישור");
 });
+document.getElementById("cart-share-btn").addEventListener("click", async ()=>{
+  if(cart.length === 0){ rsToast("הסל ריק - אין מה לשתף"); return; }
+  const url = buildCartShareUrl();
+  if(navigator.share){
+    try{
+      await navigator.share({title:"הסל שלי ברפאוז סטייל", text:"הנה הסל שלי ברפאוז סטייל:", url});
+      return;
+    }catch(e){
+      if(e && e.name === "AbortError") return; // user closed the share sheet
+    }
+  }
+  const ok = await copyTextToClipboard(url);
+  rsToast(ok ? "קישור הסל הועתק - אפשר להדביק ולשלוח" : "לא הצלחנו להעתיק את הקישור");
+});
+
+/* Opening  /?cart=...  restores the shared items into this visitor's cart.
+   Existing lines are kept (never overwritten). Runs on every
+   renderCurrentView() pass so admin-added products (which only exist after
+   the overrides load) are picked up on the second pass; the ?cart= part is
+   removed from the address bar at the end so a refresh can't re-import. */
+let pendingSharedCart = (function(){
+  try{
+    const raw = new URLSearchParams(window.location.search).get("cart");
+    if(!raw) return null;
+    let b64 = raw.replace(/-/g,"+").replace(/_/g,"/");
+    while(b64.length % 4) b64 += "=";
+    const arr = JSON.parse(decodeURIComponent(escape(atob(b64))));
+    return Array.isArray(arr) ? arr.slice(0, 50) : null;
+  }catch(e){ return null; }
+})();
+let sharedCartImported = 0;
+function importSharedCart(isFinal){
+  if(pendingSharedCart === null){
+    return;
+  }
+  const rest = [];
+  pendingSharedCart.forEach(l=>{
+    const prod = l && PRODUCTS.find(x=>x.id === String(l.i));
+    if(!prod){ rest.push(l); return; }
+    const qty = Math.max(1, Math.min(20, parseInt(l.q, 10) || 1));
+    const size = l.s || "pair";
+    const emb = (prod.customizable && l.e) ? String(l.e).slice(0, 12) : null;
+    const hasColors = (typeof colorOptions === "function") && (typeof colorById === "function") && (typeof cartColorId === "function");
+    const color = (hasColors && colorOptions(prod)) ? colorById(prod, l.c).id : null;
+    const exists = cart.some(c => c.id === prod.id && (c.embroidery || null) === emb && (c.size || "pair") === size && ((hasColors ? cartColorId(c) : c.color) || null) === color);
+    if(!exists){ cart.push({id:prod.id, qty, embroidery:emb, size, color}); sharedCartImported++; }
+  });
+  pendingSharedCart = rest;
+  updateCartUI();
+  if(isFinal){
+    pendingSharedCart = null;
+    try{
+      const u = new URL(window.location.href);
+      u.searchParams.delete("cart");
+      window.history.replaceState(window.history.state, "", u.pathname + (u.search || "") + u.hash);
+    }catch(e){}
+    if(sharedCartImported > 0){
+      openCart();
+      rsToast("הסל ששותף איתך נטען");
+    }
+  }
+}
 
 /* ============================================================
    CHECKOUT PAGE
@@ -8143,6 +8276,8 @@ function renderCurrentView(){
     })();
   }
 
+  renderCurrentView._pass = (renderCurrentView._pass || 0) + 1;
+  importSharedCart(renderCurrentView._pass >= 2);
   updateCartUI();
   updateWishlistUI();
 
