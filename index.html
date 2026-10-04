@@ -52,6 +52,7 @@
       "/shop/heritage": "shop-heritage",
       "/sale": "sale",
       "/towels": "towels",
+      "/perfume": "perfume",
       "/about": "about",
       "/contact": "contact",
       "/shipping": "shipping",
@@ -1201,6 +1202,10 @@ if("serviceWorker" in navigator){
     transition:color .25s ease, text-shadow .25s ease;
   }
   nav.nav-links button.active, nav.nav-links a.active{color:var(--ivory);}
+  @media (min-width:861px) and (max-width:1180px){
+    nav.nav-links button, nav.nav-links a{padding:10px 11px;font-size:13.5px;}
+    .nav-inner{gap:14px;}
+  }
   .nav-underline{
     position:absolute;top:5px;bottom:5px;border-radius:var(--radius);
     background:linear-gradient(135deg, var(--gold-dark), var(--gold));
@@ -3128,6 +3133,77 @@ if("serviceWorker" in navigator){
     #wa-float-tip{transition:none;}
   }
 </style>
+<style>
+  /* ===== HOME TILES (replaces hero + collections on the home page) ===== */
+  .home-tiles{padding:28px 32px 44px;max-width:1240px;margin:0 auto;}
+  .home-tiles-grid{
+    display:grid;direction:rtl;
+    grid-template-columns:1.3fr 1fr 1fr;
+    grid-template-rows:repeat(2,clamp(190px,20vw,300px));
+    gap:22px;
+  }
+  .home-tile{
+    position:relative;display:block;overflow:hidden;border-radius:18px;
+    text-decoration:none;color:#fff;background:#f3e9d2;isolation:isolate;
+  }
+  .home-tile img{
+    position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+    transition:transform .7s cubic-bezier(.19,1,.22,1);z-index:-2;
+  }
+  .home-tile::after{
+    content:"";position:absolute;inset:0;z-index:-1;
+    background:linear-gradient(180deg,rgba(20,16,12,0) 45%,rgba(20,16,12,.55) 100%);
+  }
+  .home-tile:hover img{transform:scale(1.05);}
+  .home-tile-text{
+    position:absolute;right:28px;bottom:24px;left:28px;text-align:right;
+    display:flex;flex-direction:column;gap:6px;
+  }
+  .home-tile h2{
+    margin:0;font-family:'Rubik','Almoni Neue',sans-serif;font-weight:300;
+    font-size:clamp(20px,2vw,30px);line-height:1.15;letter-spacing:.03em;color:#fff;
+    text-shadow:0 1px 10px rgba(0,0,0,.35);
+  }
+  .home-tile-cta{
+    display:inline-flex;align-items:center;gap:8px;font-size:clamp(12px,.95vw,14px);
+    font-weight:300;letter-spacing:.04em;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.4);
+  }
+  .home-tile-cta .arr{display:inline-block;transition:transform .3s ease;}
+  .home-tile:hover .home-tile-cta .arr{transform:translateX(-6px);}
+  .home-tile:focus-visible{outline:3px solid var(--gold);outline-offset:3px;}
+  .tile-bedding{grid-column:1;grid-row:1 / span 2;}
+  .tile-towels{grid-column:2 / span 2;grid-row:1;}
+  .tile-sale{grid-column:2;grid-row:2;}
+  .tile-perfume{grid-column:3;grid-row:2;}
+  .tile-perfume img{object-position:center 40%;}
+  @media (max-width:760px){
+    .home-tiles{padding:16px 16px 28px;}
+    .home-tiles-grid{grid-template-columns:1fr;grid-template-rows:none;grid-auto-rows:clamp(190px,54vw,290px);gap:14px;}
+    .tile-bedding,.tile-towels,.tile-sale,.tile-perfume{grid-column:1;grid-row:auto;}
+    .home-tile{border-radius:16px;}
+    .home-tile-text{right:18px;left:18px;bottom:16px;}
+    .home-tile h2{font-size:clamp(20px,6vw,26px);}
+  }
+  @media (prefers-reduced-motion:reduce){.home-tile img,.home-tile-cta .arr{transition:none;}}
+</style>
+<style>
+  .perfume-showcase{display:grid;direction:rtl;grid-template-columns:1fr 1fr;gap:40px;align-items:center;margin:8px auto 56px;max-width:1000px;}
+  .perfume-photo{background:#FFFFFD;border-radius:24px;overflow:hidden;box-shadow:var(--shadow);}
+  .perfume-photo img{display:block;width:100%;height:auto;}
+  .perfume-copy{text-align:right;}
+  .perfume-copy h2{font-family:'Rubik','Almoni Neue',sans-serif;font-size:clamp(24px,3vw,34px);margin:0 0 14px;color:var(--text-gold);}
+  .perfume-copy p{font-size:16px;line-height:1.75;color:var(--taupe);margin:0 0 26px;}
+  @media (max-width:760px){.perfume-showcase{grid-template-columns:1fr;gap:24px;}.perfume-copy{text-align:center;}}
+  .perfume-grid{display:grid;direction:rtl;grid-template-columns:repeat(3,1fr);gap:28px;align-items:stretch;margin:8px auto 56px;max-width:1100px;}
+  .perfume-card{display:flex;flex-direction:column;background:#FFFFFD;border-radius:24px;overflow:hidden;box-shadow:var(--shadow);}
+  .perfume-card .perfume-photo{box-shadow:none;border-radius:0;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;}
+  .perfume-card .perfume-photo img{width:100%;height:100%;object-fit:contain;}
+  .perfume-card .perfume-copy{text-align:center;padding:8px 24px 28px;display:flex;flex-direction:column;align-items:center;gap:6px;}
+  .perfume-card .perfume-copy h2{margin:0;}
+  .perfume-price{font-family:'Rubik','Almoni Neue',sans-serif;font-size:26px;font-weight:600;color:var(--text-gold);margin:0 0 14px;}
+  @media (max-width:900px){.perfume-grid{grid-template-columns:1fr 1fr;}}
+  @media (max-width:600px){.perfume-grid{grid-template-columns:1fr;gap:24px;}}
+</style>
 </head>
 <body>
 
@@ -3161,6 +3237,7 @@ if("serviceWorker" in navigator){
       <a data-nav="home" href="/" class="active">בית</a>
       <a data-nav="shop" href="/shop">מצעים</a>
       <a data-nav="towels" href="/towels">מגבות</a>
+      <a data-nav="perfume" href="/perfume">מכשירי בישום</a>
       <a data-nav="sale" href="/sale">מבצעים</a>
       <a data-nav="about" href="/about">אודות</a>
       <a data-nav="contact" href="/contact">צור קשר</a>
@@ -3190,6 +3267,7 @@ if("serviceWorker" in navigator){
     <a data-nav="home" href="/">בית</a>
     <a data-nav="shop" href="/shop">מצעים</a>
     <a data-nav="towels" href="/towels">מגבות</a>
+    <a data-nav="perfume" href="/perfume">מכשירי בישום</a>
     <a data-nav="sale" href="/sale">מבצעים</a>
     <a data-nav="about" href="/about">אודות</a>
     <a data-nav="contact" href="/contact">צור קשר</a>
@@ -3291,19 +3369,36 @@ if("serviceWorker" in navigator){
     </div>
   </div>
 
-  <section class="block" id="collections-preview">
-    <div class="container">
-      <div class="block-head">
-        <div class="eyebrow reveal">קולקציות נבחרות</div>
-        <h2 class="reveal">שינה, כמו שצריך להיות</h2>
-        <p class="reveal">שלושה עיצובים מתוך הקולקציה שלנו — כל סט צולם כתמונת סטודיו בודדת, כדי שתראו בדיוק את המרקם, הגוון והנפילה של הבד.</p>
-      </div>
-
-      <div id="featured-container"></div>
-
-      <div style="text-align:center;margin-top:20px;">
-        <button class="btn outline" data-nav="shop">לצפייה בכל הקולקציה</button>
-      </div>
+  <section class="home-tiles" id="home-tiles" aria-label="קטגוריות ראשיות">
+    <div class="home-tiles-grid">
+      <a class="home-tile tile-bedding" data-nav="shop" href="/shop">
+        <img src="/images/site/hero-new/hero-bg-3.jpg" alt="מצעים - רפאוז סטייל" loading="eager" decoding="async">
+        <span class="home-tile-text">
+          <h2>מצעים</h2>
+          <span class="home-tile-cta"><span class="arr" aria-hidden="true">←</span> לרכישה</span>
+        </span>
+      </a>
+      <a class="home-tile tile-towels" data-nav="towels" href="/towels">
+        <img src="/images/products/towel-full-set.jpg" alt="מגבות - רפאוז סטייל" loading="eager" decoding="async">
+        <span class="home-tile-text">
+          <h2>מגבות</h2>
+          <span class="home-tile-cta"><span class="arr" aria-hidden="true">←</span> לרכישה</span>
+        </span>
+      </a>
+      <a class="home-tile tile-sale" data-nav="sale" href="/sale">
+        <img src="/images/products/prachim.jpg" alt="מבצעים - רפאוז סטייל" loading="eager" decoding="async">
+        <span class="home-tile-text">
+          <h2>מבצעים</h2>
+          <span class="home-tile-cta"><span class="arr" aria-hidden="true">←</span> לרכישה</span>
+        </span>
+      </a>
+      <a class="home-tile tile-perfume" data-nav="perfume" href="/perfume">
+        <img src="/images/site/perfume-home.jpg" alt="מכשירי בישום - רפאוז סטייל" loading="eager" decoding="async">
+        <span class="home-tile-text">
+          <h2>מכשירי בישום</h2>
+          <span class="home-tile-cta"><span class="arr" aria-hidden="true">←</span> לרכישה</span>
+        </span>
+      </a>
     </div>
   </section>
 
@@ -3568,6 +3663,45 @@ if("serviceWorker" in navigator){
       <p>מגבות כותנה לבנות, רכות ועבות במיוחד, בגימור המעניק לחדר האמבטיה שלכם תחושה של ספא במלון בוטיק.</p>
     </div>
     <div class="product-grid" id="towel-grid"></div>
+  </div>
+</div>
+</section>
+
+<!-- ============ PERFUME DEVICES VIEW ============ -->
+<section class="view" id="view-perfume">
+<div class="view-frame">
+  <div class="container">
+    <div class="shop-header">
+      <div class="eyebrow">רפאוז סטייל · ניחוח של מלון בוטיק</div>
+      <h1>מכשירי בישום</h1>
+      <p>מכשירי בישום אלגנטיים בגימור לבן וזהב, שנותנים לבית ניחוח עדין ויוקרתי בכל חדר.</p>
+    </div>
+    <div class="perfume-grid">
+      <div class="perfume-card">
+        <div class="perfume-photo"><img src="/images/site/perfume-device.jpg" alt="מכשיר בישום לבן עם מסגרת זהב - רפאוז סטייל" width="749" height="764" loading="lazy" decoding="async"></div>
+        <div class="perfume-copy">
+          <h2>מכשיר בישום עם מסגרת זהב</h2>
+          <div class="perfume-price">470 ₪</div>
+          <button class="btn" data-nav="contact">להזמנה וליצירת קשר <span aria-hidden="true">←</span></button>
+        </div>
+      </div>
+      <div class="perfume-card">
+        <div class="perfume-photo"><img src="/images/site/perfume-device-2.jpg" alt="מכשיר בישום לבן - רפאוז סטייל" width="570" height="856" loading="lazy" decoding="async"></div>
+        <div class="perfume-copy">
+          <h2>מכשיר בישום לבן</h2>
+          <div class="perfume-price">370 ₪</div>
+          <button class="btn" data-nav="contact">להזמנה וליצירת קשר <span aria-hidden="true">←</span></button>
+        </div>
+      </div>
+      <div class="perfume-card">
+        <div class="perfume-photo"><img src="/images/site/perfume-device-3.jpg" alt="מכשיר בישום אפור - רפאוז סטייל" width="717" height="844" loading="lazy" decoding="async"></div>
+        <div class="perfume-copy">
+          <h2>מכשיר בישום אפור</h2>
+          <div class="perfume-price">570 ₪</div>
+          <button class="btn" data-nav="contact">להזמנה וליצירת קשר <span aria-hidden="true">←</span></button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 </section>
@@ -4170,6 +4304,7 @@ if("serviceWorker" in navigator){
           <li><a data-nav="home" href="/">בית</a></li>
           <li><a data-nav="shop" href="/shop">מצעים</a></li>
           <li><a data-nav="towels" href="/towels">מגבות</a></li>
+          <li><a data-nav="perfume" href="/perfume">מכשירי בישום</a></li>
           <li><a data-nav="sale" href="/sale">מבצעים</a></li>
           <li><a data-nav="about" href="/about">אודות</a></li>
           <li><a data-nav="contact" href="/contact">צור קשר</a></li>
@@ -4745,6 +4880,7 @@ const VIEW_SEO = {
   "shop-bloom":      { path:"/shop/bloom",     title:"קולקציית Bloom | רפאוז סטייל", desc:"קולקציית Bloom ממבחר מצעי היוקרה של רפאוז סטייל." },
   "shop-heritage":   { path:"/shop/heritage",  title:"קולקציית Heritage | רפאוז סטייל", desc:"קולקציית Heritage ממבחר מצעי היוקרה של רפאוז סטייל." },
   "towels":          { path:"/towels",         title:"מגבות יוקרה | רפאוז סטייל", desc:"מגבות יוקרה איכותיות מבית רפאוז סטייל — רכות, סופגות ועמידות לאורך זמן." },
+  "perfume":         { path:"/perfume",        title:"מכשירי בישום | רפאוז סטייל", desc:"מכשירי בישום אלגנטיים מבית רפאוז סטייל — ניחוח יוקרתי לבית." },
   "sale":            { path:"/sale",           title:"מבצעים | רפאוז סטייל", desc:"הדגמים שנמצאים כרגע במבצע אצל רפאוז סטייל — במחיר מוזל לזמן מוגבל." },
   "about":           { path:"/about",          title:"אודות | רפאוז סטייל", desc:"על רפאוז סטייל — הסיפור שמאחורי המותג, הערכים והדרך בה אנו בונים כל סט מצעים." },
   "contact":         { path:"/contact",        title:"צור קשר | רפאוז סטייל", desc:"צרו קשר עם צוות רפאוז סטייל בכל שאלה או בקשה." },
@@ -4911,6 +5047,8 @@ function renderViewNow(name, updateHistory, productId){
   } else if(name === "towels"){
     document.getElementById("view-towels").classList.add("active");
     renderTowels();
+  } else if(name === "perfume"){
+    document.getElementById("view-perfume").classList.add("active");
   } else if(name === "about"){
     document.getElementById("view-about").classList.add("active");
   } else if(name === "contact"){
