@@ -2174,6 +2174,25 @@ if("serviceWorker" in navigator){
     background:linear-gradient(135deg, var(--gold-pale) 0%, #fff 75%);
     box-shadow:0 6px 18px -8px rgba(138,108,57,0.5);
   }
+  .pd-color-select{margin:0 0 22px;}
+  .pd-color-select .pss-label{font-size:12px;color:var(--taupe);letter-spacing:.04em;margin-bottom:10px;text-transform:uppercase;}
+  .pd-color-select .pss-label b{color:var(--ink);font-weight:700;text-transform:none;}
+  .pd-color-options{display:flex;gap:12px;flex-wrap:wrap;}
+  .pd-color-option{
+    display:inline-flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;
+    padding:10px 22px 10px 18px;cursor:pointer;background:#fff;transition:all .22s ease;
+    font-family:inherit;font-size:14px;font-weight:700;color:var(--ink);min-width:140px;
+  }
+  .pd-color-option:hover{border-color:var(--gold-dark);}
+  .pd-color-option:focus-visible{outline:2px solid var(--ink);outline-offset:3px;}
+  .pd-color-option .sw{width:24px;height:24px;border-radius:50%;flex:none;border:1px solid rgba(43,36,32,0.25);box-shadow:inset 0 0 0 2px rgba(255,255,255,0.55);}
+  .pd-color-option.active{
+    border-color:var(--gold-dark);
+    background:linear-gradient(135deg, var(--gold-pale) 0%, #fff 75%);
+    box-shadow:0 6px 18px -8px rgba(138,108,57,0.5);
+  }
+  #pd-image{transition:opacity .22s ease;}
+  #pd-image.swapping{opacity:0;}
   .pd-specs{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px;}
   .pd-specs span{
     font-size:13px;border:1px solid var(--line);padding:8px 16px;border-radius:20px;background:var(--ivory);
@@ -3198,44 +3217,64 @@ if("serviceWorker" in navigator){
   @media (max-width:760px){.perfume-showcase{grid-template-columns:1fr;gap:24px;}.perfume-copy{text-align:center;}}
 
   /* ===== Perfume devices page ===== */
-  .pf-trust{display:flex;justify-content:center;gap:14px 40px;flex-wrap:wrap;margin:6px auto 64px;padding:0;list-style:none;font-size:14px;color:var(--text-gold);}
+  .pf-trust{display:flex;justify-content:center;gap:14px 44px;flex-wrap:wrap;margin:6px auto 52px;padding:0;list-style:none;font-size:14px;color:var(--text-gold);}
   .pf-trust li{display:flex;align-items:center;gap:10px;}
   .pf-trust .icon{width:20px;height:20px;flex:none;color:var(--gold-dark);}
-  .pf-row{display:grid;direction:rtl;grid-template-columns:1.05fr 1fr;gap:64px;align-items:center;max-width:1080px;margin:0 auto 96px;}
-  .pf-row.reverse .pf-media{order:2;}
-  .pf-media{position:relative;display:flex;align-items:center;justify-content:center;aspect-ratio:1/1;border-radius:32px;overflow:hidden;
-    background:radial-gradient(circle at 50% 40%, #FFFFFC 0%, #FFFBEA 55%, #F6EAC0 100%);border:1px solid var(--line);box-shadow:var(--shadow);}
-  .pf-media img{width:80%;height:80%;object-fit:contain;mix-blend-mode:multiply;transition:transform .9s cubic-bezier(.19,1,.22,1);}
-  .pf-media:hover img{transform:scale(1.045);}
-  .pf-badge{position:absolute;top:22px;right:22px;z-index:2;padding:7px 16px;font-size:12.5px;font-weight:600;color:#fff;border-radius:var(--radius);
+  #perfume-showcase{display:grid;direction:rtl;grid-template-columns:repeat(3,1fr);gap:28px;align-items:stretch;max-width:1180px;margin:0 auto 72px;}
+  .pf-row{display:flex;flex-direction:column;background:#FFFDF6;border:1px solid var(--line);border-radius:26px;overflow:hidden;box-shadow:var(--shadow);transition:transform .5s cubic-bezier(.19,1,.22,1), box-shadow .5s ease;}
+  .pf-row:hover{transform:translateY(-6px);box-shadow:0 30px 60px -24px rgba(43,36,32,0.35);}
+  .pf-media{position:relative;display:flex;align-items:center;justify-content:center;aspect-ratio:1/1;overflow:hidden;
+    background:radial-gradient(circle at 50% 42%, #FFFFFC 0%, #FFFBEA 55%, #F6EAC0 100%);border-bottom:1px solid var(--line);}
+  .pf-media img{width:82%;height:82%;object-fit:contain;mix-blend-mode:multiply;transition:transform .9s cubic-bezier(.19,1,.22,1);}
+  .pf-row:hover .pf-media img{transform:scale(1.05);}
+  .pf-badge{position:absolute;top:18px;right:18px;z-index:2;padding:6px 14px;font-size:12px;font-weight:600;color:#fff;border-radius:var(--radius);
     background:linear-gradient(135deg,var(--gold-light),var(--gold) 50%,var(--gold-dark));box-shadow:var(--shadow-gold);}
   .pf-badge.out{background:var(--ink);box-shadow:none;}
-  .pf-info{text-align:right;}
-  .pf-kicker{font-size:13px;letter-spacing:0.14em;color:var(--gold-dark);font-weight:500;margin-bottom:10px;direction:ltr;text-align:right;}
-  .pf-info h2{font-size:clamp(26px,2.9vw,35px);line-height:1.25;color:var(--text-gold);margin:0 0 14px;font-weight:500;}
-  .pf-price{font-family:'Rubik','Almoni Neue',sans-serif;font-size:28px;font-weight:600;color:var(--text-gold);margin:0 0 20px;}
-  .pf-desc{font-size:15.5px;line-height:1.85;color:var(--text-gold);font-weight:300;margin:0 0 22px;max-width:56ch;}
-  .pf-features{list-style:none;margin:0 0 30px;padding:20px 22px;display:flex;flex-direction:column;gap:11px;background:rgba(255,253,245,0.55);border:1px solid var(--line);border-radius:18px;}
-  .pf-features li{display:flex;align-items:flex-start;gap:11px;font-size:14.5px;color:var(--text-gold);line-height:1.5;}
-  .pf-features .icon{width:18px;height:18px;flex:none;margin-top:2px;color:var(--gold-dark);}
-  .pf-buy{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px;}
-  .pf-qty{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:var(--radius);background:rgba(255,253,245,0.7);}
-  .pf-qty button{width:44px;height:50px;background:none;border:none;font-size:20px;color:var(--text-gold);border-radius:var(--radius);}
+  .pf-info{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;padding:28px 26px 30px;}
+  .pf-kicker{font-size:12.5px;letter-spacing:0.14em;color:var(--gold-dark);font-weight:500;margin-bottom:8px;direction:ltr;}
+  .pf-info h2{font-size:clamp(21px,1.9vw,25px);line-height:1.3;color:var(--text-gold);margin:0 0 10px;font-weight:500;min-height:2.6em;display:flex;align-items:center;justify-content:center;}
+  .pf-price{font-family:'Rubik','Almoni Neue',sans-serif;font-size:26px;font-weight:600;color:var(--text-gold);margin:0 0 16px;}
+  .pf-desc{font-size:14.5px;line-height:1.8;color:var(--text-gold);font-weight:300;margin:0 0 20px;}
+  .pf-features{list-style:none;margin:0 0 26px;padding:18px 0 0;width:100%;display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--line);text-align:right;}
+  .pf-features li{display:flex;align-items:flex-start;gap:10px;font-size:13.5px;color:var(--text-gold);line-height:1.5;}
+  .pf-features .icon{width:17px;height:17px;flex:none;margin-top:2px;color:var(--gold-dark);}
+  .pf-buy{margin-top:auto;width:100%;display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+  .pf-qty{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:var(--radius);background:rgba(255,253,245,0.7);flex:none;}
+  .pf-qty button{width:40px;height:48px;background:none;border:none;font-size:19px;color:var(--text-gold);border-radius:var(--radius);}
   .pf-qty button:hover{background:var(--gold-pale);}
-  .pf-qty-val{min-width:30px;text-align:center;font-weight:600;color:var(--text-gold);}
-  .pf-add{flex:1;justify-content:center;min-width:200px;padding:16px 28px;}
-  .pf-more{display:inline-block;font-size:14px;color:var(--gold-dark);text-decoration:underline;text-underline-offset:5px;}
+  .pf-qty-val{min-width:26px;text-align:center;font-weight:600;color:var(--text-gold);}
+  .pf-add{flex:1;justify-content:center;min-width:0;padding:15px 18px;white-space:nowrap;}
+  .pf-more{font-size:13.5px;color:var(--gold-dark);text-decoration:underline;text-underline-offset:5px;}
   .pf-more:hover{color:var(--ink);}
   .pf-media:focus-visible,.pf-more:focus-visible,.pf-qty button:focus-visible,.pf-add:focus-visible{outline:2px solid var(--ink);outline-offset:3px;}
+  .pf-colors{display:flex;justify-content:center;gap:12px;margin:0 0 18px;}
+  .pf-color{width:34px;height:34px;border-radius:50%;padding:3px;background:#fff;border:1px solid var(--line);cursor:pointer;transition:all .2s ease;display:inline-flex;}
+  .pf-color span{display:block;width:100%;height:100%;border-radius:50%;border:1px solid rgba(43,36,32,0.25);}
+  .pf-color:hover{border-color:var(--gold-dark);}
+  .pf-color.active{border-color:var(--gold-dark);box-shadow:0 0 0 2px var(--gold-pale), 0 6px 14px -6px rgba(138,108,57,0.6);}
+  .pf-color:focus-visible{outline:2px solid var(--ink);outline-offset:3px;}
+  .sc-head{max-width:1180px;margin:0 auto 28px;text-align:center;}
+  .sc-head h2{font-size:clamp(24px,3vw,34px);color:var(--text-gold);margin:0 0 8px;font-weight:500;}
+  .sc-head p{margin:0;color:var(--taupe);font-size:15px;font-weight:300;}
+  #scent-showcase{display:grid;direction:rtl;grid-template-columns:repeat(4,1fr);gap:22px;align-items:stretch;max-width:1180px;margin:0 auto 72px;}
+  .sc-row .pf-info{padding:18px 16px 20px;}
+  .sc-row .pf-media img{width:76%;height:76%;}
+  .sc-row h3{font-size:clamp(18px,1.6vw,21px);line-height:1.3;color:var(--text-gold);margin:0 0 4px;font-weight:500;}
+  .sc-size{font-size:12.5px;color:var(--taupe);margin:0 0 10px;font-weight:300;}
+  .sc-row .pf-price{font-size:22px;margin:0 0 14px;}
+  .sc-row .pf-buy{gap:8px;}
+  .sc-row .pf-qty button{width:30px;height:42px;}
+  .sc-row .pf-add{padding:12px 8px;font-size:13px;}
+  @media (max-width:1000px){#scent-showcase{grid-template-columns:repeat(3,1fr);gap:16px;}}
+  @media (max-width:760px){#scent-showcase{grid-template-columns:repeat(2,1fr);gap:14px;}.sc-row .pf-buy{flex-direction:column;align-items:stretch;}.sc-row .pf-qty{justify-content:center;}}
   .pf-help{max-width:760px;margin:0 auto 40px;padding:44px 28px;text-align:center;border:1px solid var(--line);border-radius:28px;background:linear-gradient(160deg,#FBF4DC,#F1DFA0);}
   .pf-help h3{font-size:clamp(22px,2.6vw,28px);color:var(--text-gold);margin:0 0 10px;font-weight:500;}
   .pf-help p{margin:0 0 22px;color:var(--text-gold);font-size:15.5px;}
+  @media (max-width:1000px){#perfume-showcase{gap:18px;}.pf-info{padding:24px 18px 26px;}.pf-qty button{width:34px;}}
   @media (max-width:860px){
-    .pf-row{grid-template-columns:1fr;gap:28px;margin-bottom:68px;}
-    .pf-row.reverse .pf-media{order:0;}
-    .pf-media{aspect-ratio:1/0.92;border-radius:26px;}
-    .pf-info{text-align:right;}
-    .pf-add{min-width:0;}
+    #perfume-showcase{grid-template-columns:1fr;max-width:460px;gap:28px;}
+    .pf-info h2{min-height:0;}
+    .pf-info{padding:26px 24px 28px;}
   }
   .perfume-grid{display:grid;direction:rtl;grid-template-columns:repeat(3,1fr);gap:28px;align-items:stretch;margin:8px auto 56px;max-width:1100px;}
   .perfume-card{display:flex;flex-direction:column;background:#FFFFFD;border-radius:24px;overflow:hidden;box-shadow:var(--shadow);}
@@ -3418,28 +3457,28 @@ if("serviceWorker" in navigator){
         <img src="/images/site/bedding-home.jpg" alt="מצעים - רפאוז סטייל" width="839" height="826" loading="eager" decoding="async">
         <span class="home-tile-text">
           <h2>מצעים</h2>
-          <span class="home-tile-cta"><span class="arr" aria-hidden="true">←</span> לרכישה</span>
+          <span class="home-tile-cta">לרכישה <span class="arr" aria-hidden="true">←</span></span>
         </span>
       </a>
       <a class="home-tile tile-towels" data-nav="towels" href="/towels">
         <img src="/images/site/towels-home.jpg" alt="מגבות - רפאוז סטייל" width="777" height="857" loading="eager" decoding="async">
         <span class="home-tile-text">
           <h2>מגבות</h2>
-          <span class="home-tile-cta"><span class="arr" aria-hidden="true">←</span> לרכישה</span>
+          <span class="home-tile-cta">לרכישה <span class="arr" aria-hidden="true">←</span></span>
         </span>
       </a>
       <a class="home-tile tile-sale" data-nav="sale" href="/sale">
         <img src="/images/products/okeanos.jpg" alt="מבצעים - רפאוז סטייל" loading="eager" decoding="async">
         <span class="home-tile-text">
           <h2>מבצעים</h2>
-          <span class="home-tile-cta"><span class="arr" aria-hidden="true">←</span> לרכישה</span>
+          <span class="home-tile-cta">לרכישה <span class="arr" aria-hidden="true">←</span></span>
         </span>
       </a>
       <a class="home-tile tile-perfume" data-nav="perfume" href="/perfume">
-        <img src="/images/site/perfume-home.jpg" alt="מכשירי בישום - רפאוז סטייל" loading="eager" decoding="async">
+        <img src="/images/site/perfume-home-v2.jpg" alt="מכשירי בישום - רפאוז סטייל" loading="eager" decoding="async">
         <span class="home-tile-text">
           <h2>מכשירי בישום</h2>
-          <span class="home-tile-cta"><span class="arr" aria-hidden="true">←</span> לרכישה</span>
+          <span class="home-tile-cta">לרכישה <span class="arr" aria-hidden="true">←</span></span>
         </span>
       </a>
     </div>
@@ -3642,6 +3681,11 @@ if("serviceWorker" in navigator){
           </div>
         </div>
 
+        <div class="pd-color-select" id="pd-color-select" style="display:none;">
+          <div class="pss-label">✦ בחירת צבע: <b id="pd-color-name"></b></div>
+          <div class="pd-color-options" id="pd-color-options" role="radiogroup" aria-label="בחירת צבע"></div>
+        </div>
+
         <div id="pd-embroidery" style="display:none;margin:0 0 20px;padding:16px 18px;background:var(--ivory);border:1px solid var(--line);">
           <label for="pd-embroidery-input" id="pd-embroidery-label" style="display:block;font-size:13px;letter-spacing:0.03em;font-weight:600;color:var(--gold-dark);margin-bottom:8px;">דגם זה ניתן להתאמה אישית - רקמת ראשי תיבות (בתוספת 200 ₪)</label>
           <input type="text" id="pd-embroidery-input" maxlength="3" placeholder="לדוגמה: א.כ" style="width:100%;max-width:220px;padding:9px 12px;border:1px solid var(--line);font-family:inherit;font-size:14px;">
@@ -3725,6 +3769,11 @@ if("serviceWorker" in navigator){
       <li><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>ליווי בבחירת הדגם בוואטסאפ ובטלפון</li>
     </ul>
     <div id="perfume-showcase"></div>
+    <div class="sc-head">
+      <h2 class="serif">ניחוחות לבית</h2>
+      <p>בקבוקי חצי ליטר במחיר 199 ₪ לבקבוק</p>
+    </div>
+    <div id="scent-showcase"></div>
     <div class="pf-help">
       <h3 class="serif">לא בטוחים איזה דגם מתאים לחלל שלכם?</h3>
       <p>נשמח לעזור לבחור לפי גודל החדר והסגנון, ולהתאים את הדגם לשאר הבית.</p>
@@ -4866,8 +4915,36 @@ function productForSize(p, size){
     compareAtPrice: p.compareAtPrice ? Math.round(p.compareAtPrice / 2) : null
   });
 }
+/* ---- Color options (e.g. perfume-gold: white / black) ----
+   A product with a `colors` array gets a color picker on its page. The first
+   color is the default and always uses the product's own `img` (so an image
+   changed from the admin panel still applies to it). Same price per color. */
+function colorOptions(p){
+  return (p && Array.isArray(p.colors) && p.colors.length) ? p.colors : null;
+}
+function colorById(p, id){
+  const cs = colorOptions(p);
+  if(!cs) return null;
+  return cs.find(c => c.id === id) || cs[0];
+}
+function productImage(p, colorId){
+  const cs = colorOptions(p);
+  if(!cs) return p.img;
+  const c = colorById(p, colorId);
+  return (c === cs[0] || !c.img) ? p.img : c.img;
+}
+function cartColorLabel(c){
+  const p = PRODUCTS.find(x => x.id === c.id);
+  const col = colorById(p, c.color);
+  return col ? col.label : "";
+}
+function cartColorId(c){
+  const p = PRODUCTS.find(x => x.id === c.id);
+  const col = colorById(p, c.color);
+  return col ? col.id : "";
+}
 function groupOf(p){
-  return p.category === "towel" ? "towel" : (p.category === "perfume" ? "perfume" : ("bedding-"+p.bedType));
+  return p.category === "towel" ? "towel" : (p.category === "perfume" ? (p.scent ? "perfume-scent" : "perfume") : ("bedding-"+p.bedType));
 }
 function specLabel(p, size){
   if(p.category === "perfume"){
@@ -4899,6 +4976,7 @@ let orders = lsLoad("rstyle_orders", []); // [{id, date, items:[{id,name,qty,pri
 let currentProductId = null;
 let currentQty = 1;
 let currentSize = "pair";
+let currentColor = null;
 let activeSizeFilter = "all";
 let activeSort = "rec";
 
@@ -5084,6 +5162,7 @@ function renderViewNow(name, updateHistory, productId){
   } else if(name === "perfume"){
     document.getElementById("view-perfume").classList.add("active");
     renderPerfume();
+    renderScents();
   } else if(name === "about"){
     document.getElementById("view-about").classList.add("active");
   } else if(name === "contact"){
@@ -5613,9 +5692,13 @@ const PERFUME_DATA = [
   {
     id:"perfume-gold", name:"מכשיר בישום גולד", price:470, category:"perfume",
     img:"/images/site/perfume-device.jpg", tag:"הדגם הנבחר",
+    colors:[
+      { id:"white", label:"לבן", swatch:"#FFFFFF" },
+      { id:"black", label:"שחור", swatch:"#2B2B2B", img:"/images/site/perfume-device-black.jpg" }
+    ],
     kicker:"White & Gold Edition",
-    features:["גוף לבן מבריק עם מסגרת מתכתית בגוון זהב","כפתור הפעלה בחלקו העליון","קו נקי שמשתלב בסלון, בחדר שינה ובלובי","מתאים גם כמתנה מעוצבת לבית"],
-    customDesc:"מכשיר בישום שמעוצב כמו פריט דקורטיבי: גוף לבן מבריק, ומסגרת מתכתית בגוון זהב שנותנת לו נוכחות של אביזר עיצוב ולא של מכשיר טכני.\nכפתור ההפעלה בחלק העליון מאפשר שליטה פשוטה בלחיצה אחת, והקו הנקי משתלב בכל חלל - מהכניסה לבית ועד חדר השינה.\nבחירה טבעית למי שרוצה ניחוח של מלון בוטיק בבית, בעיצוב שמתאים לעולם המצעים והמגבות של רפאוז סטייל."
+    features:["גוף בלבן מבריק או בשחור אלגנטי (לבחירתכם), עם מסגרת מתכתית בגוון זהב","כפתור הפעלה בחלקו העליון","קו נקי שמשתלב בסלון, בחדר שינה ובלובי","מתאים גם כמתנה מעוצבת לבית"],
+    customDesc:"מכשיר בישום שמעוצב כמו פריט דקורטיבי: גוף בלבן מבריק או בשחור אלגנטי (לבחירתכם), ומסגרת מתכתית בגוון זהב שנותנת לו נוכחות של אביזר עיצוב ולא של מכשיר טכני.\nכפתור ההפעלה בחלק העליון מאפשר שליטה פשוטה בלחיצה אחת, והקו הנקי משתלב בכל חלל - מהכניסה לבית ועד חדר השינה.\nבחירה טבעית למי שרוצה ניחוח של מלון בוטיק בבית, בעיצוב שמתאים לעולם המצעים והמגבות של רפאוז סטייל."
   },
   {
     id:"perfume-white", name:"מכשיר בישום לבן קלאסי", price:370, category:"perfume",
@@ -5633,6 +5716,38 @@ const PERFUME_DATA = [
   }
 ];
 PRODUCTS.push(...PERFUME_DATA);
+
+/* ============================================================
+   PERFUME SCENT BOTTLES (category "perfume", scent:true) - half-liter
+   bottles, 199 NIS each, listed in their own section on /perfume.
+   IMPORTANT: ids/prices must stay in sync with BASE_CATALOG in
+   api/_lib/pricing.js and CATALOG in admin.html.
+   ============================================================ */
+const SCENT_PRICE = 199;
+const SCENTS_DATA = [
+  ["holyland","הולילנד"],
+  ["miami","מיאמי"],
+  ["spring","ספרינג"],
+  ["newyork","ניו יורק"],
+  ["paris","פריז"],
+  ["lacoste","לקוסט"],
+  ["tea-time","תה טיים"],
+  ["royal-beach","רויאל ביץ"],
+  ["olympia","אולימפיה"],
+  ["delta","דלתא"],
+  ["boutique-hotel","מלון בוטיק"],
+  ["nautica-home","נאוטיקה הום"],
+  ["jasmine","יסמין"]
+].map(function(s){
+  return {
+    id:"scent-" + s[0], name:s[1], price:SCENT_PRICE, category:"perfume", scent:true,
+    img:"/images/products/scent-bottle.jpg", kicker:"Scent Collection",
+    features:["בקבוק חצי ליטר"],
+    customDesc:"ניחוח " + s[1] + " בבקבוק של חצי ליטר.\nמחיר לבקבוק: " + SCENT_PRICE + " ₪."
+  };
+});
+PRODUCTS.push(...SCENTS_DATA);
+
 
 /* Applies admin-panel product overrides (price/name), fetched live from the
    server via GET /api/products (see api/products.js) - NOT from localStorage.
@@ -5927,12 +6042,37 @@ function applyPromoBanner(content){
   }
 }
 
+function renderScents(){
+  const wrap = document.getElementById("scent-showcase");
+  if(!wrap) return;
+  const list = PRODUCTS.filter(p => p.scent && !p.hidden);
+  wrap.innerHTML = list.map(p=>`
+    <article class="pf-row sc-row" data-id="${p.id}">
+      <a class="pf-media" href="${productPath(p.id)}" aria-label="לעמוד המוצר: ${p.name}">
+        ${p.outOfStock ? `<span class="pf-badge out">אזל מהמלאי</span>` : ""}
+        <img src="${p.img}" alt="${p.name} - בקבוק ניחוח חצי ליטר, רפאוז סטייל" loading="lazy" decoding="async">
+      </a>
+      <div class="pf-info">
+        <h3 class="serif">${p.name}</h3>
+        <div class="sc-size">בקבוק חצי ליטר</div>
+        <div class="pf-price">${priceHTML(p)}</div>
+        <div class="pf-buy">
+          <div class="pf-qty" role="group" aria-label="כמות">
+            <button type="button" data-act="minus" aria-label="הפחתת כמות">−</button>
+            <span class="pf-qty-val" aria-live="polite">1</span>
+            <button type="button" data-act="plus" aria-label="הוספת כמות">+</button>
+          </div>
+          <button type="button" class="btn pf-add" data-act="add" ${p.outOfStock ? "disabled" : ""}>${p.outOfStock ? "אזל מהמלאי" : "הוספה לעגלה"}</button>
+        </div>
+      </div>
+    </article>`).join("");
+}
 function renderPerfume(){
   const wrap = document.getElementById("perfume-showcase");
   if(!wrap) return;
-  const list = PRODUCTS.filter(p => p.category === "perfume" && !p.hidden);
+  const list = PRODUCTS.filter(p => p.category === "perfume" && !p.scent && !p.hidden);
   wrap.innerHTML = list.map((p, i)=>`
-    <article class="pf-row ${i % 2 === 1 ? "reverse" : ""}" data-id="${p.id}">
+    <article class="pf-row" data-id="${p.id}">
       <a class="pf-media" href="${productPath(p.id)}" aria-label="לעמוד המוצר: ${p.name}">
         ${p.outOfStock ? `<span class="pf-badge out">אזל מהמלאי</span>` : (p.tag ? `<span class="pf-badge">${p.tag}</span>` : "")}
         <img src="${p.img}" alt="${p.name} - רפאוז סטייל" loading="${i === 0 ? "eager" : "lazy"}" decoding="async">
@@ -5941,10 +6081,11 @@ function renderPerfume(){
         <div class="pf-kicker">${p.kicker || ""}</div>
         <h2 class="serif">${p.name}</h2>
         <div class="pf-price">${priceHTML(p)}</div>
-        <p class="pf-desc">${getDesc(p).split("\n").join("<br><br>")}</p>
+        <p class="pf-desc">${getDesc(p).split("\n")[0]}</p>
         <ul class="pf-features">
-          ${(p.features || []).map(f=>`<li><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l5 5L20 6"/></svg>${f}</li>`).join("")}
+          ${(p.features || []).slice(0,3).map(f=>`<li><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l5 5L20 6"/></svg>${f}</li>`).join("")}
         </ul>
+        ${colorOptions(p) ? `<div class="pf-colors" role="radiogroup" aria-label="בחירת צבע">${colorOptions(p).map((c,ci)=>`<button type="button" class="pf-color${ci===0?" active":""}" data-act="color" data-color="${c.id}" role="radio" aria-checked="${ci===0}" aria-label="${c.label}" title="${c.label}"><span style="background:${c.swatch}"></span></button>`).join("")}</div>` : ""}
         <div class="pf-buy">
           <div class="pf-qty" role="group" aria-label="כמות">
             <button type="button" data-act="minus" aria-label="הפחתת כמות">−</button>
@@ -5958,9 +6099,7 @@ function renderPerfume(){
     </article>`).join("");
 }
 (function initPerfumeEvents(){
-  const wrap = document.getElementById("perfume-showcase");
-  if(!wrap) return;
-  wrap.addEventListener("click", (e)=>{
+  const pfClick = (e)=>{
     const btn = e.target.closest("button[data-act]");
     if(!btn) return;
     const row = btn.closest(".pf-row");
@@ -5968,18 +6107,30 @@ function renderPerfume(){
     const valEl = row.querySelector(".pf-qty-val");
     let qty = parseInt(valEl.textContent, 10) || 1;
     const act = btn.dataset.act;
+    if(act === "color"){
+      const prod = PRODUCTS.find(x => x.id === row.dataset.id);
+      row.querySelectorAll(".pf-color").forEach(b=>{ const on = b === btn; b.classList.toggle("active", on); b.setAttribute("aria-checked", on); });
+      const im = row.querySelector(".pf-media img");
+      if(im && prod) im.src = productImage(prod, btn.dataset.color);
+      return;
+    }
     if(act === "minus"){ qty = Math.max(1, qty - 1); valEl.textContent = qty; return; }
     if(act === "plus"){ qty = Math.min(20, qty + 1); valEl.textContent = qty; return; }
     if(act === "add"){
       const p = PRODUCTS.find(x => x.id === row.dataset.id);
       if(!p || p.outOfStock) return;
-      addToCart(p.id, qty, null, "pair");
+      const selColor = row.querySelector(".pf-color.active");
+      addToCart(p.id, qty, null, "pair", selColor ? selColor.dataset.color : null);
       const original = "הוספה לעגלה";
       btn.textContent = "נוסף לעגלה ✓";
       setTimeout(()=>{ btn.textContent = original; }, 1800);
       valEl.textContent = 1;
       openCart();
     }
+  };
+  ["perfume-showcase", "scent-showcase"].forEach(function(id){
+    const w = document.getElementById(id);
+    if(w) w.addEventListener("click", pfClick);
   });
 })();
 
@@ -6266,7 +6417,10 @@ function renderProductDetail(){
       pdCatalogBtn.textContent = "קטלוג";
     }
   }
-  document.getElementById("pd-image").src = p.img;
+  currentColor = colorOptions(p) ? colorOptions(p)[0].id : null;
+  document.getElementById("pd-image").classList.remove("swapping");
+  document.getElementById("pd-image").src = productImage(p, currentColor);
+  renderPdColors(p);
   document.getElementById("pd-image").alt = p.name;
   document.getElementById("pd-plaque-name").textContent = displayName(p);
   document.getElementById("pd-name").textContent = displayName(p);
@@ -6543,6 +6697,45 @@ function renderIncludesList(size){
   `).join("");
 }
 
+function renderPdColors(p){
+  const box = document.getElementById("pd-color-select");
+  const wrap = document.getElementById("pd-color-options");
+  if(!box || !wrap) return;
+  const cs = colorOptions(p);
+  if(!cs){ box.style.display = "none"; wrap.innerHTML = ""; return; }
+  box.style.display = "block";
+  wrap.innerHTML = cs.map(c => `
+    <button type="button" class="pd-color-option${c.id === currentColor ? " active" : ""}" data-color="${c.id}" role="radio" aria-checked="${c.id === currentColor}">
+      <span class="sw" style="background:${c.swatch}"></span><span>${c.label}</span>
+    </button>`).join("");
+  const nameEl = document.getElementById("pd-color-name");
+  if(nameEl){ const cur = colorById(p, currentColor); nameEl.textContent = cur ? cur.label : ""; }
+}
+function selectPdColor(id){
+  const p = PRODUCTS.find(x=>x.id===currentProductId);
+  if(!p || !colorOptions(p)) return;
+  currentColor = colorById(p, id).id;
+  renderPdColors(p);
+  const img = document.getElementById("pd-image");
+  const next = productImage(p, currentColor);
+  if(img && img.getAttribute("src") !== next){
+    img.classList.add("swapping");
+    const pre = new Image();
+    let done = false;
+    const apply = ()=>{ if(done) return; done = true; img.src = next; img.classList.remove("swapping"); };
+    pre.onload = apply; pre.onerror = apply;
+    setTimeout(apply, 700); /* never leave the photo hidden if the preload event doesn't fire */
+    pre.src = next;
+  }
+}
+(function bindPdColors(){
+  const wrap = document.getElementById("pd-color-options");
+  if(!wrap) return;
+  wrap.addEventListener("click", (e)=>{
+    const btn = e.target.closest("button[data-color]");
+    if(btn) selectPdColor(btn.dataset.color);
+  });
+})();
 function selectPdSize(size){
   const p = PRODUCTS.find(x=>x.id===currentProductId);
   if(!p || !isBedding(p)) return;
@@ -6562,7 +6755,7 @@ document.getElementById("add-to-cart-btn").addEventListener("click", ()=>{
   const embroideryInput = document.getElementById("pd-embroidery-input");
   const embroidery = embroideryInput && embroideryInput.value.trim() ? embroideryInput.value.trim() : null;
   const size = isBedding(p) ? currentSize : "pair";
-  addToCart(currentProductId, currentQty, embroidery, size);
+  addToCart(currentProductId, currentQty, embroidery, size, currentColor);
   const msg = document.getElementById("added-msg");
   msg.classList.add("show");
   setTimeout(()=> msg.classList.remove("show"), 2600);
@@ -6718,19 +6911,21 @@ const EMBROIDERY_SURCHARGE = 200;
    embroidery, so the product id alone is no longer enough to tell rows
    apart for quantity +/- and remove. */
 function cartLineKey(c){
-  return [c.id, c.size || "pair", c.embroidery || ""].join("|");
+  return [c.id, c.size || "pair", c.embroidery || "", cartColorId(c)].join("|");
 }
 function cartItemUnitPrice(c, p){
   if(!p) return 0;
   const variant = productForSize(p, c.size);
   return variant.price + (p.customizable && c.embroidery && !p.embroideryFree ? EMBROIDERY_SURCHARGE : 0);
 }
-function addToCart(id, qty, embroidery, size){
+function addToCart(id, qty, embroidery, size, color){
   embroidery = embroidery || null;
   size = size || "pair";
-  const existing = cart.find(c => c.id === id && (c.embroidery || null) === embroidery && (c.size || "pair") === size);
+  const prod = PRODUCTS.find(x => x.id === id);
+  color = colorOptions(prod) ? colorById(prod, color).id : null;
+  const existing = cart.find(c => c.id === id && (c.embroidery || null) === embroidery && (c.size || "pair") === size && (cartColorId(c) || null) === color);
   if(existing){ existing.qty += qty; }
-  else { cart.push({id, qty, embroidery, size}); }
+  else { cart.push({id, qty, embroidery, size, color}); }
   updateCartUI();
 }
 function changeQty(lineKey, delta){
@@ -6786,10 +6981,10 @@ function updateCartUI(){
       const lineKey = cartLineKey(c);
       return `
       <div class="cart-item" data-line-key="${escapeHTML(lineKey)}">
-        <img src="${p.img}" alt="${p.name}" loading="lazy" decoding="async">
+        <img src="${productImage(p, c.color)}" alt="${p.name}" loading="lazy" decoding="async">
         <div class="ci-info">
         <div class="ci-name serif">${displayName(p)}</div>
-          <div class="ci-spec">${specLabel(p, c.size)}${c.embroidery ? ` · רקמת ראשי תיבות: ${escapeHTML(c.embroidery)}${p.embroideryFree ? "" : ` (+${EMBROIDERY_SURCHARGE.toLocaleString('he-IL')} ₪)`}` : ""}</div>
+          <div class="ci-spec">${specLabel(p, c.size)}${cartColorLabel(c) ? ` · צבע: ${cartColorLabel(c)}` : ""}${c.embroidery ? ` · רקמת ראשי תיבות: ${escapeHTML(c.embroidery)}${p.embroideryFree ? "" : ` (+${EMBROIDERY_SURCHARGE.toLocaleString('he-IL')} ₪)`}` : ""}</div>
           <div class="ci-bottom">
             <span class="ci-priceline">${cartItemUnitPrice(c,p).toLocaleString('he-IL')} ₪ X <span class="ci-price">${(cartItemUnitPrice(c,p)*c.qty).toLocaleString('he-IL')} ₪</span></span>
             <div class="ci-qty">
@@ -6900,7 +7095,7 @@ function renderCheckoutSummary(){
   itemsWrap.innerHTML = cart.map(c=>{
     const p = PRODUCTS.find(x=>x.id===c.id);
     if(!p) return "";
-    return `<div class="ci-row"><span>${displayName(p)}${c.size === "single" ? ` (סט יחיד)` : ""} × ${c.qty}${c.embroidery ? ` (רקמה: ${escapeHTML(c.embroidery)})` : ""}</span><span>${(cartItemUnitPrice(c,p)*c.qty).toLocaleString('he-IL')} ₪</span></div>`;
+    return `<div class="ci-row"><span>${displayName(p)}${c.size === "single" ? ` (סט יחיד)` : ""}${cartColorLabel(c) ? ` (צבע: ${cartColorLabel(c)})` : ""} × ${c.qty}${c.embroidery ? ` (רקמה: ${escapeHTML(c.embroidery)})` : ""}</span><span>${(cartItemUnitPrice(c,p)*c.qty).toLocaleString('he-IL')} ₪</span></div>`;
   }).join("");
   const subtotal = cartTotal();
   const shipping = checkoutShippingPrice();
@@ -7237,7 +7432,7 @@ async function saveOrder(paymentConfirmationCode){
         sentence. `name` is kept too, purely as the human-readable label. */
   const items = cart.map(c=>{
     const p = PRODUCTS.find(x=>x.id===c.id);
-    return p ? { id:p.id, name:displayName(p) + (c.size === "single" ? ` (סט יחיד)` : "") + (c.embroidery ? ` (רקמת ראשי תיבות: ${escapeHTML(c.embroidery)})` : ""), qty:c.qty, price:cartItemUnitPrice(c, p), size:c.size || null, embroidery:c.embroidery || null } : null;
+    return p ? { id:p.id, name:displayName(p) + (c.size === "single" ? ` (סט יחיד)` : "") + (cartColorLabel(c) ? ` (צבע: ${cartColorLabel(c)})` : "") + (c.embroidery ? ` (רקמת ראשי תיבות: ${escapeHTML(c.embroidery)})` : ""), qty:c.qty, price:cartItemUnitPrice(c, p), size:c.size || null, embroidery:c.embroidery || null, color:cartColorLabel(c) || null } : null;
   }).filter(Boolean);
   /* Reuse the server-verified numbers from openPaymentModal() rather than
      recomputing from cartTotal() again - that keeps the saved order in
@@ -7581,7 +7776,7 @@ async function openPaymentModal(){
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        items: cart.map(c=>({ id:c.id, qty:c.qty, size:c.size, embroidery:c.embroidery })),
+        items: cart.map(c=>({ id:c.id, qty:c.qty, size:c.size, embroidery:c.embroidery, color:cartColorLabel(c) || undefined })),
         couponCode: appliedCoupon ? appliedCoupon.code : undefined,
         shippingMethod
       })
