@@ -3135,11 +3135,11 @@ if("serviceWorker" in navigator){
 </style>
 <style>
   /* ===== HOME TILES (replaces hero + collections on the home page) ===== */
-  .home-tiles{padding:28px 32px 44px;max-width:1240px;margin:0 auto;}
+  .home-tiles{padding:28px 26px 44px;max-width:1360px;margin:0 auto;}
   .home-tiles-grid{
     display:grid;direction:rtl;
     grid-template-columns:1.3fr 1fr 1fr;
-    grid-template-rows:repeat(2,clamp(190px,20vw,300px));
+    grid-template-rows:repeat(2,clamp(190px,20.5vw,320px));
     gap:22px;
   }
   .home-tile{
@@ -3176,6 +3176,8 @@ if("serviceWorker" in navigator){
   .tile-sale{grid-column:2;grid-row:2;}
   .tile-perfume{grid-column:3;grid-row:2;}
   .tile-perfume img{object-position:center 40%;}
+  .tile-towels img{object-position:center 62%;}
+  .tile-bedding img{object-position:42% center;}
   @media (max-width:760px){
     .home-tiles{padding:16px 16px 28px;}
     .home-tiles-grid{grid-template-columns:1fr;grid-template-rows:none;grid-auto-rows:clamp(190px,54vw,290px);gap:14px;}
@@ -3194,6 +3196,47 @@ if("serviceWorker" in navigator){
   .perfume-copy h2{font-family:'Rubik','Almoni Neue',sans-serif;font-size:clamp(24px,3vw,34px);margin:0 0 14px;color:var(--text-gold);}
   .perfume-copy p{font-size:16px;line-height:1.75;color:var(--taupe);margin:0 0 26px;}
   @media (max-width:760px){.perfume-showcase{grid-template-columns:1fr;gap:24px;}.perfume-copy{text-align:center;}}
+
+  /* ===== Perfume devices page ===== */
+  .pf-trust{display:flex;justify-content:center;gap:14px 40px;flex-wrap:wrap;margin:6px auto 64px;padding:0;list-style:none;font-size:14px;color:var(--text-gold);}
+  .pf-trust li{display:flex;align-items:center;gap:10px;}
+  .pf-trust .icon{width:20px;height:20px;flex:none;color:var(--gold-dark);}
+  .pf-row{display:grid;direction:rtl;grid-template-columns:1.05fr 1fr;gap:64px;align-items:center;max-width:1080px;margin:0 auto 96px;}
+  .pf-row.reverse .pf-media{order:2;}
+  .pf-media{position:relative;display:flex;align-items:center;justify-content:center;aspect-ratio:1/1;border-radius:32px;overflow:hidden;
+    background:radial-gradient(circle at 50% 40%, #FFFFFC 0%, #FFFBEA 55%, #F6EAC0 100%);border:1px solid var(--line);box-shadow:var(--shadow);}
+  .pf-media img{width:80%;height:80%;object-fit:contain;mix-blend-mode:multiply;transition:transform .9s cubic-bezier(.19,1,.22,1);}
+  .pf-media:hover img{transform:scale(1.045);}
+  .pf-badge{position:absolute;top:22px;right:22px;z-index:2;padding:7px 16px;font-size:12.5px;font-weight:600;color:#fff;border-radius:var(--radius);
+    background:linear-gradient(135deg,var(--gold-light),var(--gold) 50%,var(--gold-dark));box-shadow:var(--shadow-gold);}
+  .pf-badge.out{background:var(--ink);box-shadow:none;}
+  .pf-info{text-align:right;}
+  .pf-kicker{font-size:13px;letter-spacing:0.14em;color:var(--gold-dark);font-weight:500;margin-bottom:10px;direction:ltr;text-align:right;}
+  .pf-info h2{font-size:clamp(26px,2.9vw,35px);line-height:1.25;color:var(--text-gold);margin:0 0 14px;font-weight:500;}
+  .pf-price{font-family:'Rubik','Almoni Neue',sans-serif;font-size:28px;font-weight:600;color:var(--text-gold);margin:0 0 20px;}
+  .pf-desc{font-size:15.5px;line-height:1.85;color:var(--text-gold);font-weight:300;margin:0 0 22px;max-width:56ch;}
+  .pf-features{list-style:none;margin:0 0 30px;padding:20px 22px;display:flex;flex-direction:column;gap:11px;background:rgba(255,253,245,0.55);border:1px solid var(--line);border-radius:18px;}
+  .pf-features li{display:flex;align-items:flex-start;gap:11px;font-size:14.5px;color:var(--text-gold);line-height:1.5;}
+  .pf-features .icon{width:18px;height:18px;flex:none;margin-top:2px;color:var(--gold-dark);}
+  .pf-buy{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px;}
+  .pf-qty{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:var(--radius);background:rgba(255,253,245,0.7);}
+  .pf-qty button{width:44px;height:50px;background:none;border:none;font-size:20px;color:var(--text-gold);border-radius:var(--radius);}
+  .pf-qty button:hover{background:var(--gold-pale);}
+  .pf-qty-val{min-width:30px;text-align:center;font-weight:600;color:var(--text-gold);}
+  .pf-add{flex:1;justify-content:center;min-width:200px;padding:16px 28px;}
+  .pf-more{display:inline-block;font-size:14px;color:var(--gold-dark);text-decoration:underline;text-underline-offset:5px;}
+  .pf-more:hover{color:var(--ink);}
+  .pf-media:focus-visible,.pf-more:focus-visible,.pf-qty button:focus-visible,.pf-add:focus-visible{outline:2px solid var(--ink);outline-offset:3px;}
+  .pf-help{max-width:760px;margin:0 auto 40px;padding:44px 28px;text-align:center;border:1px solid var(--line);border-radius:28px;background:linear-gradient(160deg,#FBF4DC,#F1DFA0);}
+  .pf-help h3{font-size:clamp(22px,2.6vw,28px);color:var(--text-gold);margin:0 0 10px;font-weight:500;}
+  .pf-help p{margin:0 0 22px;color:var(--text-gold);font-size:15.5px;}
+  @media (max-width:860px){
+    .pf-row{grid-template-columns:1fr;gap:28px;margin-bottom:68px;}
+    .pf-row.reverse .pf-media{order:0;}
+    .pf-media{aspect-ratio:1/0.92;border-radius:26px;}
+    .pf-info{text-align:right;}
+    .pf-add{min-width:0;}
+  }
   .perfume-grid{display:grid;direction:rtl;grid-template-columns:repeat(3,1fr);gap:28px;align-items:stretch;margin:8px auto 56px;max-width:1100px;}
   .perfume-card{display:flex;flex-direction:column;background:#FFFFFD;border-radius:24px;overflow:hidden;box-shadow:var(--shadow);}
   .perfume-card .perfume-photo{box-shadow:none;border-radius:0;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;}
@@ -3372,21 +3415,21 @@ if("serviceWorker" in navigator){
   <section class="home-tiles" id="home-tiles" aria-label="קטגוריות ראשיות">
     <div class="home-tiles-grid">
       <a class="home-tile tile-bedding" data-nav="shop" href="/shop">
-        <img src="/images/site/hero-new/hero-bg-3.jpg" alt="מצעים - רפאוז סטייל" loading="eager" decoding="async">
+        <img src="/images/site/bedding-home.jpg" alt="מצעים - רפאוז סטייל" width="839" height="826" loading="eager" decoding="async">
         <span class="home-tile-text">
           <h2>מצעים</h2>
           <span class="home-tile-cta"><span class="arr" aria-hidden="true">←</span> לרכישה</span>
         </span>
       </a>
       <a class="home-tile tile-towels" data-nav="towels" href="/towels">
-        <img src="/images/products/towel-full-set.jpg" alt="מגבות - רפאוז סטייל" loading="eager" decoding="async">
+        <img src="/images/site/towels-home.jpg" alt="מגבות - רפאוז סטייל" width="777" height="857" loading="eager" decoding="async">
         <span class="home-tile-text">
           <h2>מגבות</h2>
           <span class="home-tile-cta"><span class="arr" aria-hidden="true">←</span> לרכישה</span>
         </span>
       </a>
       <a class="home-tile tile-sale" data-nav="sale" href="/sale">
-        <img src="/images/products/prachim.jpg" alt="מבצעים - רפאוז סטייל" loading="eager" decoding="async">
+        <img src="/images/products/okeanos.jpg" alt="מבצעים - רפאוז סטייל" loading="eager" decoding="async">
         <span class="home-tile-text">
           <h2>מבצעים</h2>
           <span class="home-tile-cta"><span class="arr" aria-hidden="true">←</span> לרכישה</span>
@@ -3674,33 +3717,18 @@ if("serviceWorker" in navigator){
     <div class="shop-header">
       <div class="eyebrow">רפאוז סטייל · ניחוח של מלון בוטיק</div>
       <h1>מכשירי בישום</h1>
-      <p>מכשירי בישום אלגנטיים בגימור לבן וזהב, שנותנים לבית ניחוח עדין ויוקרתי בכל חדר.</p>
+      <p>הניחוח הוא החלק שמשלים את חוויית המלון בבית. שלושה דגמים בעיצוב מוקפד, שמשתלבים בחדר השינה, בסלון ובכניסה לבית, ונשארים בעין כאביזר עיצוב.</p>
     </div>
-    <div class="perfume-grid">
-      <div class="perfume-card">
-        <div class="perfume-photo"><img src="/images/site/perfume-device.jpg" alt="מכשיר בישום לבן עם מסגרת זהב - רפאוז סטייל" width="749" height="764" loading="lazy" decoding="async"></div>
-        <div class="perfume-copy">
-          <h2>מכשיר בישום עם מסגרת זהב</h2>
-          <div class="perfume-price">470 ₪</div>
-          <button class="btn" data-nav="contact">להזמנה וליצירת קשר <span aria-hidden="true">←</span></button>
-        </div>
-      </div>
-      <div class="perfume-card">
-        <div class="perfume-photo"><img src="/images/site/perfume-device-2.jpg" alt="מכשיר בישום לבן - רפאוז סטייל" width="570" height="856" loading="lazy" decoding="async"></div>
-        <div class="perfume-copy">
-          <h2>מכשיר בישום לבן</h2>
-          <div class="perfume-price">370 ₪</div>
-          <button class="btn" data-nav="contact">להזמנה וליצירת קשר <span aria-hidden="true">←</span></button>
-        </div>
-      </div>
-      <div class="perfume-card">
-        <div class="perfume-photo"><img src="/images/site/perfume-device-3.jpg" alt="מכשיר בישום אפור - רפאוז סטייל" width="717" height="844" loading="lazy" decoding="async"></div>
-        <div class="perfume-copy">
-          <h2>מכשיר בישום אפור</h2>
-          <div class="perfume-price">570 ₪</div>
-          <button class="btn" data-nav="contact">להזמנה וליצירת קשר <span aria-hidden="true">←</span></button>
-        </div>
-      </div>
+    <ul class="pf-trust">
+      <li><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="8" width="13" height="9"/><path d="M15 11h4l3 3v3h-7z"/><circle cx="7" cy="19" r="1.6"/><circle cx="18" cy="19" r="1.6"/></svg>משלוח מהיר לכל הארץ</li>
+      <li><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="13"/><path d="M12 8v13M3 12h18M12 8c-2-4-6-4-6-1.5S10 8 12 8zm0 0c2-4 6-4 6-1.5S14 8 12 8z"/></svg>ארוז באריזת מתנה</li>
+      <li><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>ליווי בבחירת הדגם בוואטסאפ ובטלפון</li>
+    </ul>
+    <div id="perfume-showcase"></div>
+    <div class="pf-help">
+      <h3 class="serif">לא בטוחים איזה דגם מתאים לחלל שלכם?</h3>
+      <p>נשמח לעזור לבחור לפי גודל החדר והסגנון, ולהתאים את הדגם לשאר הבית.</p>
+      <button class="btn outline" data-nav="contact">דברו איתנו</button>
     </div>
   </div>
 </div>
@@ -4791,6 +4819,9 @@ const PRODUCTS = [
 const DESC_TOWEL = `מגבות כותנה איכותיות ורכות במיוחד, בגימור פוך עבה הסופג לחות במהירות ומתייבש בקלות.
 מיוצרות מכותנה מובחרת בצפיפות גבוהה, לתחושה מפנקת של ספא בכל שימוש.
 עמידות לכביסות חוזרות תוך שמירה על רכות ואיכות הבד לאורך זמן.`;
+/* A product is "bedding" unless it belongs to one of the accessory categories
+   (towels, perfume devices) - those have no size/pair choice, thread count, etc. */
+function isBedding(p){ return p.category !== "towel" && p.category !== "perfume"; }
 function getDesc(p){
   if(p.customDesc) return p.customDesc;
   if(p.category === "towel") return DESC_TOWEL;
@@ -4800,7 +4831,7 @@ function getDesc(p){
   return DESC_2;
 }
 function displayName(p){
-  return p.category === "towel" ? p.name : `דגם ${p.name}`;
+  return !isBedding(p) ? p.name : `דגם ${p.name}`;
 }
 /* Whether a product currently has an active sale - compareAtPrice set by
    the admin via the "מבצע" field, and higher than the current price. Used
@@ -4829,16 +4860,19 @@ function priceHTML(p){
    and any other non-bedding category are unaffected regardless of size,
    since the size choice only applies to bedding. */
 function productForSize(p, size){
-  if(p.category === "towel" || size !== "single") return p;
+  if(!isBedding(p) || size !== "single") return p;
   return Object.assign({}, p, {
     price: Math.round(p.price / 2),
     compareAtPrice: p.compareAtPrice ? Math.round(p.compareAtPrice / 2) : null
   });
 }
 function groupOf(p){
-  return p.category === "towel" ? "towel" : ("bedding-"+p.bedType);
+  return p.category === "towel" ? "towel" : (p.category === "perfume" ? "perfume" : ("bedding-"+p.bedType));
 }
 function specLabel(p, size){
+  if(p.category === "perfume"){
+    return (p.features && p.features.length ? p.features.slice(0,2).join(" · ") : "מכשיר בישום");
+  }
   if(p.category === "towel"){
     return `${p.cotton}% כותנה · ${p.weight} גרם למ"ר`;
   }
@@ -5049,6 +5083,7 @@ function renderViewNow(name, updateHistory, productId){
     renderTowels();
   } else if(name === "perfume"){
     document.getElementById("view-perfume").classList.add("active");
+    renderPerfume();
   } else if(name === "about"){
     document.getElementById("view-about").classList.add("active");
   } else if(name === "contact"){
@@ -5483,7 +5518,7 @@ function productCardHTML(p){
       <div class="imgwrap"><img src="${p.img}" alt="${p.name}" loading="lazy" decoding="async"></div>
     </div>
     <div class="card-body">
-      ${p.category !== "towel" && p.bedType === "twin" ? `<div class="cspec">2 סט מצעים יחיד 90/200</div>` : ""}
+      ${isBedding(p) && p.bedType === "twin" ? `<div class="cspec">2 סט מצעים יחיד 90/200</div>` : ""}
       <div class="cname serif">${displayName(p)}</div>
       <div class="cprice">${priceHTML(p)}</div>
       <span class="clink">${p.outOfStock ? "אזל מהמלאי" : "לצפייה במוצר"}</span>
@@ -5565,6 +5600,39 @@ const TOWELS_DATA = [
   }
 ];
 PRODUCTS.push(...TOWELS_DATA);
+
+/* ============================================================
+   PERFUME DEVICES (category "perfume") - sold through the regular cart.
+   IMPORTANT: keep ids/prices in sync with BASE_CATALOG in
+   api/_lib/pricing.js (server-side price check) and CATALOG in admin.html.
+   `features` is shown as the checklist on /perfume and as the spec chips on
+   the product page - edit/add lines here (e.g. coverage area, oil capacity)
+   once the exact supplier specs are confirmed.
+   ============================================================ */
+const PERFUME_DATA = [
+  {
+    id:"perfume-gold", name:"מכשיר בישום גולד", price:470, category:"perfume",
+    img:"/images/site/perfume-device.jpg", tag:"הדגם הנבחר",
+    kicker:"White & Gold Edition",
+    features:["גוף לבן מבריק עם מסגרת מתכתית בגוון זהב","כפתור הפעלה בחלקו העליון","קו נקי שמשתלב בסלון, בחדר שינה ובלובי","מתאים גם כמתנה מעוצבת לבית"],
+    customDesc:"מכשיר בישום שמעוצב כמו פריט דקורטיבי: גוף לבן מבריק, ומסגרת מתכתית בגוון זהב שנותנת לו נוכחות של אביזר עיצוב ולא של מכשיר טכני.\nכפתור ההפעלה בחלק העליון מאפשר שליטה פשוטה בלחיצה אחת, והקו הנקי משתלב בכל חלל - מהכניסה לבית ועד חדר השינה.\nבחירה טבעית למי שרוצה ניחוח של מלון בוטיק בבית, בעיצוב שמתאים לעולם המצעים והמגבות של רפאוז סטייל."
+  },
+  {
+    id:"perfume-white", name:"מכשיר בישום לבן קלאסי", price:370, category:"perfume",
+    img:"/images/site/perfume-device-2.jpg", tag:"הדגם הדיסקרטי",
+    kicker:"Classic White",
+    features:["גוף לבן חלק בפינות מעוגלות","פרופיל דק שמתאים לקיר או למדף","מראה מינימליסטי שלא מושך תשומת לב","הדגם המשתלם בסדרה"],
+    customDesc:"המכשיר הלבן הקלאסי בנוי סביב עיקרון אחד: להיעלם בעיצוב ולהשאיר את הניחוח. גוף לבן חלק, פינות מעוגלות ופרופיל דק שמתאים לקיר, למדף או לפינה שקטה בחדר.\nקו מינימליסטי שמתחבר לכל סגנון עיצוב, בלי פרטים שמושכים את העין.\nהדגם המשתלם בסדרה, ונקודת פתיחה מצוינת למי שמתחיל להכניס בישום לבית."
+  },
+  {
+    id:"perfume-graphite", name:"מכשיר בישום גרפיט חכם", price:570, category:"perfume",
+    img:"/images/site/perfume-device-3.jpg", tag:"בקרה דרך אפליקציה",
+    kicker:"Graphite Smart Series",
+    features:["גימור גרפיט מתכתי עם פאנל קדמי שחור","חיבור לאפליקציה באמצעות סריקת קוד QR שעל המכשיר","עיצוב עכשווי שמתאים לחללים מודרניים ומוקפדים","הדגם המתקדם בסדרה"],
+    customDesc:"הדגם המתקדם בסדרה, בגימור גרפיט מתכתי עם פאנל קדמי שחור מבריק. על הפאנל מוצג קוד QR לחיבור המכשיר לאפליקציה, כך שהשליטה בבישום נעשית מהטלפון.\nהעיצוב הכהה והמוקפד מתאים לחללים מודרניים - סלון, משרד או מבואת כניסה - ומשלים את הלוק של הבית בלי לבלוט על רקע הריהוט.\nהבחירה לכל מי שרוצה שליטה נוחה בעוצמת הניחוח בצד עיצוב שקט ויוקרתי."
+  }
+];
+PRODUCTS.push(...PERFUME_DATA);
 
 /* Applies admin-panel product overrides (price/name), fetched live from the
    server via GET /api/products (see api/products.js) - NOT from localStorage.
@@ -5859,6 +5927,62 @@ function applyPromoBanner(content){
   }
 }
 
+function renderPerfume(){
+  const wrap = document.getElementById("perfume-showcase");
+  if(!wrap) return;
+  const list = PRODUCTS.filter(p => p.category === "perfume" && !p.hidden);
+  wrap.innerHTML = list.map((p, i)=>`
+    <article class="pf-row ${i % 2 === 1 ? "reverse" : ""}" data-id="${p.id}">
+      <a class="pf-media" href="${productPath(p.id)}" aria-label="לעמוד המוצר: ${p.name}">
+        ${p.outOfStock ? `<span class="pf-badge out">אזל מהמלאי</span>` : (p.tag ? `<span class="pf-badge">${p.tag}</span>` : "")}
+        <img src="${p.img}" alt="${p.name} - רפאוז סטייל" loading="${i === 0 ? "eager" : "lazy"}" decoding="async">
+      </a>
+      <div class="pf-info">
+        <div class="pf-kicker">${p.kicker || ""}</div>
+        <h2 class="serif">${p.name}</h2>
+        <div class="pf-price">${priceHTML(p)}</div>
+        <p class="pf-desc">${getDesc(p).split("\n").join("<br><br>")}</p>
+        <ul class="pf-features">
+          ${(p.features || []).map(f=>`<li><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l5 5L20 6"/></svg>${f}</li>`).join("")}
+        </ul>
+        <div class="pf-buy">
+          <div class="pf-qty" role="group" aria-label="כמות">
+            <button type="button" data-act="minus" aria-label="הפחתת כמות">−</button>
+            <span class="pf-qty-val" aria-live="polite">1</span>
+            <button type="button" data-act="plus" aria-label="הוספת כמות">+</button>
+          </div>
+          <button type="button" class="btn pf-add" data-act="add" ${p.outOfStock ? "disabled" : ""}>${p.outOfStock ? "אזל מהמלאי" : "הוספה לעגלה"}</button>
+        </div>
+        <a class="pf-more" href="${productPath(p.id)}">לפרטים נוספים על הדגם</a>
+      </div>
+    </article>`).join("");
+}
+(function initPerfumeEvents(){
+  const wrap = document.getElementById("perfume-showcase");
+  if(!wrap) return;
+  wrap.addEventListener("click", (e)=>{
+    const btn = e.target.closest("button[data-act]");
+    if(!btn) return;
+    const row = btn.closest(".pf-row");
+    if(!row) return;
+    const valEl = row.querySelector(".pf-qty-val");
+    let qty = parseInt(valEl.textContent, 10) || 1;
+    const act = btn.dataset.act;
+    if(act === "minus"){ qty = Math.max(1, qty - 1); valEl.textContent = qty; return; }
+    if(act === "plus"){ qty = Math.min(20, qty + 1); valEl.textContent = qty; return; }
+    if(act === "add"){
+      const p = PRODUCTS.find(x => x.id === row.dataset.id);
+      if(!p || p.outOfStock) return;
+      addToCart(p.id, qty, null, "pair");
+      const original = "הוספה לעגלה";
+      btn.textContent = "נוסף לעגלה ✓";
+      setTimeout(()=>{ btn.textContent = original; }, 1800);
+      valEl.textContent = 1;
+      openCart();
+    }
+  });
+})();
+
 function renderTowels(){
   const grid = document.getElementById("towel-grid");
   if(!grid) return;
@@ -5926,7 +6050,7 @@ function renderCircleStrip(){
 
   /* Only bedding models (PRODUCTS) — towels live in a separate TOWELS_DATA
      list and are explicitly excluded here so the strip never shows them. */
-  const bedding = PRODUCTS.filter(p => p.category !== "towel");
+  const bedding = PRODUCTS.filter(isBedding);
   const setCount = bedding.length;
 
   const items = bedding.map(p=>`
@@ -6016,7 +6140,7 @@ const CATEGORY_ORDER = [
 const COLLECTION_INDEX = Object.fromEntries(CATEGORY_ORDER.map((c,i)=>[c.key,i]));
 
 function filteredProducts(){
-  let list = PRODUCTS.filter(p => p.category !== "towel");
+  let list = PRODUCTS.filter(isBedding);
   if(activeSizeFilter !== "all"){
     list = list.filter(p => p.bedType === activeSizeFilter);
   }
@@ -6034,7 +6158,7 @@ function filteredProducts(){
 function renderShop(){
   const wrap = document.getElementById("grouped-shop");
   const list = filteredProducts();
-  const beddingTotal = PRODUCTS.filter(p => p.category !== "towel").length;
+  const beddingTotal = PRODUCTS.filter(isBedding).length;
   document.getElementById("result-count").textContent = `מציג ${list.length} מתוך ${beddingTotal} מוצרים`;
   if(list.length === 0){
     wrap.innerHTML = `<div class="empty-state">
@@ -6134,6 +6258,9 @@ function renderProductDetail(){
     if(p.category === "towel"){
       pdCatalogBtn.dataset.nav = "towels";
       pdCatalogBtn.textContent = "קטלוג מגבות";
+    } else if(p.category === "perfume"){
+      pdCatalogBtn.dataset.nav = "perfume";
+      pdCatalogBtn.textContent = "מכשירי בישום";
     } else {
       pdCatalogBtn.dataset.nav = "shop";
       pdCatalogBtn.textContent = "קטלוג";
@@ -6145,7 +6272,7 @@ function renderProductDetail(){
   document.getElementById("pd-name").textContent = displayName(p);
   currentSize = "pair";
   const sizeSelectBox = document.getElementById("pd-size-select");
-  if(p.category !== "towel"){
+  if(isBedding(p)){
     sizeSelectBox.style.display = "block";
     document.getElementById("pd-size-pair-price").textContent = `${p.price.toLocaleString('he-IL')} ₪`;
     document.getElementById("pd-size-single-price").textContent = `${Math.round(p.price/2).toLocaleString('he-IL')} ₪`;
@@ -6160,7 +6287,11 @@ function renderProductDetail(){
     addBtn.disabled = !!p.outOfStock;
     addBtn.textContent = p.outOfStock ? "אזל מהמלאי" : "הוספה לעגלה";
   }
-  if(p.category === "towel"){
+  const careBand = document.querySelector("#view-product .pd-care-band");
+  if(careBand) careBand.style.display = isBedding(p) || p.category === "towel" ? "" : "none";
+  if(p.category === "perfume"){
+    document.getElementById("pd-specs").innerHTML = (p.features || []).slice(0,4).map(f=>`<span>${f}</span>`).join("");
+  } else if(p.category === "towel"){
     document.getElementById("pd-specs").innerHTML = `
       <span>${p.cotton}% כותנה</span>
       <span>${p.weight} גרם למ"ר</span>
@@ -6191,7 +6322,7 @@ function renderProductDetail(){
 
   const includesBox = document.getElementById("pd-includes");
   const includesList = document.getElementById("pd-includes-list");
-  if(p.category !== "towel"){
+  if(isBedding(p)){
     includesBox.style.display = "block";
     renderIncludesList(currentSize);
   } else {
@@ -6203,7 +6334,7 @@ function renderProductDetail(){
 
   // related products: same group (bedding of same bed type, or towels), excluding current
   const related = PRODUCTS.filter(x => x.id !== p.id && groupOf(x) === groupOf(p)).slice(0,3);
-  const sameTopCategory = x => (x.category === "towel") === (p.category === "towel");
+  const sameTopCategory = x => (isBedding(x) === isBedding(p)) && (isBedding(p) || x.category === p.category);
   const relatedFill = related.length < 3
     ? related.concat(PRODUCTS.filter(x=>x.id!==p.id && !related.includes(x) && sameTopCategory(x)).slice(0, 3-related.length))
     : related;
@@ -6414,7 +6545,7 @@ function renderIncludesList(size){
 
 function selectPdSize(size){
   const p = PRODUCTS.find(x=>x.id===currentProductId);
-  if(!p || p.category === "towel") return;
+  if(!p || !isBedding(p)) return;
   currentSize = size;
   document.getElementById("pd-size-pair").classList.toggle("active", size === "pair");
   document.getElementById("pd-size-single").classList.toggle("active", size === "single");
@@ -6430,7 +6561,7 @@ document.getElementById("add-to-cart-btn").addEventListener("click", ()=>{
   if(!p || p.outOfStock) return;
   const embroideryInput = document.getElementById("pd-embroidery-input");
   const embroidery = embroideryInput && embroideryInput.value.trim() ? embroideryInput.value.trim() : null;
-  const size = (p.category !== "towel") ? currentSize : "pair";
+  const size = isBedding(p) ? currentSize : "pair";
   addToCart(currentProductId, currentQty, embroidery, size);
   const msg = document.getElementById("added-msg");
   msg.classList.add("show");
