@@ -2157,6 +2157,10 @@ if("serviceWorker" in navigator){
   .pd-info .eyebrow{margin-bottom:20px;}
   .pd-info h1{font-size:clamp(28px,4vw,40px);margin-bottom:16px;}
   .pd-price{font-size:26px;color:var(--gold-dark);font-weight:700;margin-bottom:22px;}
+  .pd-sku{display:flex;align-items:center;gap:11px;margin:-6px 0 18px;font-size:12px;color:var(--taupe-light);}
+  .pd-sku:empty{display:none;}
+  .pd-sku .k{font-weight:300;letter-spacing:0.06em;}
+  .pd-sku .v{direction:ltr;unicode-bidi:isolate;font-family:'Montserrat','Jost',sans-serif;font-weight:400;font-size:11.5px;letter-spacing:0.2em;color:var(--gold-dark);opacity:0.85;padding-inline-start:11px;border-inline-start:1px solid var(--line);}
   .pd-size-select{margin:0 0 22px;}
   .pd-size-select .pss-label{font-size:12px;color:var(--taupe);letter-spacing:.04em;margin-bottom:10px;text-transform:uppercase;}
   .pd-size-options{display:flex;gap:12px;flex-wrap:wrap;}
@@ -3234,7 +3238,7 @@ if("serviceWorker" in navigator){
   .pf-badge.out{background:var(--ink);box-shadow:none;}
   .pf-info{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;padding:28px 26px 30px;}
   .pf-kicker{font-size:12.5px;letter-spacing:0.14em;color:var(--gold-dark);font-weight:500;margin-bottom:8px;direction:ltr;}
-  .pf-info h2{font-size:clamp(21px,1.9vw,25px);line-height:1.3;color:var(--text-gold);margin:0 0 10px;font-weight:500;min-height:2.6em;display:flex;align-items:center;justify-content:center;}
+  .pf-info h2{font-size:clamp(21px,1.9vw,25px);line-height:1.3;color:var(--text-gold);margin:0 0 10px;font-weight:300;min-height:2.6em;display:flex;align-items:center;justify-content:center;}
   .pf-price{font-family:'Rubik','Almoni Neue',sans-serif;font-size:26px;font-weight:600;color:var(--text-gold);margin:0 0 16px;}
   .pf-desc{font-size:14.5px;line-height:1.8;color:var(--text-gold);font-weight:300;margin:0 0 20px;}
   .pf-features{list-style:none;margin:0 0 26px;padding:18px 0 0;width:100%;display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--line);text-align:right;}
@@ -3673,6 +3677,7 @@ if("serviceWorker" in navigator){
       <div class="pd-info">
         <div class="eyebrow">רפאוז סטייל · קולקציית מצעים יוקרתית</div>
         <h1 id="pd-name"></h1>
+        <div class="pd-sku" id="pd-sku"></div>
         <div class="pd-price" id="pd-price"></div>
         <div class="pd-specs" id="pd-specs"></div>
 
@@ -3774,13 +3779,12 @@ if("serviceWorker" in navigator){
     </div>
     <ul class="pf-trust">
       <li><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="8" width="13" height="9"/><path d="M15 11h4l3 3v3h-7z"/><circle cx="7" cy="19" r="1.6"/><circle cx="18" cy="19" r="1.6"/></svg>משלוח מהיר לכל הארץ</li>
-      <li><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="13"/><path d="M12 8v13M3 12h18M12 8c-2-4-6-4-6-1.5S10 8 12 8zm0 0c2-4 6-4 6-1.5S14 8 12 8z"/></svg>ארוז באריזת מתנה</li>
       <li><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>ליווי בבחירת הדגם בוואטסאפ ובטלפון</li>
     </ul>
     <div id="perfume-showcase"></div>
     <div class="sc-head">
       <h2 class="serif">ניחוחות לבית</h2>
-      <p>בקבוקי חצי ליטר במחיר 199 ₪ לבקבוק</p>
+      <p>בקבוקי חצי ליטר במחיר 189 ₪ לבקבוק</p>
     </div>
     <div id="scent-showcase"></div>
     <div class="pf-help">
@@ -5699,7 +5703,14 @@ PRODUCTS.push(...TOWELS_DATA);
    ============================================================ */
 const PERFUME_DATA = [
   {
-    id:"perfume-gold", name:"מכשיר בישום גולד", price:470, category:"perfume",
+    id:"perfume-white", name:"מכשיר בישום לבן קלאסי", price:350, category:"perfume",
+    img:"/images/site/perfume-device-white.jpg", tag:"הדגם הדיסקרטי",
+    kicker:"Classic White",
+    features:["גוף לבן חלק בפינות מעוגלות","פרופיל דק שמתאים לקיר או למדף","מראה מינימליסטי שלא מושך תשומת לב","הדגם המשתלם בסדרה"],
+    customDesc:"המכשיר הלבן הקלאסי בנוי סביב עיקרון אחד: להיעלם בעיצוב ולהשאיר את הניחוח. גוף לבן חלק, פינות מעוגלות ופרופיל דק שמתאים לקיר, למדף או לפינה שקטה בחדר.\nקו מינימליסטי שמתחבר לכל סגנון עיצוב, בלי פרטים שמושכים את העין.\nהדגם המשתלם בסדרה, ונקודת פתיחה מצוינת למי שמתחיל להכניס בישום לבית.\nמכשיר בישום על בסיס שמן, המתאים לחלל של עד 400 מ״ר - מדירה ועד חנות או לובי של בניין מגורים. מיכל פנימי בנפח 500 מ״ל ועד 5 תוכניות שבועיות בעוצמות שונות, כדי לכוון את עוצמת הניחוח לימים ולשעות שמתאימים לכם. קל לתפעול בלחצנים שעל המכשיר, והוא מגיע בערכה מלאה כולל שנאי חשמלי. צרפו להזמנה את השמנים הייחודיים שלנו וקבלו ריח של מלון בכל רגע בבית."
+  },
+  {
+    id:"perfume-gold", name:"מכשיר בישום גולד", price:450, category:"perfume",
     img:"/images/site/perfume-device-v2.jpg", tag:"הדגם הנבחר",
     colors:[
       { id:"white", label:"לבן", swatch:"#FFFFFF" },
@@ -5707,32 +5718,29 @@ const PERFUME_DATA = [
     ],
     kicker:"White & Gold Edition",
     features:["גוף בלבן מבריק או בשחור אלגנטי (לבחירתכם), עם מסגרת מתכתית בגוון זהב","כפתור הפעלה בחלקו העליון","קו נקי שמשתלב בסלון, בחדר שינה ובלובי","מתאים גם כמתנה מעוצבת לבית"],
-    customDesc:"מכשיר בישום שמעוצב כמו פריט דקורטיבי: גוף בלבן מבריק או בשחור אלגנטי (לבחירתכם), ומסגרת מתכתית בגוון זהב שנותנת לו נוכחות של אביזר עיצוב ולא של מכשיר טכני.\nכפתור ההפעלה בחלק העליון מאפשר שליטה פשוטה בלחיצה אחת, והקו הנקי משתלב בכל חלל - מהכניסה לבית ועד חדר השינה.\nבחירה טבעית למי שרוצה ניחוח של מלון בוטיק בבית, בעיצוב שמתאים לעולם המצעים והמגבות של רפאוז סטייל."
+    customDesc:"מכשיר בישום שמעוצב כמו פריט דקורטיבי: גוף בלבן מבריק או בשחור אלגנטי (לבחירתכם), ומסגרת מתכתית בגוון זהב שנותנת לו נוכחות של אביזר עיצוב ולא של מכשיר טכני.\nכפתור ההפעלה בחלק העליון מאפשר שליטה פשוטה בלחיצה אחת, והקו הנקי משתלב בכל חלל - מהכניסה לבית ועד חדר השינה.\nבחירה טבעית למי שרוצה ניחוח של מלון בוטיק בבית, בעיצוב שמתאים לעולם המצעים והמגבות של רפאוז סטייל.\nמכשיר בישום על בסיס שמן לחללים של עד 400 מ״ר - בתים, חנויות ובנייני מגורים. המיכל הפנימי מכיל 500 מ״ל, והמכשיר פועל לפי עד 5 תוכניות שבועיות בעוצמות שונות. ההפעלה נוחה בלחצן, והערכה מגיעה עם שנאי חשמלי ומוכנה לשימוש מיד. הוסיפו להזמנה אחד מהשמנים הייחודיים שלנו, והבית כולו מריח כמו מלון - בכל רגע."
   },
   {
-    id:"perfume-white", name:"מכשיר בישום לבן קלאסי", price:370, category:"perfume",
-    img:"/images/site/perfume-device-2.jpg", tag:"הדגם הדיסקרטי",
-    kicker:"Classic White",
-    features:["גוף לבן חלק בפינות מעוגלות","פרופיל דק שמתאים לקיר או למדף","מראה מינימליסטי שלא מושך תשומת לב","הדגם המשתלם בסדרה"],
-    customDesc:"המכשיר הלבן הקלאסי בנוי סביב עיקרון אחד: להיעלם בעיצוב ולהשאיר את הניחוח. גוף לבן חלק, פינות מעוגלות ופרופיל דק שמתאים לקיר, למדף או לפינה שקטה בחדר.\nקו מינימליסטי שמתחבר לכל סגנון עיצוב, בלי פרטים שמושכים את העין.\nהדגם המשתלם בסדרה, ונקודת פתיחה מצוינת למי שמתחיל להכניס בישום לבית."
-  },
-  {
-    id:"perfume-graphite", name:"מכשיר בישום גרפיט חכם", price:570, category:"perfume",
-    img:"/images/site/perfume-device-3.jpg", tag:"בקרה דרך אפליקציה",
+    id:"perfume-graphite", name:"מכשיר בישום גרפיט חכם", price:560, category:"perfume",
+    img:"/images/site/perfume-device-graphite.jpg", tag:"בקרה דרך אפליקציה",
+    colors:[
+      { id:"graphite", label:"גרפיט", swatch:"#5A5D61" },
+      { id:"white", label:"לבן", swatch:"#FFFFFF", img:"/images/site/perfume-device-graphite-white.jpg" }
+    ],
     kicker:"Graphite Smart Series",
     features:["גימור גרפיט מתכתי עם פאנל קדמי שחור","חיבור לאפליקציה באמצעות סריקת קוד QR שעל המכשיר","עיצוב עכשווי שמתאים לחללים מודרניים ומוקפדים","הדגם המתקדם בסדרה"],
-    customDesc:"הדגם המתקדם בסדרה, בגימור גרפיט מתכתי עם פאנל קדמי שחור מבריק. על הפאנל מוצג קוד QR לחיבור המכשיר לאפליקציה, כך שהשליטה בבישום נעשית מהטלפון.\nהעיצוב הכהה והמוקפד מתאים לחללים מודרניים - סלון, משרד או מבואת כניסה - ומשלים את הלוק של הבית בלי לבלוט על רקע הריהוט.\nהבחירה לכל מי שרוצה שליטה נוחה בעוצמת הניחוח בצד עיצוב שקט ויוקרתי."
+    customDesc:"הדגם המתקדם בסדרה, בגימור גרפיט מתכתי עם פאנל קדמי שחור מבריק. על הפאנל מוצג קוד QR לחיבור המכשיר לאפליקציה, כך שהשליטה בבישום נעשית מהטלפון.\nהעיצוב הכהה והמוקפד מתאים לחללים מודרניים - סלון, משרד או מבואת כניסה - ומשלים את הלוק של הבית בלי לבלוט על רקע הריהוט.\nהבחירה לכל מי שרוצה שליטה נוחה בעוצמת הניחוח בצד עיצוב שקט ויוקרתי.\nמכשיר בישום על בסיס שמן, מתאים לחלל של עד 400 מ״ר ולכן עובד היטב בבתים, בחנויות ובבנייני מגורים. מיכל פנימי של 500 מ״ל ועד 5 תוכניות שבועיות בעוצמות שונות, שאפשר לשלוט בהן דרך האפליקציה או בלחצנים. הערכה כוללת שנאי חשמלי. השלימו אותה עם השמנים הייחודיים שלנו וקבלו ריח מושלם, כמו של מלון, בכל רגע."
   }
 ];
 PRODUCTS.push(...PERFUME_DATA);
 
 /* ============================================================
    PERFUME SCENT BOTTLES (category "perfume", scent:true) - half-liter
-   bottles, 199 NIS each, listed in their own section on /perfume.
+   bottles, 189 NIS each, listed in their own section on /perfume.
    IMPORTANT: ids/prices must stay in sync with BASE_CATALOG in
    api/_lib/pricing.js and CATALOG in admin.html.
    ============================================================ */
-const SCENT_PRICE = 199;
+const SCENT_PRICE = 189;
 const SCENTS_DATA = [
   ["holyland","הולילנד"],
   ["miami","מיאמי"],
@@ -5746,7 +5754,17 @@ const SCENTS_DATA = [
   ["delta","דלתא"],
   ["boutique-hotel","מלון בוטיק"],
   ["nautica-home","נאוטיקה הום"],
-  ["jasmine","יסמין"]
+  ["jasmine","יסמין"],
+  ["black-jasmine","בלאק יסמין"],
+  ["luxury-spa","ספא יוקרתי"],
+  ["karamim","כרמים"],
+  ["bereshit","בראשית"],
+  ["patal","פתאל"],
+  ["blue-chanel","בלו שאנל"],
+  ["london","לונדון"],
+  ["pink-lotus","פינק לוטוס"],
+  ["abercrombie","אמרקומבי"],
+  ["my-secret","My secret"]
 ].map(function(s){
   return {
     id:"scent-" + s[0], name:s[1], price:SCENT_PRICE, category:"perfume", scent:true,
@@ -5756,6 +5774,47 @@ const SCENTS_DATA = [
   };
 });
 PRODUCTS.push(...SCENTS_DATA);
+
+/* ---- Catalog numbers (מק״ט) - shown small under the product title ----
+   Format RS-<group>-<number>: BD bedding, TW towels, PF perfume devices,
+   SC scent bottles. Products with color options get a short color suffix
+   (e.g. RS-PF-302-BK). Display-only: nothing in pricing/orders reads this.
+   Products added later from the admin panel have no entry here and simply
+   show no catalog number until one is added to SKU_MAP. */
+const SKU_MAP = {
+  "prachim":"RS-BD-101","simfonia":"RS-BD-102","rakefet":"RS-BD-103","yahalom":"RS-BD-104",
+  "london":"RS-BD-105","royal":"RS-BD-106","star":"RS-BD-107","okeanos":"RS-BD-108",
+  "classic":"RS-BD-109","aviv":"RS-BD-110","simfonia-premium":"RS-BD-111","elegantia":"RS-BD-112",
+  "towel-bath-classic":"RS-TW-201","towel-spa-set":"RS-TW-202","towel-hand-premium":"RS-TW-203",
+  "towel-body-boutique":"RS-TW-204","towel-folded-set":"RS-TW-205","towel-full-set":"RS-TW-206",
+  "perfume-white":"RS-PF-301","perfume-gold":"RS-PF-302","perfume-graphite":"RS-PF-303",
+  "scent-holyland":"RS-SC-401","scent-miami":"RS-SC-402","scent-spring":"RS-SC-403","scent-newyork":"RS-SC-404",
+  "scent-paris":"RS-SC-405","scent-lacoste":"RS-SC-406","scent-tea-time":"RS-SC-407","scent-royal-beach":"RS-SC-408",
+  "scent-olympia":"RS-SC-409","scent-delta":"RS-SC-410","scent-boutique-hotel":"RS-SC-411","scent-nautica-home":"RS-SC-412",
+  "scent-jasmine":"RS-SC-413",
+  "scent-black-jasmine":"RS-SC-414",
+  "scent-luxury-spa":"RS-SC-415",
+  "scent-karamim":"RS-SC-416",
+  "scent-bereshit":"RS-SC-417",
+  "scent-patal":"RS-SC-418",
+  "scent-blue-chanel":"RS-SC-419",
+  "scent-london":"RS-SC-420",
+  "scent-pink-lotus":"RS-SC-421",
+  "scent-abercrombie":"RS-SC-422",
+  "scent-my-secret":"RS-SC-423"
+};
+const SKU_COLOR_SUFFIX = { white:"WH", black:"BK", graphite:"GR" };
+function skuOf(p, colorId){
+  const base = p && SKU_MAP[p.id];
+  if(!base) return "";
+  return (colorOptions(p) && SKU_COLOR_SUFFIX[colorId]) ? base + "-" + SKU_COLOR_SUFFIX[colorId] : base;
+}
+function setPdSku(p){
+  const el = document.getElementById("pd-sku");
+  if(!el) return;
+  const s = skuOf(p, currentColor);
+  el.innerHTML = s ? '<span class="k">מק״ט</span><span class="v">' + s + '</span>' : "";
+}
 
 
 /* Applies admin-panel product overrides (price/name), fetched live from the
@@ -6454,6 +6513,7 @@ function renderProductDetail(){
   document.getElementById("pd-image").alt = p.name;
   document.getElementById("pd-plaque-name").textContent = displayName(p);
   document.getElementById("pd-name").textContent = displayName(p);
+  setPdSku(p);
   currentSize = "pair";
   const sizeSelectBox = document.getElementById("pd-size-select");
   if(isBedding(p)){
@@ -6746,6 +6806,7 @@ function selectPdColor(id){
   if(!p || !colorOptions(p)) return;
   currentColor = colorById(p, id).id;
   renderPdColors(p);
+  setPdSku(p);
   const img = document.getElementById("pd-image");
   const next = productImage(p, currentColor);
   if(img && img.getAttribute("src") !== next){
