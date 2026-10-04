@@ -946,7 +946,23 @@
     { id:'towel-hand-premium', name:'מגבת ידיים לבנה פרימיום', price:65 },
     { id:'towel-body-boutique', name:'מגבת גוף מלון בוטיק', price:85 },
     { id:'towel-folded-set', name:'מגבות רחצה מתקפלות לבנות', price:95 },
-    { id:'towel-full-set', name:'סט מגבות פנים, ידיים וגוף', price:100 }
+    { id:'towel-full-set', name:'סט מגבות פנים, ידיים וגוף', price:100 },
+    { id:'perfume-gold', name:'מכשיר בישום גולד', price:470 },
+    { id:'perfume-white', name:'מכשיר בישום לבן קלאסי', price:370 },
+    { id:'perfume-graphite', name:'מכשיר בישום גרפיט חכם', price:570 },
+    { id:'scent-holyland', name:'ניחוח הולילנד - בקבוק חצי ליטר', price:199 },
+    { id:'scent-miami', name:'ניחוח מיאמי - בקבוק חצי ליטר', price:199 },
+    { id:'scent-spring', name:'ניחוח ספרינג - בקבוק חצי ליטר', price:199 },
+    { id:'scent-newyork', name:'ניחוח ניו יורק - בקבוק חצי ליטר', price:199 },
+    { id:'scent-paris', name:'ניחוח פריז - בקבוק חצי ליטר', price:199 },
+    { id:'scent-lacoste', name:'ניחוח לקוסט - בקבוק חצי ליטר', price:199 },
+    { id:'scent-tea-time', name:'ניחוח תה טיים - בקבוק חצי ליטר', price:199 },
+    { id:'scent-royal-beach', name:'ניחוח רויאל ביץ - בקבוק חצי ליטר', price:199 },
+    { id:'scent-olympia', name:'ניחוח אולימפיה - בקבוק חצי ליטר', price:199 },
+    { id:'scent-delta', name:'ניחוח דלתא - בקבוק חצי ליטר', price:199 },
+    { id:'scent-boutique-hotel', name:'ניחוח מלון בוטיק - בקבוק חצי ליטר', price:199 },
+    { id:'scent-nautica-home', name:'ניחוח נאוטיקה הום - בקבוק חצי ליטר', price:199 },
+    { id:'scent-jasmine', name:'ניחוח יסמין - בקבוק חצי ליטר', price:199 }
   ];
   const CATALOG_BY_ID = {};
   CATALOG.forEach(function(c){ CATALOG_BY_ID[c.id] = c; });
@@ -2346,6 +2362,7 @@
         const badges = [];
         if (it.embroidery) badges.push('<span class="embroidery-badge">✂️ רקמה: ' + escapeHtml(it.embroidery) + '</span>');
         if (it.size === 'single') badges.push('<span class="size-tag">' + escapeHtml(SIZE_LABELS.single) + '</span>');
+        if (it.color) badges.push('<span class="size-tag">🎨 צבע: ' + escapeHtml(it.color) + '</span>');
         const customizationCell = badges.length ? badges.join(' ') : '<span class="no-customization">—</span>';
         return '<tr>' +
           '<td>' + escapeHtml(it.name || it.id || 'פריט') + '</td>' +

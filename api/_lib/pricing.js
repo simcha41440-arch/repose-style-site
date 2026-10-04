@@ -43,6 +43,22 @@ const BASE_CATALOG = {
   'towel-body-boutique': { price: 85, category: 'towel' },
   'towel-folded-set': { price: 95, category: 'towel' },
   'towel-full-set': { price: 100, category: 'towel' },
+  'perfume-gold': { price: 470, category: 'perfume' },
+  'perfume-white': { price: 370, category: 'perfume' },
+  'perfume-graphite': { price: 570, category: 'perfume' },
+  'scent-holyland': { price: 199, category: 'perfume' },
+  'scent-miami': { price: 199, category: 'perfume' },
+  'scent-spring': { price: 199, category: 'perfume' },
+  'scent-newyork': { price: 199, category: 'perfume' },
+  'scent-paris': { price: 199, category: 'perfume' },
+  'scent-lacoste': { price: 199, category: 'perfume' },
+  'scent-tea-time': { price: 199, category: 'perfume' },
+  'scent-royal-beach': { price: 199, category: 'perfume' },
+  'scent-olympia': { price: 199, category: 'perfume' },
+  'scent-delta': { price: 199, category: 'perfume' },
+  'scent-boutique-hotel': { price: 199, category: 'perfume' },
+  'scent-nautica-home': { price: 199, category: 'perfume' },
+  'scent-jasmine': { price: 199, category: 'perfume' },
 };
 
 // Merges live product_overrides rows (as returned by a
@@ -74,7 +90,7 @@ function unitPrice(priceMap, item) {
   const catalogEntry = priceMap[item.id];
   if (!catalogEntry) return null; // unknown id - caller should reject the order
   let price = catalogEntry.price;
-  if (item.size === 'single' && catalogEntry.category !== 'towel') {
+  if (item.size === 'single' && catalogEntry.category !== 'towel' && catalogEntry.category !== 'perfume') {
     price = Math.round(price / 2);
   }
   if (catalogEntry.customizable && item.embroidery && !catalogEntry.embroideryFree) {
@@ -147,6 +163,8 @@ function verifyItems(priceMap, items) {
       price: result ? result.price : null,
       size: item.size || null,
       embroidery: item.embroidery || null,
+      // Display-only (e.g. device color "שחור"/"לבן") - never affects price.
+      color: typeof item.color === 'string' && item.color ? item.color.slice(0, 40) : null,
     };
   });
 }
