@@ -3231,8 +3231,13 @@ if("serviceWorker" in navigator){
     background:radial-gradient(circle at 50% 42%, #FFFFFC 0%, #FFFBEA 55%, #F6EAC0 100%);border-bottom:1px solid var(--line);}
   .pf-media img{width:82%;height:82%;object-fit:contain;mix-blend-mode:multiply;transition:transform .9s cubic-bezier(.19,1,.22,1);}
   .pf-row:hover .pf-media img{transform:scale(1.05);}
-  /* the gold device photo is cropped tighter than the others, so it looked oversized - shrink it a touch */
-  .pf-row[data-id="perfume-gold"] .pf-media img{width:72%;height:72%;}
+  /* Equal visual size for all perfume devices: each photo is framed differently, so the image box is tuned
+     per photo (matched by file name, so it also follows the color switch). Larger % = bigger device. */
+  .pf-media img[src$="perfume-device-white.jpg"]{width:82%;height:82%;}
+  .pf-media img[src$="perfume-device-v2.jpg"]{width:81%;height:81%;}
+  .pf-media img[src$="perfume-device-black.jpg"]{width:76%;height:76%;}
+  .pf-media img[src$="perfume-device-graphite.jpg"]{width:77%;height:77%;}
+  .pf-media img[src$="perfume-device-graphite-white.jpg"]{width:83%;height:83%;}
   .pf-badge{position:absolute;top:18px;right:18px;z-index:2;padding:6px 14px;font-size:12px;font-weight:600;color:#fff;border-radius:var(--radius);
     background:linear-gradient(135deg,var(--gold-light),var(--gold) 50%,var(--gold-dark));box-shadow:var(--shadow-gold);}
   .pf-badge.out{background:var(--ink);box-shadow:none;}
