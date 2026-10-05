@@ -14,6 +14,7 @@ const { getClientIp, checkRateLimit, recordRateLimitEvent, logAdminAction } = re
 const TYPE_LABELS = {
   contact: 'contact',
   checkout_contact: 'checkout_contact',
+  checkout: 'checkout',
 };
 
 // Generous compared to the real inquiry rate limit, since one visitor

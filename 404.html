@@ -4460,7 +4460,7 @@ if("serviceWorker" in navigator){
     </div>
     <button type="button" class="icon-btn" id="payment-modal-close-btn" aria-label="סגירה"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></button>
   </div>
-  <p class="payment-modal-sub">הפרטים שלכם נשמרו. השלימו את התשלום בעמוד המאובטח כדי לאשר את ההזמנה.</p>
+  <p class="payment-modal-sub" id="payment-modal-sub">הפרטים שלכם נשמרו. השלימו את התשלום בעמוד המאובטח כדי לאשר את ההזמנה.</p>
   <div id="payment-form">
     <div class="pm-form-error" id="pm-form-error" role="alert"></div>
 
@@ -4472,8 +4472,10 @@ if("serviceWorker" in navigator){
 
     <!-- Shown while a real Tranzila terminal hasn't been connected yet -->
     <div id="tranzila-not-configured" style="text-align:center;padding:20px 4px;color:#5B4E3C;font-weight:300;">
-      <p>עמוד הסליקה המאובטח מול טרנזילה מוכן, וממתין לחיבור מסוף הסליקה שלכם (ראו TRANZILA-SETUP.md).</p>
-      <p style="margin-top:10px;">כדי להשלים את ההזמנה בינתיים, אנא צרו איתנו קשר בטלפון <a href="tel:0556713828" style="color:var(--text-gold);">055-6713828</a> או בדוא"ל <a href="mailto:rstyle.israel@gmail.com" style="color:var(--text-gold);">rstyle.israel@gmail.com</a> ונשלים עמכם את התשלום.</p>
+      <p style="font-size:17px;font-weight:500;color:#3B2F1E;">תודה! קיבלנו את פרטי ההזמנה שלכם.</p>
+      <p style="margin-top:10px;">להמשך התשלום והשלמת ההזמנה נא לפנות אלינו בטלפון <a href="tel:0556713828" style="color:var(--text-gold);font-weight:500;">055-6713828</a> או בדוא"ל <a href="mailto:rstyle.israel@gmail.com" style="color:var(--text-gold);font-weight:500;">rstyle.israel@gmail.com</a>, ונשלים עמכם את התשלום.</p>
+      <p style="margin-top:10px;">הפרטים וההזמנה כבר אצלנו, כך שלא צריך למסור אותם שוב.</p>
+      <p id="pm-attempt-ref" style="display:none;margin-top:12px;font-size:13px;color:var(--taupe);">מספר פנייה: <b></b></p>
     </div>
 
     <div class="secure-note">
@@ -5591,21 +5593,28 @@ function applyOverridesData(data){
     if(!o.name || o.price === undefined || o.price === null || o.price === "") return; // incomplete row - skip rather than show a broken card
     const d = (o.details && typeof o.details === "object") ? o.details : {};
     const isTowel = o.category === "towel";
+    const isScent = o.category === "scent";
+    const isPerfume = isScent || o.category === "perfume";
+    const cleanText = function(v){ return typeof v === "string" ? v.replace(/[<>]/g, "").trim() : ""; };
+    const featList = Array.isArray(d.features) ? d.features.map(cleanText).filter(Boolean).slice(0, 8) : [];
     PRODUCTS.push({
       id: id,
       name: o.name,
       price: Number(o.price),
       compareAtPrice: (o.compare_at_price !== undefined && o.compare_at_price !== null && o.compare_at_price !== "") ? Number(o.compare_at_price) : null,
-      img: o.image || "/images/site/logo-shop.png",
-      category: isTowel ? "towel" : undefined,
+      img: o.image || (isScent ? "/images/products/scent-bottle.jpg" : "/images/site/logo-shop.png"),
+      category: isTowel ? "towel" : (isPerfume ? "perfume" : undefined),
+      scent: isScent ? true : undefined,
+      kicker: isScent ? "Scent Collection" : undefined,
+      features: isPerfume ? (featList.length ? featList : (isScent ? ["בקבוק חצי ליטר"] : [])) : undefined,
       cotton: d.cotton != null && d.cotton !== "" ? Number(d.cotton) : 100,
       thread: d.thread != null && d.thread !== "" ? Number(d.thread) : 300,
       weight: d.weight != null && d.weight !== "" ? Number(d.weight) : 600,
       bedType: d.bedType === "double" ? "double" : "twin",
       tier: d.tier === "premium" ? "premium" : "classic",
-      collection: !isTowel ? (d.collection || "heritage") : undefined,
+      collection: (!isTowel && !isPerfume) ? (d.collection || "heritage") : undefined,
       tag: d.tag || undefined,
-      customDesc: d.desc || "",
+      customDesc: cleanText(d.desc) || (isScent ? ("ניחוח " + o.name + " בבקבוק של חצי ליטר.") : (isPerfume ? ("מכשיר בישום " + o.name + " של רפאוז סטייל.") : "")),
       pillowsIncluded: !!d.pillowsIncluded,
       outOfStock: !!o.out_of_stock,
       isCustom: true
@@ -5620,6 +5629,17 @@ function applyOverridesData(data){
     if(o.image !== undefined && o.image !== null && o.image !== "") p.img = o.image;
     p.compareAtPrice = (o.compare_at_price !== undefined && o.compare_at_price !== null && o.compare_at_price !== "") ? Number(o.compare_at_price) : null;
     p.outOfStock = !!o.out_of_stock;
+    /* Text edits saved from the admin panel ("תיאור" / "מאפיינים") for built-in products,
+       e.g. perfume devices and scent bottles. Empty/missing = keep the built-in text. */
+    const od = (o.details && typeof o.details === "object") ? o.details : null;
+    if(od){
+      const t = typeof od.desc === "string" ? od.desc.replace(/[<>]/g, "").trim() : "";
+      if(t) p.customDesc = t;
+      if(Array.isArray(od.features)){
+        const f = od.features.map(function(x){ return String(x).replace(/[<>]/g, "").trim(); }).filter(Boolean).slice(0, 8);
+        if(f.length) p.features = f;
+      }
+    }
   });
 
   // Admin can permanently delete a built-in catalog product from the
@@ -7474,6 +7494,51 @@ function rsClearDraft(formKey){
   fetch("/api/form-drafts?draftId=" + encodeURIComponent(id), { method: "DELETE" }).catch(()=>{});
   rsNewDraftId(formKey);
 }
+/* Checkout form draft capture: saves whatever the shopper has typed into the
+   main checkout form (even just a name or an email) as a "קופה (לא סיים)" draft
+   in the admin panel's drafts tab. Removed once they reach the payment step,
+   because by then the full details are logged as a payment attempt instead. */
+(function(){
+  const form = document.getElementById("checkout-form");
+  if(!form) return;
+  const val = id => { const el = document.getElementById(id); return el ? el.value.trim() : ""; };
+  let timer = null;
+  function save(){
+    const first = val("ck-firstname"), last = val("ck-lastname");
+    const addr = [val("ck-address"), val("ck-city"), val("ck-zip")].filter(Boolean).join(", ");
+    const lines = [];
+    if(addr) lines.push("כתובת: " + addr);
+    if(val("ck-phone2")) lines.push("טלפון נוסף: " + val("ck-phone2"));
+    if(val("ck-notes")) lines.push("הערות: " + val("ck-notes"));
+    if(val("ck-giftcard")) lines.push("ברכת גיפט קארד: " + val("ck-giftcard"));
+    try{
+      if(Array.isArray(cart) && cart.length){
+        const parts = cart.map(c=>{
+          const p = PRODUCTS.find(x=>x.id===c.id);
+          return (p ? displayName(p) : c.id) + " x" + c.qty;
+        });
+        lines.push("בעגלה: " + parts.join(", "));
+      }
+    }catch(_){}
+    fetch("/api/form-drafts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        draftId: rsDraftId("checkout-form"),
+        type: "checkout",
+        name: (first + " " + last).trim(),
+        phone: val("ck-phone") || val("ck-phone2"),
+        email: val("ck-email"),
+        message: lines.join("\n"),
+        time_on_site_seconds: rsTimeOnSiteSeconds()
+      })
+    }).catch(()=>{ /* best-effort, never surfaced */ });
+  }
+  function schedule(){ clearTimeout(timer); timer = setTimeout(save, 1200); }
+  form.addEventListener("input", schedule);
+  form.addEventListener("change", schedule);
+})();
+
 rsWireDraftCapture("contact-form", "contact", [
   { id: "ct-name", field: "name" },
   { id: "ct-phone", field: "phone" },
@@ -7527,38 +7592,62 @@ async function openPaymentModal(){
   const iframe = document.getElementById("tranzila-iframe");
   const loading = document.getElementById("tranzila-iframe-loading");
 
+  /* Title/sub-text/secure-note depend on whether a real Tranzila terminal is connected. */
+  const pmTitle = document.getElementById("payment-modal-title");
+  const pmSub = document.getElementById("payment-modal-sub");
+  const pmSecure = document.querySelector("#payment-modal .secure-note");
+  if(pmTitle && !pmTitle.dataset.orig) pmTitle.dataset.orig = pmTitle.textContent;
+  if(pmSub && !pmSub.dataset.orig) pmSub.dataset.orig = pmSub.textContent;
+
   if(!TRANZILA_CONFIGURED){
     iframeWrap.style.display = "none";
     notConfigured.style.display = "block";
-    return;
+    if(pmTitle) pmTitle.textContent = "ההזמנה התקבלה - להשלמת התשלום";
+    if(pmSub) pmSub.textContent = "כל פרטי ההזמנה שלכם נשמרו אצלנו.";
+    if(pmSecure) pmSecure.style.display = "none";
+  } else {
+    notConfigured.style.display = "none";
+    iframeWrap.style.display = "block";
+    loading.style.display = "block";
+    iframe.style.display = "none";
+    if(pmTitle && pmTitle.dataset.orig) pmTitle.textContent = pmTitle.dataset.orig;
+    if(pmSub && pmSub.dataset.orig) pmSub.textContent = pmSub.dataset.orig;
+    if(pmSecure) pmSecure.style.display = "";
   }
 
-  notConfigured.style.display = "none";
-  iframeWrap.style.display = "block";
-  loading.style.display = "block";
-  iframe.style.display = "none";
-
-  const customer = {
-    name: `${document.getElementById("ck-firstname").value.trim()} ${document.getElementById("ck-lastname").value.trim()}`.trim(),
-    email: document.getElementById("ck-email").value.trim(),
-    phone: document.getElementById("ck-phone").value.trim()
-  };
+  const _val = id => { const el = document.getElementById(id); return el ? el.value.trim() : ""; };
+  const firstName = _val("ck-firstname");
+  const lastName = _val("ck-lastname");
   const shippingMethodEl = document.querySelector('input[name="shipping-method"]:checked');
   const shippingMethod = shippingMethodEl ? shippingMethodEl.value : null;
+  const customer = {
+    name: `${firstName} ${lastName}`.trim(),
+    first_name: firstName,
+    last_name: lastName,
+    email: _val("ck-email"),
+    phone: _val("ck-phone"),
+    phone2: _val("ck-phone2") || null,
+    address: _val("ck-address"),
+    city: _val("ck-city"),
+    zip: _val("ck-zip") || null,
+    shipping_method: shippingMethod,
+    notes: _val("ck-notes") || null,
+    gift_message: _val("ck-giftcard") || null,
+    coupon: (typeof appliedCoupon !== "undefined" && appliedCoupon) ? appliedCoupon.code : null
+  };
 
   /* The amount actually charged has to come from the server, never from
      numbers this browser computed on its own - see api/checkout-total.js
-     for why. This recomputes subtotal/discount/shipping/total the exact
-     same way saveOrder() needs them further down, so the verified result
-     is stashed in verifiedCheckout and reused there instead of being
-     recalculated (and possibly drifting) a second time after payment. */
-  let verified;
+     for why. The verified result is stashed in verifiedCheckout and reused
+     by saveOrder(). While the terminal isn't connected nothing is charged,
+     so if the check fails we still keep the lead using local numbers. */
+  let verified = null;
   try{
     const res = await fetch("/api/checkout-total", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        items: cart.map(c=>({ id:c.id, qty:c.qty, size:c.size, embroidery:c.embroidery })),
+        items: cart.map(c=>({ id:c.id, qty:c.qty, size:c.size, embroidery:c.embroidery, color:((typeof cartColorLabel === "function" ? cartColorLabel(c) : "") || undefined) })),
         couponCode: appliedCoupon ? appliedCoupon.code : undefined,
         shippingMethod
       })
@@ -7568,29 +7657,73 @@ async function openPaymentModal(){
       throw new Error((verified && verified.error) || "שגיאה בחישוב הסכום לתשלום.");
     }
   }catch(err){
-    loading.style.display = "none";
-    setPmFormError(err.message || "שגיאה בחישוב הסכום לתשלום. אנא רעננו את העמוד ונסו שוב.");
+    if(TRANZILA_CONFIGURED){
+      loading.style.display = "none";
+      setPmFormError(err.message || "שגיאה בחישוב הסכום לתשלום. אנא רעננו את העמוד ונסו שוב.");
+      return;
+    }
+    verified = null;
+  }
+  let subtotal, discount, shipping, total;
+  if(verified){
+    verifiedCheckout = verified;
+    subtotal = verified.subtotal; discount = verified.discount; shipping = verified.shipping; total = verified.total;
+  } else {
+    subtotal = cartTotal();
+    shipping = checkoutShippingPrice();
+    discount = couponDiscountAmount(subtotal);
+    total = Math.max(0, subtotal - discount + shipping);
+  }
+
+  /* Every time a shopper reaches this point we log an "attempt" server-side
+     (see api/order-attempts.js), with the full details. When the terminal
+     isn't connected yet the attempt is marked "awaiting_payment" and the
+     business inbox gets an email, so the order can be completed by phone. */
+  const attemptItems = cart.map(c=>{
+    const p = PRODUCTS.find(x=>x.id===c.id);
+    return {
+      id: c.id,
+      name: p ? displayName(p) : c.id,
+      qty: c.qty,
+      price: p ? cartItemUnitPrice(c, p) : null,
+      size: c.size || null,
+      embroidery: c.embroidery || null,
+      color: (typeof cartColorLabel === "function" ? cartColorLabel(c) : "") || null
+    };
+  });
+
+  try{ rsClearDraft("checkout-form"); }catch(_){ /* draft cleanup is best-effort */ }
+  const sig = JSON.stringify([customer.phone, total, attemptItems.map(i=>i.id+":"+i.qty)]);
+  const isDuplicate = !TRANZILA_CONFIGURED && window._pmLastSig === sig && (Date.now() - (window._pmLastSigAt || 0)) < 5*60*1000;
+  const refEl = document.getElementById("pm-attempt-ref");
+
+  if(isDuplicate){
+    currentOrderAttemptId = window._pmLastAttemptId;
+  } else {
+    currentOrderAttemptId = "att_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    if(!TRANZILA_CONFIGURED){ window._pmLastSig = sig; window._pmLastSigAt = Date.now(); window._pmLastAttemptId = currentOrderAttemptId; }
+    fetch("/api/order-attempts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        attemptId: currentOrderAttemptId,
+        mode: TRANZILA_CONFIGURED ? "started" : "awaiting_payment",
+        customer,
+        items: attemptItems,
+        subtotal, discount, shipping, total
+      })
+    }).catch(()=>{ /* best-effort - never blocks checkout */ });
+  }
+
+  if(!TRANZILA_CONFIGURED){
+    if(refEl){
+      refEl.style.display = "block";
+      const b = refEl.querySelector("b");
+      if(b) b.textContent = currentOrderAttemptId.slice(-6).toUpperCase();
+    }
     return;
   }
-  verifiedCheckout = verified;
-  const { subtotal, discount, shipping, total } = verified;
 
-  /* Every time a shopper reaches this point - opening the payment iframe -
-     we log an "attempt" server-side (see api/order-attempts.js), even if
-     they never finish. currentOrderAttemptId is correlated with the
-     Tranzila charge via the "param" field and used to update the status
-     to success/failed further down, in the postMessage result handler. */
-  currentOrderAttemptId = "att_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-  fetch("/api/order-attempts", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      attemptId: currentOrderAttemptId,
-      customer,
-      items: cart.map(c=>({ id:c.id, qty:c.qty })),
-      subtotal, discount, shipping, total
-    })
-  }).catch(()=>{ /* best-effort - never blocks checkout */ });
 
   iframe.onload = () => { loading.style.display = "none"; iframe.style.display = "block"; };
   iframe.src = buildTranzilaIframeSrc(total, customer, currentOrderAttemptId);

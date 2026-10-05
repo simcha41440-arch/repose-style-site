@@ -83,7 +83,23 @@ function buildPriceMap(overrideRows) {
     map[id] = { ...BASE_CATALOG[id] };
   }
   for (const row of overrideRows || []) {
-    if (!row || !row.id || !map[row.id]) continue;
+    if (!row || !row.id) continue;
+    // Products added from the admin panel's "הוספת מוצר חדש" form (towels,
+    // bedding, perfume devices, scent bottles) have no entry in BASE_CATALOG -
+    // without this they would be rejected at checkout as "unknown product".
+    // Their price/category come from the saved override row itself.
+    if (!map[row.id]) {
+      if (row.active === false) continue;
+      if (row.price === undefined || row.price === null || row.price === '') continue;
+      const customPrice = Number(row.price);
+      if (!Number.isFinite(customPrice) || customPrice < 0) continue;
+      const cat = row.category === 'towel'
+        ? 'towel'
+        : (row.category === 'scent' || row.category === 'perfume' ? 'perfume' : undefined);
+      map[row.id] = { price: customPrice, ...(cat ? { category: cat } : {}) };
+      if (row.out_of_stock) map[row.id].outOfStock = true;
+      continue;
+    }
     if (row.price !== undefined && row.price !== null && row.price !== '') {
       map[row.id].price = Number(row.price);
     }
