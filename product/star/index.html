@@ -3259,6 +3259,11 @@ if("serviceWorker" in navigator){
   .pf-media img[src$="perfume-device-graphite.jpg"]{width:100%;height:100%;}
   .pf-media img[src$="perfume-device-graphite-white.jpg"]{width:100%;height:100%;}
   .pd-frame img[src*="perfume-device-"],.pd-frame img[src*="scent-bottle"]{mix-blend-mode:multiply;}
+  /* Perfume devices: photos have a pure white background, so no multiply tint - keep the device white */
+  .pd-frame img[src*="perfume-device-"]{mix-blend-mode:normal;}
+  .pd-frame:has(img[src*="perfume-device-"]){background:#fff;}
+  .pf-media img[src*="perfume-device-"]{mix-blend-mode:normal;}
+  .pf-media:has(img[src*="perfume-device-"]){background:#fff;}
   .pf-badge{position:absolute;top:18px;right:18px;z-index:2;padding:6px 14px;font-size:12px;font-weight:600;color:#fff;border-radius:var(--radius);
     background:linear-gradient(135deg,var(--gold-light),var(--gold) 50%,var(--gold-dark));box-shadow:var(--shadow-gold);}
   .pf-badge.out{background:var(--ink);box-shadow:none;}
@@ -5817,7 +5822,7 @@ const SCENTS_DATA = [
 ].map(function(s){
   return {
     id:"scent-" + s[0], name:s[1], price:SCENT_PRICE, category:"perfume", scent:true,
-    img:"/images/products/scent-bottle.jpg", kicker:"Scent Collection",
+    img:"/images/products/scent-bottle-v2.jpg", kicker:"Scent Collection",
     features:["בקבוק חצי ליטר"],
     customDesc:"ניחוח " + s[1] + " בבקבוק של חצי ליטר.\nמחיר לבקבוק: " + SCENT_PRICE + " ₪."
   };
@@ -5918,7 +5923,7 @@ function applyOverridesData(data){
       name: o.name,
       price: Number(o.price),
       compareAtPrice: (o.compare_at_price !== undefined && o.compare_at_price !== null && o.compare_at_price !== "") ? Number(o.compare_at_price) : null,
-      img: o.image || (isScent ? "/images/products/scent-bottle.jpg" : "/images/site/logo-shop.png"),
+      img: o.image || (isScent ? "/images/products/scent-bottle-v2.jpg" : "/images/site/logo-shop.png"),
       category: isTowel ? "towel" : (isPerfume ? "perfume" : undefined),
       scent: isScent ? true : undefined,
       kicker: isScent ? "Scent Collection" : undefined,
