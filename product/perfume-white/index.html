@@ -3198,7 +3198,7 @@ if("serviceWorker" in navigator){
   .tile-towels{grid-column:2 / span 2;grid-row:1;}
   .tile-sale{grid-column:2;grid-row:2;}
   .tile-perfume{grid-column:3;grid-row:2;}
-  .tile-perfume img{object-position:center 40%;}
+  .tile-perfume img{object-position:center 45%;}
   .tile-towels img{object-position:center 62%;}
   .tile-bedding img{object-position:42% center;}
   @media (max-width:760px){
@@ -3220,6 +3220,27 @@ if("serviceWorker" in navigator){
   .perfume-copy p{font-size:16px;line-height:1.75;color:var(--taupe);margin:0 0 26px;}
   @media (max-width:760px){.perfume-showcase{grid-template-columns:1fr;gap:24px;}.perfume-copy{text-align:center;}}
 
+
+  /* Perfume devices - in-home gallery */
+  .pf-gallery{max-width:1180px;margin:0 auto 72px;direction:rtl;}
+  .pf-gallery-head{text-align:center;margin:0 0 30px;}
+  .pf-gallery-head .eyebrow{margin-bottom:10px;}
+  .pf-gallery-head h2{font-size:clamp(24px,3vw,34px);color:var(--text-gold);margin:0 0 8px;font-weight:500;}
+  .pf-gallery-head p{margin:0 auto;max-width:620px;color:var(--taupe);font-size:15px;font-weight:300;line-height:1.7;}
+  .pf-gallery-grid{display:grid;grid-template-columns:1.25fr 1fr;grid-template-rows:1fr 1fr;gap:22px;}
+  .pf-shot{position:relative;margin:0;overflow:hidden;border-radius:26px;border:1px solid var(--line);box-shadow:var(--shadow);background:#FFFDF6;min-height:260px;}
+  .pf-shot.big{grid-row:1 / span 2;}
+  .pf-shot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;transition:transform .9s cubic-bezier(.19,1,.22,1);}
+  .pf-shot:hover img{transform:scale(1.04);}
+  .pf-shot figcaption{position:absolute;right:0;left:0;bottom:0;padding:34px 22px 16px;font-size:14px;line-height:1.5;color:#fff;text-align:right;background:linear-gradient(to top,rgba(35,28,22,.62),rgba(35,28,22,0));}
+  @media (max-width:760px){.pf-gallery-grid{grid-template-columns:1fr;grid-template-rows:none;gap:16px;}.pf-shot.big{grid-row:auto;}.pf-shot{min-height:0;aspect-ratio:4/3;}.pf-shot.big{aspect-ratio:1/1;}}
+  /* Same gallery under each perfume product page */
+  .pd-gallery{margin:0 0 70px;}
+  .pd-gallery h3{text-align:center;font-size:clamp(22px,2.6vw,28px);color:var(--text-gold);font-weight:500;margin:0 0 24px;}
+  .pd-gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+  .pd-gallery .pf-shot{aspect-ratio:4/3;min-height:0;}
+  @media (max-width:760px){.pd-gallery-grid{grid-template-columns:1fr;}}
+
   /* ===== Perfume devices page ===== */
   .pf-trust{display:flex;justify-content:center;gap:14px 44px;flex-wrap:wrap;margin:6px auto 52px;padding:0;list-style:none;font-size:14px;color:var(--text-gold);}
   .pf-trust li{display:flex;align-items:center;gap:10px;}
@@ -3231,13 +3252,13 @@ if("serviceWorker" in navigator){
     background:radial-gradient(circle at 50% 42%, #FFFFFC 0%, #FFFBEA 55%, #F6EAC0 100%);border-bottom:1px solid var(--line);}
   .pf-media img{width:82%;height:82%;object-fit:contain;mix-blend-mode:multiply;transition:transform .9s cubic-bezier(.19,1,.22,1);}
   .pf-row:hover .pf-media img{transform:scale(1.05);}
-  /* Equal visual size for all perfume devices: each photo is framed differently, so the image box is tuned
-     per photo (matched by file name, so it also follows the color switch). Larger % = bigger device. */
-  .pf-media img[src$="perfume-device-white.jpg"]{width:82%;height:82%;}
-  .pf-media img[src$="perfume-device-v2.jpg"]{width:81%;height:81%;}
-  .pf-media img[src$="perfume-device-black.jpg"]{width:76%;height:76%;}
-  .pf-media img[src$="perfume-device-graphite.jpg"]{width:77%;height:77%;}
-  .pf-media img[src$="perfume-device-graphite-white.jpg"]{width:83%;height:83%;}
+  /* Device photos are pre-padded equal-size squares (device centered at ~60%, white margin), so the image box fills the frame. */
+  .pf-media img[src$="perfume-device-white.jpg"]{width:100%;height:100%;}
+  .pf-media img[src$="perfume-device-v2.jpg"]{width:100%;height:100%;}
+  .pf-media img[src$="perfume-device-black.jpg"]{width:100%;height:100%;}
+  .pf-media img[src$="perfume-device-graphite.jpg"]{width:100%;height:100%;}
+  .pf-media img[src$="perfume-device-graphite-white.jpg"]{width:100%;height:100%;}
+  .pd-frame img[src*="perfume-device-"],.pd-frame img[src*="scent-bottle"]{mix-blend-mode:multiply;}
   .pf-badge{position:absolute;top:18px;right:18px;z-index:2;padding:6px 14px;font-size:12px;font-weight:600;color:#fff;border-radius:var(--radius);
     background:linear-gradient(135deg,var(--gold-light),var(--gold) 50%,var(--gold-dark));box-shadow:var(--shadow-gold);}
   .pf-badge.out{background:var(--ink);box-shadow:none;}
@@ -3269,7 +3290,7 @@ if("serviceWorker" in navigator){
   .sc-head p{margin:0;color:var(--taupe);font-size:15px;font-weight:300;}
   #scent-showcase{display:grid;direction:rtl;grid-template-columns:repeat(4,1fr);gap:22px;align-items:stretch;max-width:1180px;margin:0 auto 72px;}
   .sc-row .pf-info{padding:18px 16px 20px;}
-  .sc-row .pf-media img{width:76%;height:76%;}
+  .sc-row .pf-media img{width:100%;height:100%;}
   .sc-row h3{font-size:clamp(18px,1.6vw,21px);line-height:1.3;color:var(--text-gold);margin:0 0 4px;font-weight:500;}
   .sc-size{font-size:12.5px;color:var(--taupe);margin:0 0 10px;font-weight:300;}
   .sc-row .pf-price{font-size:22px;margin:0 0 14px;}
@@ -3493,7 +3514,7 @@ if("serviceWorker" in navigator){
         </span>
       </a>
       <a class="home-tile tile-perfume" data-nav="perfume" href="/perfume">
-        <img src="/images/site/perfume-home-v2.jpg" alt="מכשירי בישום - רפאוז סטייל" loading="eager" decoding="async">
+        <img src="/images/site/perfume-home-v3.jpg" alt="מכשירי בישום - רפאוז סטייל" loading="eager" decoding="async">
         <span class="home-tile-text">
           <h2>מכשירי בישום</h2>
           <span class="home-tile-cta">לרכישה <span class="arr" aria-hidden="true">←</span></span>
@@ -3747,6 +3768,15 @@ if("serviceWorker" in navigator){
       <p>לפני השימוש יש לבדוק את המוצר. אח"כ לכבס - אריגים צבעוניים לכבס בנפרד, במים פושרים (30 מעלות) ובאבקה או נוזל עדינים, המיועדים לכביסה צבעונית בלבד. ללא כלור וללא סחיטה.</p>
     </div>
 
+    <section class="pd-gallery" id="pd-gallery" style="display:none;">
+      <h3>ככה המכשיר נראה בבית</h3>
+      <div class="pd-gallery-grid">
+        <figure class="pf-shot"><img src="/images/site/perfume-wall-lifestyle.jpg" alt="מכשיר בישום רפאוז סטייל תלוי על קיר בסלון" loading="lazy" decoding="async"><figcaption>נתלה על הקיר ומשתלב בחלל</figcaption></figure>
+        <figure class="pf-shot"><img src="/images/site/perfume-mist.jpg" alt="מכשיר בישום מפזר ערפל ניחוח" loading="lazy" decoding="async"><figcaption>פיזור עדין של ניחוח</figcaption></figure>
+        <figure class="pf-shot"><img src="/images/site/perfume-inside.jpg" alt="מכשיר בישום פתוח עם בקבוק השמן" loading="lazy" decoding="async"><figcaption>גישה נוחה לבקבוק השמן</figcaption></figure>
+      </div>
+    </section>
+
     <div class="related">
       <h3>עוד מהקולקציה</h3>
       <div class="product-grid" id="related-grid"></div>
@@ -3787,6 +3817,18 @@ if("serviceWorker" in navigator){
       <li><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>ליווי בבחירת הדגם בוואטסאפ ובטלפון</li>
     </ul>
     <div id="perfume-showcase"></div>
+    <section class="pf-gallery" aria-labelledby="pf-gallery-title">
+      <div class="pf-gallery-head">
+        <div class="eyebrow">רואים אותם בבית</div>
+        <h2 class="serif" id="pf-gallery-title">ככה זה נראה בפועל</h2>
+        <p>מכשיר שנתלה על הקיר ומשתלב בחלל, מתפעל בקלות ומפזר ניחוח עדין בכל החדר.</p>
+      </div>
+      <div class="pf-gallery-grid">
+        <figure class="pf-shot big"><img src="/images/site/perfume-wall-lifestyle.jpg" alt="מכשיר בישום רפאוז סטייל תלוי על קיר בסלון מעוצב" loading="lazy" decoding="async"><figcaption>נתלה על הקיר ומשתלב בסלון, בחדר השינה ובכניסה</figcaption></figure>
+        <figure class="pf-shot"><img src="/images/site/perfume-mist.jpg" alt="מכשיר בישום מפזר ערפל ניחוח עדין" loading="lazy" decoding="async"><figcaption>פיזור עדין של ניחוח</figcaption></figure>
+        <figure class="pf-shot"><img src="/images/site/perfume-inside.jpg" alt="מכשיר בישום פתוח עם בקבוק השמן בתוכו" loading="lazy" decoding="async"><figcaption>דלת נפתחת וגישה נוחה לבקבוק השמן</figcaption></figure>
+      </div>
+    </section>
     <div class="sc-head">
       <h2 class="serif">ניחוחות לבית</h2>
       <p>בקבוקי חצי ליטר במחיר 189 ₪ לבקבוק</p>
@@ -6537,6 +6579,8 @@ function renderProductDetail(){
     addBtn.textContent = p.outOfStock ? "אזל מהמלאי" : "הוספה לעגלה";
   }
   const careBand = document.querySelector("#view-product .pd-care-band");
+  const pdGallery = document.getElementById("pd-gallery");
+  if(pdGallery) pdGallery.style.display = (p.category === "perfume" && !p.scent) ? "" : "none";
   if(careBand) careBand.style.display = isBedding(p) || p.category === "towel" ? "" : "none";
   if(p.category === "perfume"){
     document.getElementById("pd-specs").innerHTML = (p.features || []).slice(0,4).map(f=>`<span>${f}</span>`).join("");
