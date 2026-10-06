@@ -21,7 +21,7 @@ const { CATALOG, STORE_INFO, SITE_URL } = require('./chatKnowledge');
 // auto-updating alias for the current Flash model, so the bot keeps
 // working when an older model (like gemini-2.5-flash) is retired.
 // GEMINI_MODEL in Vercel, if set, is tried first.
-const FALLBACK_MODELS = ['gemini-flash-latest', 'gemini-2.5-flash'];
+const FALLBACK_MODELS = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-flash-lite-latest'];
 function modelList() {
   const preferred = sanitizeEnvValue(process.env.GEMINI_MODEL);
   return [preferred].concat(FALLBACK_MODELS).filter((m, i, a) => m && a.indexOf(m) === i);
@@ -151,7 +151,7 @@ async function callGemini({ apiKey, model, systemPrompt, contents }) {
   else generationConfig.maxOutputTokens = 4096;
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 25000);
+  const timer = setTimeout(() => controller.abort(), 15000);
   try {
     const resp = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
@@ -196,16 +196,30 @@ async function callGemini({ apiKey, model, systemPrompt, contents }) {
 async function callGeminiWithFallback(opts) {
   const models = modelList();
   let lastErr;
+  const deadline = Date.now() + 24000; // stay inside the function's time limit
   for (const model of models) {
-    try {
-      const text = await callGemini(Object.assign({}, opts, { model }));
-      return { text, model };
-    } catch (err) {
-      lastErr = err;
-      const modelProblem = err.status === 404 || err.status === 429 ||
-        (err.status === 400 && /model/i.test(err.geminiMessage || ''));
-      console.error('chatbot:', err.message);
-      if (!modelProblem) break;
+    // Google's "high demand" / temporary errors (500/503/504) usually
+    // clear within a second or two - retry the same model once, then
+    // move on to the next model instead of giving up.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (Date.now() > deadline) throw lastErr || new Error('Gemini: out of time');
+      try {
+        const text = await callGemini(Object.assign({}, opts, { model }));
+        if (!text) { // empty answer (e.g. blocked/cut off) - try the next model
+          lastErr = new Error(`Gemini returned an empty reply (${model})`);
+          break;
+        }
+        return { text, model };
+      } catch (err) {
+        lastErr = err;
+        console.error('chatbot:', err.message);
+        const busy = err.status === 500 || err.status === 503 || err.status === 504 || err.name === 'AbortError';
+        const modelProblem = busy || err.status === 404 || err.status === 429 ||
+          (err.status === 400 && /model/i.test(err.geminiMessage || ''));
+        if (!modelProblem) throw err; // bad key / blocked request - same on every model
+        if (busy && attempt === 0) { await new Promise((r) => setTimeout(r, 900)); continue; }
+        break;
+      }
     }
   }
   throw lastErr;
@@ -221,6 +235,7 @@ function hintFor(err) {
   if (/referer|referrer|restrict/i.test(m)) return 'המפתח מוגבל (API restrictions / referrer). ב-Google Cloud Console > Credentials בטלו את הגבלת ה-HTTP referrers של המפתח, או צרו מפתח חדש ב-AI Studio.';
   if (/has not been used|is disabled|SERVICE_DISABLED/i.test(m)) return 'ה-Generative Language API לא מופעל בפרויקט של המפתח. צרו מפתח דרך aistudio.google.com/apikey (שם זה מופעל אוטומטית).';
   if (st === 429 || /quota|RESOURCE_EXHAUSTED/i.test(m)) return 'נגמרה המכסה (quota) של המפתח. המתינו, או הפעילו חיוב ב-Google AI Studio.';
+  if (st === 503 || st === 500 || /high demand|overloaded|UNAVAILABLE/i.test(m)) return 'השרתים של Google עמוסים כרגע בכל המודלים שנוסו. זה זמני - נסו שוב בעוד כמה דקות.';
   if (st === 404) return 'המודל לא נמצא. אפשר להגדיר ב-Vercel משתנה GEMINI_MODEL עם שם מודל עדכני.';
   if (/location|region|not supported/i.test(m)) return 'Gemini לא זמין באזור של שרת Vercel. ב-Vercel > Settings > Functions שנו את Function Region (למשל ל-fra1 או iad1).';
   return 'שגיאה לא צפויה - שלחו את הטקסט הזה לתמיכה.';
