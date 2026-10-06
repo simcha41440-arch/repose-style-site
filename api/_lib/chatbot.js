@@ -22,10 +22,22 @@ const { CATALOG, STORE_INFO, SITE_URL } = require('./chatKnowledge');
 // working when an older model (like gemini-2.5-flash) is retired.
 // GEMINI_MODEL in Vercel, if set, is tried first.
 // flash-lite is fast and rarely overloaded, so it's the second choice.
-const FALLBACK_MODELS = ['gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-2.5-flash'];
+// Order matters. Live diagnostics showed gemini-flash-latest is often
+// overloaded (503) and its free-tier quota runs out (429), while
+// flash-lite answered every time - so flash-lite goes first: fast, high
+// free quota, and plenty good for store questions.
+const FALLBACK_MODELS = ['gemini-flash-lite-latest', 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+
+// A model that just said "quota exceeded" (429) is skipped for a while on
+// this server instance, so later visitors don't wait on it again.
+const modelCooldown = {};
+function coolDown(model, ms) { modelCooldown[model] = Date.now() + ms; }
+
 function modelList() {
   const preferred = sanitizeEnvValue(process.env.GEMINI_MODEL);
-  return [preferred].concat(FALLBACK_MODELS).filter((m, i, a) => m && a.indexOf(m) === i);
+  const all = [preferred].concat(FALLBACK_MODELS).filter((m, i, a) => m && a.indexOf(m) === i);
+  const ready = all.filter((m) => !(modelCooldown[m] > Date.now()));
+  return ready.length ? ready : all; // if everything is cooling down, try anyway
 }
 
 // Per-IP limit: 40 messages per 15 minutes is plenty for a real shopper
@@ -227,6 +239,7 @@ async function callGeminiWithFallback(opts) {
         attempts.push({ model, status: err.status || (err.name === 'AbortError' ? 'timeout' : null),
           error: String(err.geminiMessage || err.message || '').slice(0, 220) });
         console.error('chatbot:', err.message);
+        if (err.status === 429) coolDown(model, 10 * 60 * 1000);
         const busy = err.status === 500 || err.status === 503 || err.status === 504 || err.name === 'AbortError';
         const modelProblem = busy || err.status === 404 || err.status === 429 ||
           (err.status === 400 && /model/i.test(err.geminiMessage || ''));
@@ -272,7 +285,7 @@ async function handleChatHealth(req, res, supabase) {
   const started = Date.now();
   // ?chat_health=full runs a real customer-style question with the full
   // store prompt (exactly like the chat window does) instead of a tiny ping.
-  const full = req.query && req.query.chat_health === 'full';
+  const full = !!(req.query && (req.query.chat_health === 'full' || req.query.full));
   let systemPrompt = 'Answer in one short Hebrew word.';
   let question = 'שלום';
   if (full) {
