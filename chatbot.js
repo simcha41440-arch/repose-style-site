@@ -43,16 +43,31 @@
 
   /* ---------- styles ---------- */
   var css = '' +
-  '#rs-chat-btn{position:fixed;bottom:96px;right:22px;z-index:1140;width:58px;height:58px;border-radius:50%;border:none;' +
-    'background:linear-gradient(145deg,#D6B15E,#8A6C2E);color:#fff;display:flex;align-items:center;justify-content:center;' +
-    'box-shadow:0 10px 26px -6px rgba(20,16,12,.5);cursor:pointer;transition:transform .25s ease,box-shadow .25s ease;padding:0;}' +
-  '#rs-chat-btn:hover{transform:scale(1.07);box-shadow:0 14px 32px -6px rgba(20,16,12,.55);}' +
-  '#rs-chat-btn:focus-visible{outline:3px solid #2B2420;outline-offset:3px;}' +
-  '#rs-chat-btn svg{width:28px;height:28px;}' +
-  '#rs-chat-btn .rs-chat-badge{position:absolute;top:-2px;left:-2px;background:#2B2420;color:#F1DFA0;font:600 10px/1 Rubik,Arial,sans-serif;' +
-    'padding:4px 6px;border-radius:999px;letter-spacing:.04em;}' +
-  '#rs-chat-btn.rs-open{transform:scale(.9);}' +
-  '#rs-chat-panel{position:fixed;bottom:166px;right:22px;z-index:1160;width:370px;max-width:calc(100vw - 32px);height:540px;max-height:calc(100vh - 190px);' +
+  /* Chat button: dark "ink" disc with a slowly turning gold ring and a
+     gold sparkle mark - matches the site's black & gold palette. */
+  '#rs-chat-btn{position:fixed;bottom:104px;right:21px;z-index:1140;width:60px;height:60px;border-radius:50%;border:none;padding:0;cursor:pointer;' +
+    'display:flex;align-items:center;justify-content:center;isolation:isolate;' +
+    'background:radial-gradient(circle at 35% 28%,#4A3D33 0%,#2B2420 45%,#14100C 100%);' +
+    'box-shadow:0 14px 30px -8px rgba(20,16,12,.65),0 0 0 1px rgba(227,195,120,.25);' +
+    'transition:transform .35s cubic-bezier(.19,1,.22,1),box-shadow .35s ease,opacity .25s ease;}' +
+  /* rotating gold ring */
+  '#rs-chat-btn::before{content:"";position:absolute;inset:-3px;border-radius:50%;z-index:-1;' +
+    'background:conic-gradient(from 0deg,#8A6C2E,#F3DE9C,#B08A3E,#FFF3C9,#8A6C2E,#D6B15E,#8A6C2E);animation:rsRing 6s linear infinite;}' +
+  /* inner dark disc + fine inner gold line */
+  '#rs-chat-btn::after{content:"";position:absolute;inset:1px;border-radius:50%;z-index:-1;' +
+    'background:radial-gradient(circle at 35% 28%,#4A3D33 0%,#2B2420 45%,#14100C 100%);box-shadow:inset 0 0 0 4px rgba(20,16,12,.9),inset 0 0 0 5px rgba(227,195,120,.45);}' +
+  '@keyframes rsRing{to{transform:rotate(360deg)}}' +
+  '#rs-chat-btn:hover{transform:translateY(-2px) scale(1.06);box-shadow:0 20px 38px -10px rgba(20,16,12,.7),0 0 22px -4px rgba(227,195,120,.55);}' +
+  '#rs-chat-btn:focus-visible{outline:2px solid #B08A3E;outline-offset:4px;}' +
+  '#rs-chat-btn svg{width:28px;height:28px;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4));transition:transform .5s cubic-bezier(.19,1,.22,1);}' +
+  '#rs-chat-btn:hover svg{transform:rotate(-12deg) scale(1.08);}' +
+  '#rs-chat-btn .rs-chat-badge{position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);padding:2px 7px;border-radius:999px;' +
+    'font:700 9px/1.2 Rubik,Arial,sans-serif;letter-spacing:.12em;color:#2B2420;background:linear-gradient(135deg,#F3DE9C,#D6B15E 55%,#B08A3E);' +
+    'box-shadow:0 3px 8px -3px rgba(0,0,0,.5);}' +
+  '#rs-chat-btn.rs-open{transform:scale(.92);}' +
+  '#rs-chat-btn.rs-hidden{opacity:0;pointer-events:none;transform:scale(.6);}' +
+  '@media (max-width:680px){#rs-chat-btn{bottom:88px;right:15px;width:54px;height:54px;}#rs-chat-btn svg{width:25px;height:25px;}}' +
+  '#rs-chat-panel{position:fixed;bottom:178px;right:22px;z-index:1160;width:370px;max-width:calc(100vw - 32px);height:540px;max-height:calc(100vh - 190px);' +
     'background:#FFFDF8;border:1px solid #D8B96C;border-radius:20px;box-shadow:0 24px 60px -18px rgba(28,23,18,.45);' +
     'display:flex;flex-direction:column;overflow:hidden;direction:rtl;font-family:Rubik,"Almoni Neue",Arial,sans-serif;color:#2B2420;' +
     'opacity:0;transform:translateY(14px) scale(.98);pointer-events:none;transition:opacity .22s ease,transform .22s ease;}' +
@@ -91,7 +106,7 @@
     '#rs-chat-panel{right:8px;left:8px;width:auto;max-width:none;bottom:8px;height:calc(100vh - 16px);height:calc(100dvh - 16px);max-height:none;}' +
     '#rs-chat-btn.rs-open{opacity:0;pointer-events:none;}' +
   '}' +
-  '@media (prefers-reduced-motion:reduce){#rs-chat-panel,#rs-chat-btn{transition:none}.rs-typing i{animation:none}}' +
+  '@media (prefers-reduced-motion:reduce){#rs-chat-panel,#rs-chat-btn{transition:none}#rs-chat-btn::before{animation:none}.rs-typing i{animation:none}}' +
   'body.rs-print-hide #rs-chat-btn{display:none}';
 
   var style = document.createElement('style');
@@ -99,7 +114,10 @@
   style.textContent = css;
   document.head.appendChild(style);
 
-  var ICON_CHAT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 11h.01M12 11h.01M15.5 11h.01" stroke-width="2.6"/></svg>';
+  var ICON_CHAT = '<svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="rsGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF3C9"/><stop offset=".45" stop-color="#E3C378"/><stop offset="1" stop-color="#B08A3E"/></linearGradient></defs>' +
+    '<path fill="url(#rsGold)" d="M11 2.5c.5 3.9 2.6 6 6.5 6.5-3.9.5-6 2.6-6.5 6.5-.5-3.9-2.6-6-6.5-6.5 3.9-.5 6-2.6 6.5-6.5z"/>' +
+    '<path fill="url(#rsGold)" d="M18 13.5c.28 2 1.2 2.92 3.2 3.2-2 .28-2.92 1.2-3.2 3.2-.28-2-1.2-2.92-3.2-3.2 2-.28 2.92-1.2 3.2-3.2z" opacity=".9"/>' +
+    '<circle cx="5.5" cy="18" r="1.1" fill="url(#rsGold)" opacity=".75"/></svg>';
   var ICON_SPARK = '<svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>';
   var ICON_CLOSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
   var ICON_RESET = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>';
@@ -139,6 +157,18 @@
     document.body.appendChild(panel);
   }
   if (document.body) mount(); else document.addEventListener('DOMContentLoaded', mount);
+
+  // Same behaviour as the WhatsApp button: step out of the way while the
+  // cart, wishlist, search, payment or any other panel/popup is open.
+  var HIDE_BEHIND_IDS = ['cart-drawer', 'wishlist-drawer', 'search-panel', 'newsletter-modal',
+    'payment-modal', 'success-modal', 'mobile-menu'];
+  setInterval(function () {
+    var covered = HIDE_BEHIND_IDS.some(function (id) {
+      var el = document.getElementById(id);
+      return el && el.classList.contains('open');
+    }) || !!document.getElementById('rs-gift-ov');
+    btn.classList.toggle('rs-hidden', covered);
+  }, 200);
 
   var msgsEl = panel.querySelector('#rs-chat-msgs');
   var suggEl = panel.querySelector('#rs-chat-sugg');
