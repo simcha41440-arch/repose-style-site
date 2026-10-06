@@ -21,7 +21,8 @@ const { CATALOG, STORE_INFO, SITE_URL } = require('./chatKnowledge');
 // auto-updating alias for the current Flash model, so the bot keeps
 // working when an older model (like gemini-2.5-flash) is retired.
 // GEMINI_MODEL in Vercel, if set, is tried first.
-const FALLBACK_MODELS = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-flash-lite-latest'];
+// flash-lite is fast and rarely overloaded, so it's the second choice.
+const FALLBACK_MODELS = ['gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-2.5-flash'];
 function modelList() {
   const preferred = sanitizeEnvValue(process.env.GEMINI_MODEL);
   return [preferred].concat(FALLBACK_MODELS).filter((m, i, a) => m && a.indexOf(m) === i);
@@ -141,7 +142,7 @@ function sanitizeHistory(messages) {
   return cleaned.map((m) => ({ role: m.role, parts: [{ text: m.text }] }));
 }
 
-async function callGemini({ apiKey, model, systemPrompt, contents }) {
+async function callGemini({ apiKey, model, systemPrompt, contents, timeoutMs }) {
   const generationConfig = { temperature: 0.4, maxOutputTokens: 1024 };
   // 2.5 Flash "thinks" by default, which is slower and eats the output
   // token budget - a store FAQ bot doesn't need it.
@@ -151,7 +152,7 @@ async function callGemini({ apiKey, model, systemPrompt, contents }) {
   else generationConfig.maxOutputTokens = 4096;
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 15000);
+  const timer = setTimeout(() => controller.abort(), timeoutMs || 12000);
   try {
     const resp = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
@@ -196,15 +197,19 @@ async function callGemini({ apiKey, model, systemPrompt, contents }) {
 async function callGeminiWithFallback(opts) {
   const models = modelList();
   let lastErr;
-  const deadline = Date.now() + 24000; // stay inside the function's time limit
+  // Hard time budget - must finish well inside Vercel's 30s function limit,
+  // or the visitor gets a raw timeout instead of a friendly answer.
+  const deadline = Date.now() + 20000;
   for (const model of models) {
     // Google's "high demand" / temporary errors (500/503/504) usually
     // clear within a second or two - retry the same model once, then
     // move on to the next model instead of giving up.
     for (let attempt = 0; attempt < 2; attempt++) {
-      if (Date.now() > deadline) throw lastErr || new Error('Gemini: out of time');
+      const left = deadline - Date.now();
+      if (left < 2500) throw lastErr || new Error('Gemini: out of time');
       try {
-        const text = await callGemini(Object.assign({}, opts, { model }));
+        // A single slow model can't eat the whole budget.
+        const text = await callGemini(Object.assign({}, opts, { model, timeoutMs: Math.min(11000, left) }));
         if (!text) { // empty answer (e.g. blocked/cut off) - try the next model
           lastErr = new Error(`Gemini returned an empty reply (${model})`);
           break;
@@ -217,7 +222,8 @@ async function callGeminiWithFallback(opts) {
         const modelProblem = busy || err.status === 404 || err.status === 429 ||
           (err.status === 400 && /model/i.test(err.geminiMessage || ''));
         if (!modelProblem) throw err; // bad key / blocked request - same on every model
-        if (busy && attempt === 0) { await new Promise((r) => setTimeout(r, 900)); continue; }
+        // Quick retry only for a fast "busy" answer - a timeout moves straight on.
+        if (busy && err.name !== 'AbortError' && attempt === 0) { await new Promise((r) => setTimeout(r, 700)); continue; }
         break;
       }
     }
@@ -316,6 +322,15 @@ const FALLBACK_REPLY =
   'מצטערים, לא הצלחתי לענות כרגע. אפשר לפנות אלינו בטלפון או בוואטסאפ 055-6713828, או דרך עמוד צור קשר - ונשמח לעזור.';
 
 async function handleChat(req, res, supabase, body) {
+  try {
+    return await handleChatInner(req, res, supabase, body);
+  } catch (err) {
+    console.error('chatbot: unexpected error:', err && err.message);
+    if (!res.headersSent) return res.status(500).json({ error: 'internal', reply: FALLBACK_REPLY });
+  }
+}
+
+async function handleChatInner(req, res, supabase, body) {
   const apiKey = sanitizeEnvValue(process.env.GEMINI_API_KEY);
   if (!apiKey) {
     console.error('chatbot: GEMINI_API_KEY is not set in Vercel environment variables.');

@@ -325,17 +325,27 @@
     msgsEl.appendChild(typing);
     msgsEl.scrollTop = msgsEl.scrollHeight;
 
-    fetch('/api/inquiries', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'chat',
-        session_id: sessionId,
-        messages: history.slice(-16),
-        page: location.origin + location.pathname
+    var payload = JSON.stringify({
+      type: 'chat',
+      session_id: sessionId,
+      messages: history.slice(-16),
+      page: location.origin + location.pathname
+    });
+    function ask() {
+      return fetch('/api/inquiries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, status: r.status, d: d }; }); });
+    }
+    // One automatic, silent retry for a temporary server/network hiccup,
+    // so the visitor only sees an error if it happens twice in a row.
+    ask()
+      .then(function (res) {
+        // Retry only when the server gave no answer at all (timeout/crash);
+        // a friendly server-side reply is shown as-is.
+        if (res.ok || (res.d && res.d.reply) || res.status === 429 || res.status === 400) return res;
+        return new Promise(function (r) { setTimeout(r, 1200); }).then(ask);
+      }, function () {
+        return new Promise(function (r) { setTimeout(r, 1200); }).then(ask);
       })
-    })
-      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, d: d }; }); })
       .then(function (res) {
         typing.remove();
         var reply = res.d && res.d.reply;
