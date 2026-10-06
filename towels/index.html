@@ -2283,6 +2283,7 @@ if("serviceWorker" in navigator){
   #pd-image{transition:opacity .22s ease;}
   #pd-image.swapping{opacity:0;}
   .pd-specs{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px;}
+  .pd-specs:empty{display:none;}
   .pd-specs span{
     font-size:13px;border:1px solid var(--line);padding:8px 16px;border-radius:20px;background:var(--ivory);
   }
@@ -6816,7 +6817,9 @@ function renderProductDetail(){
   if(pdGallery) pdGallery.style.display = (p.category === "perfume" && !p.scent) ? "" : "none";
   if(careBand) careBand.style.display = isBedding(p) || p.category === "towel" ? "" : "none";
   if(p.category === "perfume"){
-    document.getElementById("pd-specs").innerHTML = (p.features || []).slice(0,4).map(f=>`<span>${f}</span>`).join("");
+    // Perfume devices: no feature chips here (the full description below says it all).
+    // Scent bottles / tester pack keep their short size chip.
+    document.getElementById("pd-specs").innerHTML = p.scent ? (p.features || []).slice(0,4).map(f=>`<span>${f}</span>`).join("") : "";
   } else if(p.category === "towel"){
     document.getElementById("pd-specs").innerHTML = `
       <span>${p.cotton}% כותנה</span>
