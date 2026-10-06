@@ -1,4 +1,4 @@
-const CACHE_NAME = "rstyle-shell-v17";
+const CACHE_NAME = "rstyle-shell-v18";
 const SHELL_URLS = [
   "/",
   "/index.html",

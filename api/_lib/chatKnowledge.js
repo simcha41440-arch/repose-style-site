@@ -1,0 +1,97 @@
+// Knowledge base for the site's AI chat assistant (api/_lib/chatbot.js).
+//
+// IMPORTANT: CATALOG mirrors the PRODUCTS / TOWELS_DATA / PERFUME_DATA /
+// SCENTS_DATA arrays in index.html (and BASE_CATALOG in pricing.js). When a
+// product is added/removed there, update it here too. Price changes, sale
+// prices, out-of-stock flags and deleted products made in the admin panel
+// are picked up automatically at request time from Supabase's
+// product_overrides table - no need to touch this file for those.
+
+const SITE_URL = 'https://reposestyle.com';
+
+const CATALOG = [
+  { id: "prachim", name: "אביב", nameEn: "AVIV", price: 1080, type: "bedding", collection: "Bloom", cotton: 100, thread: 400, tag: "רב מכר" },
+  { id: "simfonia", name: "סימפוניה", nameEn: "SIMFONIA", price: 700, type: "bedding", collection: "Heritage", cotton: 50, thread: 250 },
+  { id: "rakefet", name: "רקפת", nameEn: "RAKEFET", price: 890, type: "bedding", collection: "Bloom", cotton: 100, thread: 400 },
+  { id: "yahalom", name: "יהלום", nameEn: "YAHALOM", price: 1490, type: "bedding", collection: "Renaissance", cotton: 100, thread: 400, embroidery: "free", tag: "פרימיום" },
+  { id: "london", name: "לונדון", nameEn: "LONDON", price: 690, type: "bedding", collection: "Renaissance", cotton: 100, thread: 400, embroidery: "paid" },
+  { id: "royal", name: "רויאל", nameEn: "ROYAL", price: 1190, type: "bedding", collection: "Renaissance", cotton: 100, thread: 400 },
+  { id: "star", name: "סטאר", nameEn: "STAR", price: 680, type: "bedding", collection: "Heritage", cotton: 50, thread: 250 },
+  { id: "okeanos", name: "אוקיינוס", nameEn: "OKEANOS", price: 590, type: "bedding", collection: "Heritage", cotton: 50, thread: 250 },
+  { id: "classic", name: "קלאסיק", nameEn: "CLASSIC", price: 665, type: "bedding", collection: "Heritage", cotton: 50, thread: 250 },
+  { id: "aviv", name: "סימפוניה פרימיום", nameEn: "SIMFONIA PREMIUM", price: 1080, type: "bedding", collection: "Renaissance", cotton: 100, thread: 400 },
+  { id: "simfonia-premium", name: "פוקסיה", nameEn: "FUCHSIA", price: 1000, type: "bedding", collection: "Bloom", cotton: 100, thread: 400 },
+  { id: "elegantia", name: "מלודיה", nameEn: "MELODY", price: 700, type: "bedding", collection: "Heritage", cotton: 50, thread: 250 },
+  { id: "towel-bath-classic", name: "מגבת אמבט לבנה קלאסית", price: 79, type: "towel", tag: "רך וסופג במיוחד" },
+  { id: "towel-spa-set", name: "סט מגבות ספא לבנות", price: 99, type: "towel", tag: "רב מכר" },
+  { id: "towel-hand-premium", name: "מגבת ידיים לבנה פרימיום", price: 65, type: "towel" },
+  { id: "towel-body-boutique", name: "מגבת גוף מלון בוטיק", price: 85, type: "towel" },
+  { id: "towel-folded-set", name: "מגבות רחצה מתקפלות לבנות", price: 95, type: "towel" },
+  { id: "towel-full-set", name: "סט מגבות פנים, ידיים וגוף", price: 100, type: "towel" },
+  { id: "perfume-white", name: "מכשיר בישום לבן קלאסי", price: 350, type: "diffuser", features: ["גוף לבן חלק בפינות מעוגלות","פרופיל דק שמתאים לקיר או למדף","מראה מינימליסטי שלא מושך תשומת לב","הדגם המשתלם בסדרה"] },
+  { id: "perfume-gold", name: "מכשיר בישום גולד", price: 450, type: "diffuser", colors: ["לבן","שחור"], features: ["גוף בלבן מבריק או בשחור אלגנטי (לבחירתכם), עם מסגרת מתכתית בגוון זהב","כפתור הפעלה בחלקו העליון","קו נקי שמשתלב בסלון, בחדר שינה ובלובי","מתאים גם כמתנה מעוצבת לבית"] },
+  { id: "perfume-graphite", name: "מכשיר בישום גרפיט חכם", price: 560, type: "diffuser", colors: ["גרפיט","לבן"], features: ["גימור גרפיט מתכתי עם פאנל קדמי שחור","חיבור לאפליקציה באמצעות סריקת קוד QR שעל המכשיר","עיצוב עכשווי שמתאים לחללים מודרניים ומוקפדים","הדגם המתקדם בסדרה"] },
+  { id: "scent-holyland", name: "הולילנד", price: 189, type: "scent" },
+  { id: "scent-miami", name: "מיאמי", price: 189, type: "scent" },
+  { id: "scent-spring", name: "ספרינג", price: 189, type: "scent" },
+  { id: "scent-newyork", name: "ניו יורק", price: 189, type: "scent" },
+  { id: "scent-paris", name: "פריז", price: 189, type: "scent" },
+  { id: "scent-lacoste", name: "לקוסט", price: 189, type: "scent" },
+  { id: "scent-tea-time", name: "תה טיים", price: 189, type: "scent" },
+  { id: "scent-royal-beach", name: "רויאל ביץ", price: 189, type: "scent" },
+  { id: "scent-olympia", name: "אולימפיה", price: 189, type: "scent" },
+  { id: "scent-delta", name: "דלתא", price: 189, type: "scent" },
+  { id: "scent-boutique-hotel", name: "מלון בוטיק", price: 189, type: "scent" },
+  { id: "scent-nautica-home", name: "נאוטיקה הום", price: 189, type: "scent" },
+  { id: "scent-jasmine", name: "יסמין", price: 189, type: "scent" },
+  { id: "scent-black-jasmine", name: "בלאק יסמין", price: 189, type: "scent" },
+  { id: "scent-luxury-spa", name: "ספא יוקרתי", price: 189, type: "scent" },
+  { id: "scent-karamim", name: "כרמים", price: 189, type: "scent" },
+  { id: "scent-bereshit", name: "בראשית", price: 189, type: "scent" },
+  { id: "scent-patal", name: "פתאל", price: 189, type: "scent" },
+  { id: "scent-blue-chanel", name: "בלו שאנל", price: 189, type: "scent" },
+  { id: "scent-london", name: "לונדון", price: 189, type: "scent" },
+  { id: "scent-pink-lotus", name: "פינק לוטוס", price: 189, type: "scent" },
+  { id: "scent-abercrombie", name: "אמרקומבי", price: 189, type: "scent" },
+  { id: "scent-my-secret", name: "My secret", price: 189, type: "scent" },
+];
+
+// Static store information, taken from the about / shipping / FAQ pages.
+const STORE_INFO = `
+שם העסק: רפאוז סטייל (Repose Style) - חנות אונליין למצעים יוקרתיים, מגבות, מכשירי בישום וניחוחות לבית.
+הסלוגן: "הרגשה של בית מלון בבית שלכם".
+כתובת: אלפנדרי 20, ירושלים.
+טלפון / וואטסאפ: 055-6713828.
+דוא"ל: rstyle.israel@gmail.com.
+
+קולקציות מצעים:
+- Renaissance ו-Bloom: 100% כותנה, אריגת סאטן, צפיפות של עד 400 חוט לאינצ'.
+- Heritage: 50% כותנה, אריגת סאטן, 250 חוט לאינצ'.
+- עמודי הקולקציות: ${SITE_URL}/shop/renaissance , ${SITE_URL}/shop/bloom , ${SITE_URL}/shop/heritage
+
+מה כולל סט מצעים (המחיר המוצג באתר הוא ל"זוג יחידים"):
+- 2 סדינים עם גומי מלא 90/200/30 ס"מ
+- 2 ציפות לשמיכה יחיד 150/200 ס"מ
+- 2 ציפיות לכרית מדוגמות + 2 ציפיות לכרית חלקות
+- אפשר לבחור בעמוד המוצר גם "סט יחיד" (חצי מהכמויות) - במחיר של חצי מהמחיר המלא, מעוגל.
+
+רקמת ראשי תיבות: בדגמים "לונדון" ו"יהלום" אפשר להוסיף רקמת ראשי תיבות בעמוד המוצר. בלונדון התוספת היא 200 ₪, ביהלום הרקמה כלולה במחיר (עד 2 אותיות).
+
+מגבות: 100% כותנה, 600 גרם למ"ר. עמוד המגבות: ${SITE_URL}/towels
+מכשירי בישום וניחוחות: עמוד ${SITE_URL}/perfume . בקבוקי ניחוח הם בנפח חצי ליטר, 189 ₪ לבקבוק.
+
+כביסה וטיפול במצעים: כביסה במים פושרים עד 40 מעלות, בתוכנית עדינה, ללא הלבנה. ייבוש בטמפרטורה נמוכה או תלייה בצל.
+
+משלוחים: שליח עד הבית, 3-7 ימי עסקים מרגע אישור ההזמנה. לאחר המשלוח נשלח מספר מעקב.
+דמי משלוח: 29 ₪. משלוח חינם בהזמנה מעל 299 ₪.
+החזרות והחלפות: עד 14 יום מקבלת המוצר, בתנאי שלא נעשה בו שימוש והאריזה המקורית נשמרה. מתאמים בטלפון או בדוא"ל.
+זיכוי כספי: לאמצעי התשלום המקורי, תוך עד 14 ימי עסקים מקבלת המוצר המוחזר ובדיקתו.
+תשלום: בעמוד סליקה מאובטח ומוצפן של טרנזילה (Tranzila). האתר לא שומר ולא נחשף לפרטי כרטיס האשראי.
+מבצע מתנה: בכל רכישה מעל 500 ₪ מקבלים במתנה שקית ריח מעוצבת (Elegant Sachet), בניחוחות לבנדר, ורד או יסמין. לפרטים נוספים על המתנה (למשל בחירת ניחוח) - להפנות לטלפון/וואטסאפ.
+קופונים: ניתן להזין קוד קופון בעמוד התשלום (אם יש ללקוח קוד).
+
+עמודים שימושיים: חנות ${SITE_URL}/shop , מבצעים ${SITE_URL}/sale , משלוחים והחזרות ${SITE_URL}/shipping , שאלות נפוצות ${SITE_URL}/faq , צור קשר ${SITE_URL}/contact , אודות ${SITE_URL}/about , האזור האישי ${SITE_URL}/account
+עמוד מוצר: ${SITE_URL}/product/<id> (לפי ה-id שברשימת המוצרים).
+`;
+
+module.exports = { CATALOG, STORE_INFO, SITE_URL };

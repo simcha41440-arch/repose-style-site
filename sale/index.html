@@ -1060,6 +1060,8 @@ if("serviceWorker" in navigator){
   }
   a{color:inherit;text-decoration:none;}
   button{font-family:inherit;cursor:pointer;}
+  /* Text areas (contact message, checkout notes): visitors may only drag them taller/shorter - never wider/narrower. */
+  textarea{resize:vertical;min-height:90px;max-width:100%;}
   img{max-width:100%;display:block;}
   .eyebrow{
     font-size:12px;
@@ -1201,7 +1203,35 @@ if("serviceWorker" in navigator){
     padding:10px 20px;position:relative;z-index:1;border-radius:var(--radius);
     transition:color .25s ease, text-shadow .25s ease;
   }
-  nav.nav-links button.active, nav.nav-links a.active{color:var(--ivory);}
+  /* Current page: solid gold pill with white text, so it stays clearly visible on the light (scrolled / inner-page) nav bar too. */
+  nav.nav-links button.active, nav.nav-links a.active{color:#fff;text-shadow:none;background:linear-gradient(135deg, var(--gold-dark), var(--gold));box-shadow:0 6px 14px -8px rgba(138,108,46,0.7);}
+  /* Hovered top-level item sits on the moving gold pill - white text keeps it readable. */
+  nav.nav-links > a:hover, nav.nav-links > a:focus-visible, nav.nav-links .nav-dd:hover > a, nav.nav-links .nav-dd > a:focus-visible{color:#fff;text-shadow:none;}
+  /* ===== Top-nav dropdowns (מצעים / מגבות / בישום) ===== */
+  .nav-dd{position:relative;display:flex;}
+  nav.nav-links .nav-dd > a{display:inline-flex;align-items:center;gap:5px;}
+  .nav-dd-chev{width:12px;height:12px;flex:none;opacity:.75;transition:transform .25s ease;}
+  .nav-dd:hover .nav-dd-chev,.nav-dd:focus-within .nav-dd-chev{transform:rotate(180deg);}
+  .nav-dd-menu{position:absolute;top:100%;right:50%;transform:translate(50%,8px);z-index:50;min-width:250px;
+    padding:18px 0 0;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .22s ease, transform .22s ease, visibility 0s linear .22s;}
+  .nav-dd-menu::before{content:"";position:absolute;top:12px;left:0;right:0;bottom:0;z-index:-1;background:#FFFDF6;border:1px solid var(--line);
+    border-radius:18px;box-shadow:0 26px 50px -18px rgba(43,36,32,0.38);}
+  .nav-dd-menu::after{content:"";position:absolute;top:7px;right:50%;width:11px;height:11px;margin-right:-6px;background:#FFFDF6;
+    border-top:1px solid var(--line);border-left:1px solid var(--line);transform:rotate(45deg);}
+  .nav-dd:hover .nav-dd-menu,.nav-dd:focus-within .nav-dd-menu{opacity:1;visibility:visible;pointer-events:auto;transform:translate(50%,0);transition-delay:0s;}
+  nav.nav-links .nav-dd-menu a{display:block;margin:0 8px;padding:11px 16px;border-radius:12px;text-align:right;white-space:nowrap;
+    color:var(--text-gold);text-shadow:none;font-size:14px;font-weight:600;letter-spacing:0;transition:background .2s ease;}
+  nav.nav-links .nav-dd-menu a:last-child{margin-bottom:8px;}
+  nav.nav-links .nav-dd-menu a:first-child{margin-top:8px;}
+  nav.nav-links .nav-dd-menu a b{display:block;font-weight:600;}
+  nav.nav-links .nav-dd-menu a small{display:block;margin-top:2px;font-size:12px;font-weight:400;color:var(--taupe);}
+  nav.nav-links .nav-dd-menu a:hover,nav.nav-links .nav-dd-menu a:focus-visible{background:linear-gradient(135deg,#FBF1D3,#F3E2AE);outline:none;}
+  .mobile-menu a.mm-sub{padding:10px 18px 10px 4px;font-size:14.5px;color:var(--taupe);border-bottom:1px dashed rgba(216,185,108,0.55);}
+  .mobile-menu a.mm-sub::before{content:"–";margin-left:8px;color:var(--gold);}
+  .mobile-menu a.mm-sub{justify-content:flex-start;}
+  /* Towels page sub-category chips */
+  .towel-filter{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin:-6px auto 44px;}
+  #scents{scroll-margin-top:120px;}
   @media (min-width:861px) and (max-width:1180px){
     nav.nav-links button, nav.nav-links a{padding:10px 11px;font-size:13.5px;}
     .nav-inner{gap:14px;}
@@ -1790,6 +1820,63 @@ if("serviceWorker" in navigator){
   .cta-band .btn.light{color:var(--ink);border-color:rgba(20,20,20,0.35);}
   .cta-band .btn.light:hover{background:var(--ink);color:var(--ivory);border-color:var(--ink);}
 
+  /* ===== Home: benefits strip + CTA band - light "warm white" redesign ===== */
+  .benefits{
+    background:
+      radial-gradient(760px 260px at 50% 0%, rgba(238,220,166,0.38), transparent 70%),
+      linear-gradient(180deg,#FFFDF8 0%,#FBF6EA 100%);
+    border-top:1px solid rgba(216,185,108,0.55);border-bottom:1px solid rgba(216,185,108,0.55);
+    padding:18px 0;
+  }
+  .benefit{position:relative;border-left:none;padding:54px 30px 50px;transition:transform .45s cubic-bezier(.19,1,.22,1);}
+  .benefit:not(:last-child)::after{content:"";position:absolute;left:0;top:18%;bottom:18%;width:1px;
+    background:linear-gradient(180deg,transparent,var(--line) 30%,var(--line) 70%,transparent);}
+  .benefit svg{box-sizing:border-box;width:66px;height:66px;padding:17px;margin-bottom:22px;border-radius:50%;
+    stroke:var(--gold-dark);border:1px solid var(--line);
+    background:radial-gradient(circle at 32% 28%, #FFFFFF 0%, #FBF1D3 60%, #F1DFA0 100%);
+    box-shadow:0 14px 28px -14px rgba(138,108,46,0.6), inset 0 0 0 5px rgba(255,255,255,0.75);
+    transition:background .4s ease, stroke .4s ease, transform .45s cubic-bezier(.19,1,.22,1);}
+  .benefit:hover{transform:translateY(-5px);}
+  .benefit:hover svg{background:linear-gradient(145deg,var(--gold-metal),var(--gold-dark));stroke:#fff;transform:rotate(-6deg);}
+  .benefit h3{color:var(--text-gold);font-size:18px;margin-bottom:12px;}
+  .benefit h3::after{content:"";display:block;width:28px;height:2px;margin:12px auto 0;border-radius:2px;
+    background:linear-gradient(90deg,var(--gold-light),var(--gold));}
+  .benefit p{color:var(--taupe);font-size:14.5px;line-height:1.75;max-width:250px;margin-inline:auto;}
+  @media (max-width:860px){
+    .benefits{padding:26px 0;}
+    .benefits-grid{gap:14px;}
+    .benefit{border:1px solid rgba(216,185,108,0.6);border-radius:22px;background:rgba(255,255,255,0.75);padding:32px 18px 30px;
+      box-shadow:0 18px 36px -26px rgba(43,36,32,0.35);}
+    .benefit:not(:last-child)::after{display:none;}
+    .benefit svg{width:58px;height:58px;padding:15px;margin-bottom:16px;}
+  }
+
+  .cta-band{position:relative;overflow:hidden;isolation:isolate;padding:130px 24px;
+    background:
+      radial-gradient(620px 320px at 50% 0%, rgba(238,220,166,0.5), transparent 72%),
+      radial-gradient(520px 300px at 50% 100%, rgba(238,220,166,0.32), transparent 72%),
+      linear-gradient(180deg,#FBF6EA 0%,#FFFDF8 50%,#FBF6EA 100%);
+    border-top:1px solid rgba(216,185,108,0.45);}
+  /* double gold frame */
+  .cta-band::before{content:"";position:absolute;z-index:-1;top:38px;bottom:38px;left:max(24px, calc(50% - 560px));right:max(24px, calc(50% - 560px));
+    border:1px solid rgba(216,185,108,0.75);border-radius:30px;
+    box-shadow:inset 0 0 0 9px rgba(255,253,248,0.9), inset 0 0 0 10px rgba(216,185,108,0.4), 0 30px 70px -40px rgba(138,108,46,0.45);
+    background:rgba(255,255,255,0.45);}
+  /* faint RS monogram watermark */
+  .cta-band::after{content:"";position:absolute;z-index:-1;left:50%;top:50%;width:420px;height:360px;transform:translate(-50%,-50%);
+    background:url("/images/site/rs-mark.png") center/contain no-repeat;opacity:0.07;pointer-events:none;}
+  .cta-band h2{font-size:clamp(30px,4.6vw,48px);margin-bottom:34px;line-height:1.2;
+    background:linear-gradient(135deg,#5A410F 0%,#B08A3E 48%,#6B4E14 100%);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .cta-band .btn.light{background:linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 45%, var(--gold-dark) 100%);
+    color:#fff;border-color:transparent;box-shadow:var(--shadow-gold);padding:18px 46px;font-size:15px;}
+  .cta-band .btn.light:hover{background:linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);color:#fff;border-color:transparent;
+    box-shadow:0 20px 40px -14px rgba(138,108,46,0.7);transform:translateY(-2px);}
+  @media (max-width:600px){
+    .cta-band{padding:96px 22px;}
+    .cta-band::before{top:22px;bottom:22px;left:14px;right:14px;border-radius:24px;}
+    .cta-band::after{width:260px;height:224px;}
+  }
+
   /* ===== FOOTER ===== */
   footer{
     position:relative;
@@ -1807,7 +1894,9 @@ if("serviceWorker" in navigator){
   }
   @media (max-width:860px){.footer-grid{grid-template-columns:1fr 1fr;}}
   @media (max-width:520px){.footer-grid{grid-template-columns:1fr;}}
-  .footer-brand{display:flex;align-items:center;gap:14px;margin-bottom:22px;}
+  .footer-brand{display:flex;width:fit-content;align-items:center;gap:14px;margin-bottom:22px;text-decoration:none;cursor:pointer;transition:opacity .25s ease;}
+  .footer-brand:hover{opacity:0.85;}
+  .footer-brand:focus-visible{outline:2px solid var(--gold-light);outline-offset:6px;border-radius:6px;}
   .footer-brand img{height:48px;filter:drop-shadow(0 0 10px rgba(210,175,113,0.45));}
   .footer-brand span{font-family:'Rubik','Almoni Neue',sans-serif;font-size:20px;letter-spacing:0.04em;color:var(--gold-pale);}
   .footer-col p{color:var(--taupe-light);font-size:14.5px;font-weight:300;line-height:1.8;}
@@ -2525,6 +2614,8 @@ if("serviceWorker" in navigator){
   .about-intro .lead{font-size:18.5px;line-height:1.9;color:var(--taupe);font-weight:300;}
 
   .about-feature{padding-top:70px;padding-bottom:20px;}
+  /* About page photo: trimmed top & bottom (square crop instead of the tall 5:6 original). */
+  .about-feature .feature-frame img{aspect-ratio:1/1;height:auto;object-fit:cover;object-position:center 50%;}
 
   .process-band{background:var(--ivory);border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
   .process-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:44px;}
@@ -2631,13 +2722,43 @@ if("serviceWorker" in navigator){
     80%{transform:translateX(3px);}
   }
 
-  .checkout-mini-contact{max-width:900px;margin:70px auto 0;text-align:center;}
-  .checkout-mini-contact h2{font-size:24px;margin-bottom:26px;position:relative;padding-bottom:16px;}
-  .checkout-mini-contact h2::after{content:"";position:absolute;bottom:0;right:50%;transform:translateX(50%);width:60px;height:2px;background:var(--gold);}
-  .mini-contact-row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;}
-  .mini-contact-row .form-group{flex:1;min-width:140px;margin-bottom:0;}
-  .mini-contact-row input{border:1px solid var(--line);background:var(--ivory);padding:11px 12px;font-size:13px;width:100%;}
-  .mini-contact-row .btn{padding:12px 22px;white-space:nowrap;}
+  /* ===== Checkout "צור קשר" card: dark/gold info panel + form ===== */
+  .checkout-mini-contact{max-width:980px;margin:80px auto 0;}
+  .mc-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.45fr);direction:rtl;background:#FFFDF6;border:1px solid var(--line);
+    border-radius:28px;overflow:hidden;box-shadow:0 30px 70px -34px rgba(43,36,32,0.45);}
+  .mc-side{position:relative;overflow:hidden;padding:46px 38px;text-align:right;color:#F1DFA0;
+    background:radial-gradient(circle at 85% 12%, rgba(214,177,94,0.30) 0%, rgba(214,177,94,0) 55%), linear-gradient(160deg,#2B2420 0%,#1C1712 100%);}
+  .mc-side::after{content:"";position:absolute;left:-60px;bottom:-60px;width:200px;height:200px;border-radius:50%;border:1px solid rgba(227,195,120,0.22);box-shadow:0 0 0 26px rgba(227,195,120,0.05);}
+  .mc-eyebrow{display:inline-block;font-size:12px;letter-spacing:0.12em;color:var(--gold-light);margin-bottom:12px;}
+  .mc-side h2{font-size:clamp(26px,3vw,34px);color:#fff;margin:0 0 14px;font-weight:500;line-height:1.2;}
+  .mc-side h2::after{content:"";display:block;width:54px;height:2px;margin-top:14px;background:linear-gradient(90deg,var(--gold-light),var(--gold));}
+  .mc-side p{font-size:15px;line-height:1.75;color:rgba(241,223,160,0.85);margin:0 0 26px;font-weight:300;}
+  .mc-links{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;position:relative;z-index:1;}
+  .mc-links a{display:flex;align-items:center;gap:12px;color:#fff;text-decoration:none;font-size:15px;padding:10px 14px;border-radius:14px;
+    border:1px solid rgba(227,195,120,0.28);background:rgba(255,255,255,0.04);transition:background .25s ease,border-color .25s ease;}
+  .mc-links a:hover{background:rgba(227,195,120,0.12);border-color:rgba(227,195,120,0.6);}
+  .mc-links a:focus-visible{outline:2px solid var(--gold-light);outline-offset:3px;}
+  .mc-links .mc-ico{width:34px;height:34px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(145deg,var(--gold-metal),var(--gold-dark));color:#fff;}
+  .mc-links .mc-ico svg{width:17px;height:17px;}
+  .mc-links small{display:block;font-size:11.5px;color:var(--gold-light);letter-spacing:0.04em;}
+  .mc-links .mc-num{direction:ltr;unicode-bidi:isolate;}
+  .mini-contact-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:44px 40px;align-content:center;}
+  .mini-contact-row .form-group{margin:0;display:flex;flex-direction:column;gap:7px;text-align:right;}
+  .mini-contact-row .mc-full{grid-column:1 / -1;}
+  .mini-contact-row label{margin:0;font-size:13px;font-weight:500;color:var(--text-gold);}
+  .mini-contact-row input,.mini-contact-row textarea{width:100%;border:1px solid var(--line);background:#fff;border-radius:14px;padding:13px 15px;
+    font-family:inherit;font-size:14.5px;color:var(--text-gold);transition:border-color .2s ease, box-shadow .2s ease;}
+  .mini-contact-row textarea{min-height:96px;line-height:1.6;}
+  .mini-contact-row input::placeholder,.mini-contact-row textarea::placeholder{color:#B9A576;}
+  .mini-contact-row input:focus,.mini-contact-row textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 4px var(--gold-glow);}
+  .mini-contact-row .btn{grid-column:1 / -1;justify-content:center;padding:16px 22px;font-size:15px;}
+  .mc-note{grid-column:1 / -1;margin:-4px 0 0;font-size:12px;color:var(--taupe);text-align:center;}
+  @media (max-width:820px){
+    .mc-card{grid-template-columns:1fr;}
+    .mc-side{padding:36px 26px;}
+    .mini-contact-row{grid-template-columns:1fr;padding:30px 22px 32px;}
+  }
 
   /* footer email */
   .footer-email{font-size:15px;letter-spacing:0.03em;text-transform:lowercase;color:var(--taupe);}
@@ -3253,17 +3374,21 @@ if("serviceWorker" in navigator){
   .pf-media img{width:82%;height:82%;object-fit:contain;mix-blend-mode:multiply;transition:transform .9s cubic-bezier(.19,1,.22,1);}
   .pf-row:hover .pf-media img{transform:scale(1.05);}
   /* Device photos are pre-padded equal-size squares (device centered at ~60%, white margin), so the image box fills the frame. */
-  .pf-media img[src$="perfume-device-white.jpg"]{width:100%;height:100%;}
-  .pf-media img[src$="perfume-device-v2.jpg"]{width:100%;height:100%;}
-  .pf-media img[src$="perfume-device-black.jpg"]{width:100%;height:100%;}
-  .pf-media img[src$="perfume-device-graphite.jpg"]{width:100%;height:100%;}
-  .pf-media img[src$="perfume-device-graphite-white.jpg"]{width:100%;height:100%;}
+  .pf-media img[src$="perfume-device-white.png"]{width:100%;height:100%;}
+  .pf-media img[src$="perfume-device-v2.png"]{width:100%;height:100%;}
+  .pf-media img[src$="perfume-device-black.png"]{width:100%;height:100%;}
+  .pf-media img[src$="perfume-device-graphite.png"]{width:100%;height:100%;}
+  .pf-media img[src$="perfume-device-graphite-white.png"]{width:100%;height:100%;}
   .pd-frame img[src*="perfume-device-"],.pd-frame img[src*="scent-bottle"]{mix-blend-mode:multiply;}
   /* Perfume devices: photos have a pure white background, so no multiply tint - keep the device white */
   .pd-frame img[src*="perfume-device-"]{mix-blend-mode:normal;}
   .pd-frame:has(img[src*="perfume-device-"]){background:#fff;}
   .pf-media img[src*="perfume-device-"]{mix-blend-mode:normal;}
-  .pf-media:has(img[src*="perfume-device-"]){background:#fff;}
+  /* Perfume devices (cut-out transparent PNGs): same warm gold "spotlight" backdrop as the scent bottles, plus a soft floor shadow and depth. */
+  .pf-media:has(img[src*="perfume-device-"]){background:radial-gradient(circle at 50% 42%, #FFFFFC 0%, #FFFBEA 55%, #F6EAC0 100%);}
+  .pf-media:has(img[src*="perfume-device-"])::after{content:"";position:absolute;left:50%;bottom:16.5%;width:50%;height:6%;transform:translateX(-50%);
+    background:radial-gradient(ellipse at center, rgba(110,80,25,0.30) 0%, rgba(110,80,25,0.12) 45%, transparent 72%);pointer-events:none;z-index:0;}
+  .pf-media img[src*="perfume-device-"]{position:relative;z-index:1;filter:drop-shadow(0 16px 22px rgba(90,66,20,0.20)) drop-shadow(0 2px 4px rgba(90,66,20,0.12));}
   .pf-badge{position:absolute;top:18px;right:18px;z-index:2;padding:6px 14px;font-size:12px;font-weight:600;color:#fff;border-radius:var(--radius);
     background:linear-gradient(135deg,var(--gold-light),var(--gold) 50%,var(--gold-dark));box-shadow:var(--shadow-gold);}
   .pf-badge.out{background:var(--ink);box-shadow:none;}
@@ -3361,9 +3486,31 @@ if("serviceWorker" in navigator){
     </div>
     <nav class="nav-links" role="navigation" aria-label="ניווט ראשי">
       <a data-nav="home" href="/" class="active">בית</a>
-      <a data-nav="shop" href="/shop">מצעים</a>
-      <a data-nav="towels" href="/towels">מגבות</a>
-      <a data-nav="perfume" href="/perfume">מכשירי בישום</a>
+      <div class="nav-dd">
+        <a data-nav="shop" href="/shop" aria-haspopup="true">מצעים<svg class="nav-dd-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></a>
+        <div class="nav-dd-menu" role="menu" aria-label="מצעים">
+          <a href="/shop"><b>כל המצעים</b><small>כל הסטים בכל הקולקציות</small></a>
+          <a href="/shop/renaissance"><b>קולקציית Renaissance</b><small>100% כותנה · 400 חוט</small></a>
+          <a href="/shop/bloom"><b>קולקציית Bloom</b><small>100% כותנה · 400 חוט</small></a>
+          <a href="/shop/heritage"><b>קולקציית Heritage</b><small>50% כותנה · 250 חוט</small></a>
+        </div>
+      </div>
+      <div class="nav-dd">
+        <a data-nav="towels" href="/towels" aria-haspopup="true">מגבות<svg class="nav-dd-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></a>
+        <div class="nav-dd-menu" role="menu" aria-label="מגבות">
+          <a href="/towels"><b>כל המגבות</b><small>כל הדגמים והסטים</small></a>
+          <a href="/towels?type=bath"><b>מגבות רחצה וגוף</b><small>אמבט, גוף ומגבות מתקפלות</small></a>
+          <a href="/towels?type=hand"><b>מגבות ידיים ופנים</b><small>מגבת ידיים פרימיום</small></a>
+          <a href="/towels?type=sets"><b>סטים של מגבות</b><small>סט ספא · סט פנים, ידיים וגוף</small></a>
+        </div>
+      </div>
+      <div class="nav-dd">
+        <a data-nav="perfume" href="/perfume" aria-haspopup="true">בישום<svg class="nav-dd-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></a>
+        <div class="nav-dd-menu" role="menu" aria-label="בישום">
+          <a href="/perfume"><b>מכשירי בישום</b><small>דגמים בעיצוב מוקפד לבית</small></a>
+          <a href="/perfume#scents"><b>ניחוחות לבית</b><small>בקבוקי חצי ליטר</small></a>
+        </div>
+      </div>
       <a data-nav="sale" href="/sale">מבצעים</a>
       <a data-nav="about" href="/about">אודות</a>
       <a data-nav="contact" href="/contact">צור קשר</a>
@@ -3392,8 +3539,16 @@ if("serviceWorker" in navigator){
   <div class="mobile-menu" id="mobile-menu" role="navigation" aria-label="ניווט נייד">
     <a data-nav="home" href="/">בית</a>
     <a data-nav="shop" href="/shop">מצעים</a>
+    <a class="mm-sub" href="/shop/renaissance">קולקציית Renaissance</a>
+    <a class="mm-sub" href="/shop/bloom">קולקציית Bloom</a>
+    <a class="mm-sub" href="/shop/heritage">קולקציית Heritage</a>
     <a data-nav="towels" href="/towels">מגבות</a>
-    <a data-nav="perfume" href="/perfume">מכשירי בישום</a>
+    <a class="mm-sub" href="/towels?type=bath">מגבות רחצה וגוף</a>
+    <a class="mm-sub" href="/towels?type=hand">מגבות ידיים ופנים</a>
+    <a class="mm-sub" href="/towels?type=sets">סטים של מגבות</a>
+    <a data-nav="perfume" href="/perfume">בישום</a>
+    <a class="mm-sub" href="/perfume">מכשירי בישום</a>
+    <a class="mm-sub" href="/perfume#scents">ניחוחות לבית</a>
     <a data-nav="sale" href="/sale">מבצעים</a>
     <a data-nav="about" href="/about">אודות</a>
     <a data-nav="contact" href="/contact">צור קשר</a>
@@ -3803,6 +3958,12 @@ if("serviceWorker" in navigator){
       <h1>מגבות יוקרה</h1>
       <p>מגבות כותנה לבנות, רכות ועבות במיוחד, בגימור המעניק לחדר האמבטיה שלכם תחושה של ספא במלון בוטיק.</p>
     </div>
+    <div class="towel-filter" id="towel-filter" role="group" aria-label="סינון מגבות">
+      <button type="button" class="chip active" data-towel-type="all">כל המגבות</button>
+      <button type="button" class="chip" data-towel-type="bath">מגבות רחצה וגוף</button>
+      <button type="button" class="chip" data-towel-type="hand">מגבות ידיים ופנים</button>
+      <button type="button" class="chip" data-towel-type="sets">סטים של מגבות</button>
+    </div>
     <div class="product-grid" id="towel-grid"></div>
   </div>
 </div>
@@ -3834,7 +3995,7 @@ if("serviceWorker" in navigator){
         <figure class="pf-shot"><img src="/images/site/perfume-inside.jpg" alt="מכשיר בישום פתוח עם בקבוק השמן בתוכו" loading="lazy" decoding="async"><figcaption>דלת נפתחת וגישה נוחה לבקבוק השמן</figcaption></figure>
       </div>
     </section>
-    <div class="sc-head">
+    <div class="sc-head" id="scents">
       <h2 class="serif">ניחוחות לבית</h2>
       <p>בקבוקי חצי ליטר במחיר 189 ₪ לבקבוק</p>
     </div>
@@ -4255,16 +4416,25 @@ if("serviceWorker" in navigator){
     </div>
 
     <div class="checkout-mini-contact">
-      <h2 class="serif">צור קשר</h2>
-      <p style="color:var(--taupe);margin-bottom:26px;">השאירו פרטים ואחד ממנצחני שירות הלקוחות שלנו יצור אתכם קשר</p>
-      <form id="checkout-mini-contact-form" class="mini-contact-row">
-        <input type="text" id="mc-hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;">
-        <div class="form-group"><input type="text" id="mc-name" name="name" placeholder="שם" required maxlength="100"></div>
-        <div class="form-group"><input type="email" id="mc-email" name="email" placeholder="דוא\"ל" required maxlength="150"></div>
-        <div class="form-group"><input type="tel" id="mc-phone" name="phone" placeholder="טלפון" required maxlength="20"></div>
-        <div class="form-group" style="flex:2;"><input type="text" id="mc-message" name="message" placeholder="הודעה" required maxlength="500"></div>
-        <button type="submit" class="btn outline">שליחת פרטים</button>
-      </form>
+      <div class="mc-card">
+        <div class="mc-side">
+          <span class="mc-eyebrow">יש שאלה לפני התשלום?</span>
+          <h2 class="serif">צור קשר</h2>
+          <p>השאירו פרטים ואחד מנציגי שירות הלקוחות שלנו יחזור אליכם בהקדם. אפשר גם לדבר איתנו ישירות:</p>
+          <ul class="mc-links">
+            <li><a href="tel:+972556713828"><span class="mc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg></span><span><small>טלפון</small><span class="mc-num">055-6713828</span></span></a></li>
+            <li><a href="https://wa.me/972556713828?text=%D7%94%D7%99%D7%99%2C%20%D7%99%D7%A9%20%D7%9C%D7%99%20%D7%A9%D7%90%D7%9C%D7%94%20%D7%9C%D7%A4%D7%A0%D7%99%20%D7%94%D7%AA%D7%A9%D7%9C%D7%95%D7%9D" target="_blank" rel="noopener"><span class="mc-ico"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.3-.5 0-.9.2-3-.6-2.5-1-4.1-3.6-4.2-3.7-.1-.2-1-1.3-1-2.5s.6-1.8.9-2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.1.1.3 0 .5l-.3.5-.4.4c-.1.1-.3.3-.1.6.2.3.7 1.2 1.6 1.9 1.1 1 2 1.3 2.3 1.4.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.1.1.6-.1 1.1z"/></svg></span><span><small>וואטסאפ</small>שלחו לנו הודעה</span></a></li>
+          </ul>
+        </div>
+        <form id="checkout-mini-contact-form" class="mini-contact-row">
+          <input type="text" id="mc-hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;">
+          <div class="form-group"><label for="mc-name">שם מלא</label><input type="text" id="mc-name" name="name" placeholder="השם שלכם" required maxlength="100" autocomplete="name"></div>
+          <div class="form-group"><label for="mc-phone">טלפון</label><input type="tel" id="mc-phone" name="phone" placeholder="050-0000000" required maxlength="20" autocomplete="tel" dir="ltr" style="text-align:right;"></div>
+          <div class="form-group mc-full"><label for="mc-email">דוא&quot;ל</label><input type="email" id="mc-email" name="email" placeholder="example@mail.com" required maxlength="150" autocomplete="email" dir="ltr" style="text-align:right;"></div>
+          <div class="form-group mc-full"><label for="mc-message">הודעה</label><textarea id="mc-message" name="message" rows="3" placeholder="במה נוכל לעזור?" required maxlength="500"></textarea></div>
+          <button type="submit" class="btn">שליחת פרטים</button>
+        </form>
+      </div>
       <div class="added-msg" id="checkout-mini-contact-msg" role="status" aria-live="polite" style="justify-content:center;margin-top:16px;">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
         <span>הפרטים נשלחו בהצלחה!</span>
@@ -4434,10 +4604,10 @@ if("serviceWorker" in navigator){
     </section>
     <div class="footer-grid">
       <div class="footer-col">
-        <div class="footer-brand">
-          <img src="/images/site/logo-shop.png" alt="רפאוז סטייל">
+        <a class="footer-brand" data-nav="home" href="/" aria-label="רפאוז סטייל - מעבר לעמוד הבית">
+          <img src="/images/site/logo-shop.png" alt="">
           <span>רפאוז סטייל</span>
-        </div>
+        </a>
         <p>רפאוז סטייל — יוקרה שתעצב לכם את הבית. מצעי כותנה פרימיום בעיצוב אלגנטי, לחדר שינה שמרגיש כמו סוויטה במלון בוטיק.</p>
       </div>
       <div class="footer-col">
@@ -4525,7 +4695,7 @@ if("serviceWorker" in navigator){
 </div>
 
 <!-- ============ FLOATING WHATSAPP BUTTON ============ -->
-<div id="wa-float-tip" role="status">דברו איתנו בוואטסאפ 👋</div>
+<div id="wa-float-tip" role="status">דברו איתנו בוואטסאפ</div>
 <a id="wa-float" href="#" target="_blank" rel="noopener" draggable="false" aria-label="פתיחת שיחת וואטסאפ">
   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12.004 2C6.478 2 2 6.477 2 12c0 1.87.512 3.622 1.404 5.126L2 22l4.994-1.352A9.945 9.945 0 0 0 12.004 22C17.53 22 22 17.523 22 12S17.53 2 12.004 2zm0 18.05c-1.72 0-3.336-.492-4.7-1.34l-.337-.202-3.19.863.85-3.11-.22-.32A8.003 8.003 0 0 1 4 12c0-4.418 3.582-8 8.004-8C16.42 4 20 7.582 20 12s-3.58 8.05-7.996 8.05z"/></svg>
 </a>
@@ -5230,6 +5400,7 @@ function renderViewNow(name, updateHistory, productId){
     document.getElementById("view-perfume").classList.add("active");
     renderPerfume();
     renderScents();
+    scrollToScentsIfRequested();
   } else if(name === "about"){
     document.getElementById("view-about").classList.add("active");
   } else if(name === "contact"){
@@ -5377,7 +5548,7 @@ function positionNavUnderlineToActive(){
   if(underline){ underline.classList.remove("show"); }
 }
 
-document.querySelectorAll("nav.nav-links button, nav.nav-links a").forEach(btn=>{
+document.querySelectorAll("nav.nav-links > button, nav.nav-links > a, nav.nav-links .nav-dd > a").forEach(btn=>{
   btn.addEventListener("mouseenter", ()=> setNavUnderline(btn));
   btn.addEventListener("focus", ()=> setNavUnderline(btn));
   btn.addEventListener("blur", ()=> positionNavUnderlineToActive());
@@ -5758,17 +5929,17 @@ PRODUCTS.push(...TOWELS_DATA);
 const PERFUME_DATA = [
   {
     id:"perfume-white", name:"מכשיר בישום לבן קלאסי", price:350, category:"perfume",
-    img:"/images/site/perfume-device-white.jpg", tag:"הדגם הדיסקרטי",
+    img:"/images/site/perfume-device-white.png", tag:"הדגם הדיסקרטי",
     kicker:"Classic White",
     features:["גוף לבן חלק בפינות מעוגלות","פרופיל דק שמתאים לקיר או למדף","מראה מינימליסטי שלא מושך תשומת לב","הדגם המשתלם בסדרה"],
     customDesc:"המכשיר הלבן הקלאסי בנוי סביב עיקרון אחד: להיעלם בעיצוב ולהשאיר את הניחוח. גוף לבן חלק, פינות מעוגלות ופרופיל דק שמתאים לקיר, למדף או לפינה שקטה בחדר.\nקו מינימליסטי שמתחבר לכל סגנון עיצוב, בלי פרטים שמושכים את העין.\nהדגם המשתלם בסדרה, ונקודת פתיחה מצוינת למי שמתחיל להכניס בישום לבית.\nמכשיר בישום על בסיס שמן, המתאים לחלל של עד 400 מ״ר - מדירה ועד חנות או לובי של בניין מגורים. מיכל פנימי בנפח 500 מ״ל ועד 5 תוכניות שבועיות בעוצמות שונות, כדי לכוון את עוצמת הניחוח לימים ולשעות שמתאימים לכם. קל לתפעול בלחצנים שעל המכשיר, והוא מגיע בערכה מלאה כולל שנאי חשמלי. צרפו להזמנה את השמנים הייחודיים שלנו וקבלו ריח של מלון בכל רגע בבית."
   },
   {
     id:"perfume-gold", name:"מכשיר בישום גולד", price:450, category:"perfume",
-    img:"/images/site/perfume-device-v2.jpg", tag:"הדגם הנבחר",
+    img:"/images/site/perfume-device-v2.png", tag:"הדגם הנבחר",
     colors:[
       { id:"white", label:"לבן", swatch:"#FFFFFF" },
-      { id:"black", label:"שחור", swatch:"#2B2B2B", img:"/images/site/perfume-device-black.jpg" }
+      { id:"black", label:"שחור", swatch:"#2B2B2B", img:"/images/site/perfume-device-black.png" }
     ],
     kicker:"White & Gold Edition",
     features:["גוף בלבן מבריק או בשחור אלגנטי (לבחירתכם), עם מסגרת מתכתית בגוון זהב","כפתור הפעלה בחלקו העליון","קו נקי שמשתלב בסלון, בחדר שינה ובלובי","מתאים גם כמתנה מעוצבת לבית"],
@@ -5776,10 +5947,10 @@ const PERFUME_DATA = [
   },
   {
     id:"perfume-graphite", name:"מכשיר בישום גרפיט חכם", price:560, category:"perfume",
-    img:"/images/site/perfume-device-graphite.jpg", tag:"בקרה דרך אפליקציה",
+    img:"/images/site/perfume-device-graphite.png", tag:"בקרה דרך אפליקציה",
     colors:[
       { id:"graphite", label:"גרפיט", swatch:"#5A5D61" },
-      { id:"white", label:"לבן", swatch:"#FFFFFF", img:"/images/site/perfume-device-graphite-white.jpg" }
+      { id:"white", label:"לבן", swatch:"#FFFFFF", img:"/images/site/perfume-device-graphite-white.png" }
     ],
     kicker:"Graphite Smart Series",
     features:["גימור גרפיט מתכתי עם פאנל קדמי שחור","חיבור לאפליקציה באמצעות סריקת קוד QR שעל המכשיר","עיצוב עכשווי שמתאים לחללים מודרניים ומוקפדים","הדגם המתקדם בסדרה"],
@@ -6221,10 +6392,6 @@ function renderPerfume(){
         <div class="pf-kicker">${p.kicker || ""}</div>
         <h2 class="serif">${p.name}</h2>
         <div class="pf-price">${priceHTML(p)}</div>
-        <p class="pf-desc">${getDesc(p).split("\n")[0]}</p>
-        <ul class="pf-features">
-          ${(p.features || []).slice(0,3).map(f=>`<li><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l5 5L20 6"/></svg>${f}</li>`).join("")}
-        </ul>
         ${colorOptions(p) ? `<div class="pf-colors" role="radiogroup" aria-label="בחירת צבע">${colorOptions(p).map((c,ci)=>`<button type="button" class="pf-color${ci===0?" active":""}" data-act="color" data-color="${c.id}" role="radio" aria-checked="${ci===0}" aria-label="${c.label}" title="${c.label}"><span style="background:${c.swatch}"></span></button>`).join("")}</div>` : ""}
         <div class="pf-buy">
           <div class="pf-qty" role="group" aria-label="כמות">
@@ -6274,13 +6441,53 @@ function renderPerfume(){
   });
 })();
 
+/* Towel sub-categories (top-nav dropdown + chips on /towels, via ?type=).
+   A towel id not listed here still shows under "כל המגבות". Admin-added
+   towels can be placed in a group by adding their id to the right list. */
+const TOWEL_TYPES = {
+  bath: ["towel-bath-classic", "towel-body-boutique", "towel-folded-set"],
+  hand: ["towel-hand-premium"],
+  sets: ["towel-spa-set", "towel-full-set"]
+};
+function currentTowelType(){
+  let t = "all";
+  try{ t = new URLSearchParams(location.search).get("type") || "all"; }catch(e){}
+  return TOWEL_TYPES[t] ? t : "all";
+}
 function renderTowels(){
   const grid = document.getElementById("towel-grid");
   if(!grid) return;
-  const towelProducts = PRODUCTS.filter(p => p.category === "towel");
+  const type = currentTowelType();
+  const towelProducts = PRODUCTS.filter(p => p.category === "towel" && (type === "all" || TOWEL_TYPES[type].indexOf(p.id) !== -1));
   grid.innerHTML = towelProducts.map(productCardHTML).join("");
   attachCardClicks(grid);
+  document.querySelectorAll("#towel-filter .chip").forEach(c=>{
+    const on = c.dataset.towelType === type;
+    c.classList.toggle("active", on);
+    c.setAttribute("aria-pressed", on ? "true" : "false");
+  });
 }
+(function initTowelFilter(){
+  const bar = document.getElementById("towel-filter");
+  if(!bar) return;
+  bar.addEventListener("click", (e)=>{
+    const chip = e.target.closest("[data-towel-type]");
+    if(!chip) return;
+    const t = chip.dataset.towelType;
+    try{ history.replaceState(history.state, "", t === "all" ? "/towels" : "/towels?type=" + t); }catch(err){}
+    renderTowels();
+  });
+})();
+/* /perfume#scents (from the "בישום" dropdown): the device cards above are
+   rendered by JS, so the browser's own jump to the anchor can land in the
+   wrong place - re-scroll once everything has rendered. */
+function scrollToScentsIfRequested(){
+  if(location.hash !== "#scents") return;
+  const el = document.getElementById("scents");
+  if(!el) return;
+  setTimeout(()=> el.scrollIntoView({ behavior:"smooth", block:"start" }), 350);
+}
+window.addEventListener("hashchange", scrollToScentsIfRequested);
 
 /* ============================================================
    RENDER: HOME FEATURED
@@ -8892,7 +9099,7 @@ function renderCurrentView(){
   } else {
     const viewName = viewForPath(currentPath);
     showView(viewName, false);
-    window.history.replaceState({view: viewName}, "", currentPath);
+    window.history.replaceState({view: viewName}, "", currentPath + window.location.search + window.location.hash);
   }
   /* The main app is now driving which page is shown (via the .view/.active
      classes) - remove the early anti-flash style from <head> so it doesn't
@@ -8920,5 +9127,7 @@ applyContentOverrides();
   }, true);
 })();
 </script>
+<script src="/chatbot.js" defer></script>
+<script src="/gift-popup.js" defer></script>
 </body>
 </html>

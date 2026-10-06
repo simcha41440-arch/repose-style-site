@@ -9,6 +9,7 @@ const {
   looksLikeBot,
   logAdminAction,
 } = require('./_lib/security');
+const { handleChat } = require('./_lib/chatbot');
 
 const TYPE_LABELS = {
   contact: 'פנייה חדשה מעמוד צור קשר',
@@ -112,6 +113,12 @@ module.exports = async (req, res) => {
     // handler before the inquiry-specific rate limit/validation below.
     if (body && body.type === 'newsletter') {
       return handleNewsletterSignup(req, res, supabase, body);
+    }
+
+    // AI chat assistant (Gemini) - see api/_lib/chatbot.js. Lives here to
+    // stay under Vercel's Hobby-plan 12-serverless-function cap.
+    if (body && body.type === 'chat') {
+      return handleChat(req, res, supabase, body);
     }
 
     const ip = getClientIp(req);
