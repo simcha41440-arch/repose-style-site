@@ -3370,21 +3370,17 @@ if("serviceWorker" in navigator){
   .pf-media img{width:82%;height:82%;object-fit:contain;mix-blend-mode:multiply;transition:transform .9s cubic-bezier(.19,1,.22,1);}
   .pf-row:hover .pf-media img{transform:scale(1.05);}
   /* Device photos are pre-padded equal-size squares (device centered at ~60%, white margin), so the image box fills the frame. */
-  .pf-media img[src$="perfume-device-white.png"]{width:100%;height:100%;}
-  .pf-media img[src$="perfume-device-v2.png"]{width:100%;height:100%;}
-  .pf-media img[src$="perfume-device-black.png"]{width:100%;height:100%;}
-  .pf-media img[src$="perfume-device-graphite.png"]{width:100%;height:100%;}
-  .pf-media img[src$="perfume-device-graphite-white.png"]{width:100%;height:100%;}
+  .pf-media img[src$="perfume-device-white.jpg"]{width:100%;height:100%;}
+  .pf-media img[src$="perfume-device-v2.jpg"]{width:100%;height:100%;}
+  .pf-media img[src$="perfume-device-black.jpg"]{width:100%;height:100%;}
+  .pf-media img[src$="perfume-device-graphite.jpg"]{width:100%;height:100%;}
+  .pf-media img[src$="perfume-device-graphite-white.jpg"]{width:100%;height:100%;}
   .pd-frame img[src*="perfume-device-"],.pd-frame img[src*="scent-bottle"]{mix-blend-mode:multiply;}
   /* Perfume devices: photos have a pure white background, so no multiply tint - keep the device white */
   .pd-frame img[src*="perfume-device-"]{mix-blend-mode:normal;}
   .pd-frame:has(img[src*="perfume-device-"]){background:#fff;}
   .pf-media img[src*="perfume-device-"]{mix-blend-mode:normal;}
-  /* Perfume devices (cut-out transparent PNGs): same warm gold "spotlight" backdrop as the scent bottles, plus a soft floor shadow and depth. */
-  .pf-media:has(img[src*="perfume-device-"]){background:radial-gradient(circle at 50% 42%, #FFFFFC 0%, #FFFBEA 55%, #F6EAC0 100%);}
-  .pf-media:has(img[src*="perfume-device-"])::after{content:"";position:absolute;left:50%;bottom:16.5%;width:50%;height:6%;transform:translateX(-50%);
-    background:radial-gradient(ellipse at center, rgba(110,80,25,0.30) 0%, rgba(110,80,25,0.12) 45%, transparent 72%);pointer-events:none;z-index:0;}
-  .pf-media img[src*="perfume-device-"]{position:relative;z-index:1;filter:drop-shadow(0 16px 22px rgba(90,66,20,0.20)) drop-shadow(0 2px 4px rgba(90,66,20,0.12));}
+  .pf-media:has(img[src*="perfume-device-"]){background:#fff;}
   .pf-badge{position:absolute;top:18px;right:18px;z-index:2;padding:6px 14px;font-size:12px;font-weight:600;color:#fff;border-radius:var(--radius);
     background:linear-gradient(135deg,var(--gold-light),var(--gold) 50%,var(--gold-dark));box-shadow:var(--shadow-gold);}
   .pf-badge.out{background:var(--ink);box-shadow:none;}
@@ -5920,17 +5916,17 @@ PRODUCTS.push(...TOWELS_DATA);
 const PERFUME_DATA = [
   {
     id:"perfume-white", name:"מכשיר בישום לבן קלאסי", price:350, category:"perfume",
-    img:"/images/site/perfume-device-white.png", tag:"הדגם הדיסקרטי",
+    img:"/images/site/perfume-device-white.jpg", tag:"הדגם הדיסקרטי",
     kicker:"Classic White",
     features:["גוף לבן חלק בפינות מעוגלות","פרופיל דק שמתאים לקיר או למדף","מראה מינימליסטי שלא מושך תשומת לב","הדגם המשתלם בסדרה"],
     customDesc:"המכשיר הלבן הקלאסי בנוי סביב עיקרון אחד: להיעלם בעיצוב ולהשאיר את הניחוח. גוף לבן חלק, פינות מעוגלות ופרופיל דק שמתאים לקיר, למדף או לפינה שקטה בחדר.\nקו מינימליסטי שמתחבר לכל סגנון עיצוב, בלי פרטים שמושכים את העין.\nהדגם המשתלם בסדרה, ונקודת פתיחה מצוינת למי שמתחיל להכניס בישום לבית.\nמכשיר בישום על בסיס שמן, המתאים לחלל של עד 400 מ״ר - מדירה ועד חנות או לובי של בניין מגורים. מיכל פנימי בנפח 500 מ״ל ועד 5 תוכניות שבועיות בעוצמות שונות, כדי לכוון את עוצמת הניחוח לימים ולשעות שמתאימים לכם. קל לתפעול בלחצנים שעל המכשיר, והוא מגיע בערכה מלאה כולל שנאי חשמלי. צרפו להזמנה את השמנים הייחודיים שלנו וקבלו ריח של מלון בכל רגע בבית."
   },
   {
     id:"perfume-gold", name:"מכשיר בישום גולד", price:450, category:"perfume",
-    img:"/images/site/perfume-device-v2.png", tag:"הדגם הנבחר",
+    img:"/images/site/perfume-device-v2.jpg", tag:"הדגם הנבחר",
     colors:[
       { id:"white", label:"לבן", swatch:"#FFFFFF" },
-      { id:"black", label:"שחור", swatch:"#2B2B2B", img:"/images/site/perfume-device-black.png" }
+      { id:"black", label:"שחור", swatch:"#2B2B2B", img:"/images/site/perfume-device-black.jpg" }
     ],
     kicker:"White & Gold Edition",
     features:["גוף בלבן מבריק או בשחור אלגנטי (לבחירתכם), עם מסגרת מתכתית בגוון זהב","כפתור הפעלה בחלקו העליון","קו נקי שמשתלב בסלון, בחדר שינה ובלובי","מתאים גם כמתנה מעוצבת לבית"],
@@ -5938,10 +5934,10 @@ const PERFUME_DATA = [
   },
   {
     id:"perfume-graphite", name:"מכשיר בישום גרפיט חכם", price:560, category:"perfume",
-    img:"/images/site/perfume-device-graphite.png", tag:"בקרה דרך אפליקציה",
+    img:"/images/site/perfume-device-graphite.jpg", tag:"בקרה דרך אפליקציה",
     colors:[
       { id:"graphite", label:"גרפיט", swatch:"#5A5D61" },
-      { id:"white", label:"לבן", swatch:"#FFFFFF", img:"/images/site/perfume-device-graphite-white.png" }
+      { id:"white", label:"לבן", swatch:"#FFFFFF", img:"/images/site/perfume-device-graphite-white.jpg" }
     ],
     kicker:"Graphite Smart Series",
     features:["גימור גרפיט מתכתי עם פאנל קדמי שחור","חיבור לאפליקציה באמצעות סריקת קוד QR שעל המכשיר","עיצוב עכשווי שמתאים לחללים מודרניים ומוקפדים","הדגם המתקדם בסדרה"],
