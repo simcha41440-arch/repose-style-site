@@ -1862,9 +1862,6 @@ if("serviceWorker" in navigator){
     border:1px solid rgba(216,185,108,0.75);border-radius:30px;
     box-shadow:inset 0 0 0 9px rgba(255,253,248,0.9), inset 0 0 0 10px rgba(216,185,108,0.4), 0 30px 70px -40px rgba(138,108,46,0.45);
     background:rgba(255,255,255,0.45);}
-  /* faint RS monogram watermark */
-  .cta-band::after{content:"";position:absolute;z-index:-1;left:50%;top:50%;width:420px;height:360px;transform:translate(-50%,-50%);
-    background:url("/images/site/rs-mark.png") center/contain no-repeat;opacity:0.07;pointer-events:none;}
   .cta-band h2{font-size:clamp(30px,4.6vw,48px);margin-bottom:34px;line-height:1.2;
     background:linear-gradient(135deg,#5A410F 0%,#B08A3E 48%,#6B4E14 100%);-webkit-background-clip:text;background-clip:text;color:transparent;}
   .cta-band .btn.light{background:linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 45%, var(--gold-dark) 100%);
@@ -1874,7 +1871,6 @@ if("serviceWorker" in navigator){
   @media (max-width:600px){
     .cta-band{padding:96px 22px;}
     .cta-band::before{top:22px;bottom:22px;left:14px;right:14px;border-radius:24px;}
-    .cta-band::after{width:260px;height:224px;}
   }
 
   /* ===== FOOTER ===== */
