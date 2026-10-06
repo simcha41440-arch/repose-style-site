@@ -1,5 +1,5 @@
 /* ============================================================
-   GIFT POPUP - "בכל רכישה מעל 500 ₪ תקבלו מתנה"
+   GIFT POPUP - "בכל רכישה מעל 500 ₪ - מארז ריחניות במתנה"
    ------------------------------------------------------------
    Opens once the visitor has spent 40 seconds on the site (counted
    across pages in the same visit, not per page). Shown at most once
@@ -12,12 +12,12 @@
     delaySeconds: 40,
     hideDaysAfterClose: 3,
     image: '/images/site/gift-sachets.jpg',
-    imageAlt: 'שקיות ריח מעוצבות - מתנה מרפאוז סטייל',
+    imageAlt: 'מארז ריחניות - מתנה מרפאוז סטייל',
     badge: 'מתנה מאיתנו',
     amountLabel: 'בכל רכישה מעל',
     amount: '500',
-    title: 'שקית ריח מעוצבת במתנה',
-    text: 'השלימו הזמנה בסכום של מעל 500 ₪ וקבלו מאיתנו שקית ריח מעוצבת, שמפיצה ניחוח עדין ונעים בבית.',
+    title: 'מארז ריחניות במתנה',
+    text: 'השלימו הזמנה בסכום של מעל 500 ₪ וקבלו מאיתנו מארז ריחניות מעוצב, שמפיץ ניחוח עדין ונעים בבית.',
     cta: 'לקנייה עכשיו',
     ctaHref: '/shop',
     later: 'אולי מאוחר יותר'
@@ -82,12 +82,37 @@
     'text-decoration:underline;text-underline-offset:4px;}' +
   '#rs-gift .g-later:hover{color:#F1DFA0;}' +
   /* image side */
-  '#rs-gift .g-media{position:relative;display:flex;align-items:center;justify-content:center;padding:44px 26px;min-height:100%;' +
-    'background:radial-gradient(circle at 50% 45%,#FFFFFF 0%,#FFF8E6 48%,#EAD49C 100%);}' +
-  '#rs-gift .g-media::before{content:"";position:absolute;inset:14px;border:1px solid rgba(176,138,62,.45);border-radius:18px;pointer-events:none;}' +
-  '#rs-gift .g-media img{position:relative;display:block;width:100%;height:auto;mix-blend-mode:multiply;' +
-    'filter:drop-shadow(0 22px 20px rgba(110,80,25,.25));animation:rsGiftFloat 5s ease-in-out infinite;}' +
-  '@keyframes rsGiftFloat{0%,100%{transform:rotate(-2deg) translateY(0)}50%{transform:rotate(-2deg) translateY(-7px)}}' +
+  /* champagne-gold "satin" stage: soft light rays + spotlight + sparkles */
+  '#rs-gift .g-media{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:52px 30px 46px;min-height:100%;isolation:isolate;' +
+    'background:radial-gradient(circle at 50% 42%,rgba(255,250,232,.95) 0%,rgba(255,244,214,.55) 26%,rgba(255,244,214,0) 56%),' +
+    'linear-gradient(155deg,#F7E9C4 0%,#E2C27A 42%,#B98D3F 78%,#8A6C2E 100%);}' +
+  '#rs-gift .g-media::before{content:"";position:absolute;inset:-40%;z-index:-1;opacity:.35;' +
+    'background:repeating-conic-gradient(from 0deg at 50% 50%,rgba(255,255,255,.55) 0deg 5deg,rgba(255,255,255,0) 5deg 15deg);' +
+    '-webkit-mask:radial-gradient(circle at 50% 50%,#000 0%,transparent 55%);mask:radial-gradient(circle at 50% 50%,#000 0%,transparent 55%);' +
+    'animation:rsGiftRays 40s linear infinite;}' +
+  '@keyframes rsGiftRays{to{transform:rotate(360deg)}}' +
+  '#rs-gift .g-media::after{content:"";position:absolute;inset:14px;border:1px solid rgba(255,255,255,.55);border-radius:18px;pointer-events:none;' +
+    'box-shadow:inset 0 0 0 1px rgba(138,108,46,.25);}' +
+  '#rs-gift .g-spark{position:absolute;z-index:0;width:9px;height:9px;background:#FFF8E1;transform:rotate(45deg);border-radius:2px;' +
+    'box-shadow:0 0 10px 2px rgba(255,248,225,.9);animation:rsGiftTwinkle 2.8s ease-in-out infinite;}' +
+  '@keyframes rsGiftTwinkle{0%,100%{opacity:.25;transform:rotate(45deg) scale(.7)}50%{opacity:1;transform:rotate(45deg) scale(1.1)}}' +
+  /* the gift itself: a straight, framed product card with a soft floor shadow */
+  '#rs-gift .g-card{position:relative;z-index:1;width:100%;animation:rsGiftFloat 5s ease-in-out infinite;}' +
+  '#rs-gift .g-media img{position:relative;display:block;width:100%;height:auto;border-radius:12px;background:#fff;' +
+    'border:3px solid #FFFDF6;box-shadow:0 0 0 1px rgba(138,108,46,.45),0 26px 40px -18px rgba(70,48,10,.65),0 8px 16px -8px rgba(70,48,10,.35);}' +
+  '#rs-gift .g-card::after{content:"";position:absolute;left:12%;right:12%;bottom:-22px;height:18px;border-radius:50%;' +
+    'background:radial-gradient(ellipse at center,rgba(70,48,10,.45),rgba(70,48,10,0) 70%);filter:blur(2px);}' +
+  '@keyframes rsGiftFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}' +
+  '#rs-gift .g-close{position:absolute;top:22px;left:22px;z-index:3;width:38px;height:38px;border-radius:50%;cursor:pointer;' +
+    'display:flex;align-items:center;justify-content:center;border:1px solid rgba(176,138,62,.5);background:rgba(255,253,248,.92);color:#2B2420;' +
+    'box-shadow:0 6px 16px -6px rgba(0,0,0,.35);}' +
+  '#rs-gift .g-close:hover{background:#fff;}' +
+  '#rs-gift .g-close svg{width:17px;height:17px;}' +
+  '#rs-gift .g-close:focus-visible,#rs-gift .g-cta:focus-visible,#rs-gift .g-later:focus-visible{outline:2px solid #E3C378;outline-offset:3px;}' +
+  /* phones: image on top, text below */
+  '@media (max-width:640px){' +
+    '#rs-gift{grid-template-columns:1fr;width:420px;}' +
+    '#rs-gift .g-media{order:-1;padding:46px 26px 40px;}' +
     '#rs-gift .g-body{padding:30px 26px 26px;text-align:center;}' +
     '#rs-gift .g-badge{margin-bottom:14px;}' +
     '#rs-gift .g-amount{justify-content:center;}' +
@@ -96,7 +121,7 @@
     '#rs-gift h2{font-size:21px;}' +
     '#rs-gift p{font-size:14px;margin-bottom:20px;}' +
   '}' +
-  '@media (prefers-reduced-motion:reduce){#rs-gift-ov,#rs-gift{transition:none;}#rs-gift .g-media img,#rs-gift .g-cta::after{animation:none;}}';
+  '@media (prefers-reduced-motion:reduce){#rs-gift-ov,#rs-gift{transition:none;}#rs-gift .g-card,#rs-gift .g-media::before,#rs-gift .g-spark,#rs-gift .g-cta::after{animation:none;}}';
 
   var ICON_GIFT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg>';
   var ICON_CLOSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
@@ -130,7 +155,11 @@
         '</div>' +
         '<div class="g-media">' +
           '<button type="button" class="g-close" aria-label="סגירה">' + ICON_CLOSE + '</button>' +
-          '<img src="' + CONFIG.image + '" alt="' + CONFIG.imageAlt + '">' +
+          '<span class="g-spark" style="top:16%;right:14%"></span>' +
+          '<span class="g-spark" style="top:24%;left:12%;width:6px;height:6px;animation-delay:.9s"></span>' +
+          '<span class="g-spark" style="bottom:16%;right:20%;width:7px;height:7px;animation-delay:1.6s"></span>' +
+          '<span class="g-spark" style="bottom:22%;left:16%;width:5px;height:5px;animation-delay:.4s"></span>' +
+          '<div class="g-card"><img src="' + CONFIG.image + '" alt="' + CONFIG.imageAlt + '"></div>' +
         '</div>' +
       '</div>';
     document.body.appendChild(ov);

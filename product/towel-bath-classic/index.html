@@ -3200,36 +3200,59 @@ if("serviceWorker" in navigator){
   #a11y-toggle:hover{transform:scale(1.08);background:var(--gold-dark);}
   #a11y-toggle svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.6;}
   #a11y-panel{
-    position:fixed;bottom:88px;left:22px;z-index:981;
-    width:290px;max-width:85vw;background:#fff;border-radius:16px;
-    box-shadow:0 20px 50px -12px rgba(20,16,12,0.35);
-    border:1px solid rgba(138,108,46,0.25);
-    padding:18px;display:none;
+    position:fixed;bottom:88px;left:22px;z-index:1001;
+    width:330px;max-width:calc(100vw - 32px);max-height:calc(100vh - 110px);overflow:auto;
+    background:#FFFDF8;border-radius:22px;border:1px solid rgba(176,138,62,0.45);
+    box-shadow:0 30px 70px -20px rgba(20,16,12,0.5);
+    padding:0;display:none;direction:rtl;font-family:'Rubik','Almoni Neue',sans-serif;
   }
-  #a11y-panel.open{display:block;}
-  #a11y-panel h4{margin:0 0 12px;font-size:15px;color:var(--text-gold);text-align:right;}
-  #a11y-panel .a11y-row{
-    display:flex;align-items:center;justify-content:space-between;gap:10px;
-    padding:9px 4px;border-bottom:1px solid #eee;font-size:13.5px;color:var(--taupe);
-  }
-  #a11y-panel .a11y-row:last-child{border-bottom:none;}
-  #a11y-panel .a11y-btns{display:flex;gap:6px;}
-  #a11y-panel button.a11y-mini{
-    background:var(--ivory);border:1px solid rgba(138,108,46,0.3);border-radius:8px;
-    width:30px;height:30px;cursor:pointer;font-size:14px;color:var(--text-gold);
-  }
-  #a11y-panel button.a11y-mini.active{background:var(--gold);color:#fff;border-color:var(--gold);}
-  #a11y-panel .a11y-reset{
-    width:100%;margin-top:12px;padding:9px;border-radius:10px;border:none;
-    background:var(--text-gold);color:#fff;font-size:13px;cursor:pointer;
-  }
+  #a11y-panel.open{display:block;animation:a11yIn .25s ease;}
+  @keyframes a11yIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+  #a11y-panel .a11y-head{display:flex;align-items:center;gap:12px;padding:16px 18px;border-radius:21px 21px 0 0;
+    background:radial-gradient(300px 120px at 100% 0%, rgba(214,177,94,0.28), transparent 70%), linear-gradient(160deg,#2B2420,#1C1712);color:#F1DFA0;}
+  #a11y-panel .a11y-head-ico{width:38px;height:38px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(145deg,var(--gold-metal),var(--gold-dark));color:#fff;}
+  #a11y-panel .a11y-head-ico svg{width:22px;height:22px;}
+  #a11y-panel .a11y-head-t{flex:1;min-width:0;text-align:right;}
+  #a11y-panel .a11y-head-t b{display:block;font-size:16px;color:#fff;font-weight:600;}
+  #a11y-panel .a11y-head-t small{font-size:12px;color:var(--gold-light);}
+  #a11y-panel .a11y-close{background:none;border:none;color:var(--gold-light);cursor:pointer;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+  #a11y-panel .a11y-close:hover{background:rgba(255,255,255,0.08);}
+  #a11y-panel .a11y-close svg{width:18px;height:18px;}
+  #a11y-panel .a11y-body{padding:16px 16px 18px;}
+  #a11y-panel .a11y-size{padding:14px 14px 16px;border:1px solid rgba(176,138,62,0.35);border-radius:16px;background:linear-gradient(180deg,#FFFFFF,#FBF4E2);margin-bottom:14px;}
+  #a11y-panel .a11y-size-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;font-size:14.5px;font-weight:600;color:var(--text-gold);}
+  #a11y-panel .a11y-size-top output{font-size:13px;font-weight:700;color:#fff;background:var(--gold-dark);border-radius:999px;padding:3px 10px;direction:ltr;}
+  #a11y-panel .a11y-size-ctrl{display:flex;align-items:center;gap:12px;}
+  #a11y-panel .a11y-step{flex:none;width:58px;height:46px;border-radius:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:2px;
+    font-family:inherit;font-weight:700;font-size:16px;color:var(--text-gold);background:#fff;border:1px solid rgba(176,138,62,0.45);transition:all .2s ease;}
+  #a11y-panel .a11y-step:hover:not(:disabled){background:linear-gradient(135deg,var(--gold-light),var(--gold));color:#fff;border-color:transparent;}
+  #a11y-panel .a11y-step:disabled{opacity:.4;cursor:default;}
+  #a11y-panel .a11y-dots{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;}
+  #a11y-panel .a11y-dots i{width:100%;max-width:34px;height:7px;border-radius:999px;background:#EADBB4;transition:background .2s ease;}
+  #a11y-panel .a11y-dots i.on{background:linear-gradient(90deg,var(--gold-light),var(--gold-dark));}
+  #a11y-panel .a11y-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  #a11y-panel .a11y-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:78px;padding:10px 8px;
+    border-radius:14px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500;color:var(--text-gold);
+    background:#fff;border:1px solid rgba(176,138,62,0.35);transition:all .2s ease;text-align:center;line-height:1.3;}
+  #a11y-panel .a11y-tile .a11y-ico{display:flex;line-height:1;color:var(--gold-dark);}
+  #a11y-panel .a11y-tile:hover{border-color:var(--gold);box-shadow:0 8px 18px -10px rgba(138,108,46,0.6);}
+  #a11y-panel .a11y-tile.active{background:linear-gradient(135deg,#2B2420,#1C1712);color:#F1DFA0;border-color:#1C1712;}
+  #a11y-panel .a11y-tile.active .a11y-ico{color:var(--gold-light);}
+  #a11y-panel .a11y-foot{display:flex;gap:10px;margin-top:14px;}
+  #a11y-panel .a11y-reset{flex:1;margin:0;padding:11px;border-radius:12px;border:none;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:600;
+    color:#fff;background:linear-gradient(135deg,var(--gold-light),var(--gold) 50%,var(--gold-dark));}
+  #a11y-panel .a11y-statement{flex:1;padding:11px;border-radius:12px;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:600;
+    color:var(--text-gold);background:#fff;border:1px solid rgba(176,138,62,0.45);}
+  #a11y-panel button:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
+  /* text size: scales the whole page content (works with the px-based styles), not the fixed widgets */
+  body.a11y-font-1 #main-content, body.a11y-font-1 footer{zoom:1.08;}
+  body.a11y-font-2 #main-content, body.a11y-font-2 footer{zoom:1.16;}
+  body.a11y-font-3 #main-content, body.a11y-font-3 footer{zoom:1.25;}
   body.a11y-contrast{filter:contrast(1.15) saturate(0.85);}
   body.a11y-contrast, body.a11y-contrast *{background-color:#000 !important;color:#fff !important;border-color:#fff !important;}
   body.a11y-underline a{text-decoration:underline !important;}
   body.a11y-nostop *, body.a11y-nostop *::before, body.a11y-nostop *::after{animation:none !important;transition:none !important;}
-  body.a11y-font-1{font-size:107% !important;}
-  body.a11y-font-2{font-size:116% !important;}
-  body.a11y-font-3{font-size:126% !important;}
   body.a11y-grayscale{filter:grayscale(1);}
   body.a11y-spacing, body.a11y-spacing *{letter-spacing:0.06em !important;word-spacing:0.15em !important;line-height:1.9 !important;}
   body.a11y-readable, body.a11y-readable *{font-family:Arial, Verdana, sans-serif !important;}
@@ -4722,45 +4745,33 @@ if("serviceWorker" in navigator){
   </svg>
 </button>
 <div id="a11y-panel" role="dialog" aria-label="הגדרות נגישות">
-  <h4>הגדרות נגישות</h4>
-  <div class="a11y-row">
-    <span>גודל טקסט</span>
-    <div class="a11y-btns">
-      <button type="button" class="a11y-mini" data-a11y-font="0">א</button>
-      <button type="button" class="a11y-mini" data-a11y-font="1">א+</button>
-      <button type="button" class="a11y-mini" data-a11y-font="2">א++</button>
-      <button type="button" class="a11y-mini" data-a11y-font="3">א+++</button>
+  <div class="a11y-head">
+    <span class="a11y-head-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.5" r="1.8" fill="currentColor" stroke="none"/><path d="M5 8.5l7 1.5 7-1.5"/><path d="M12 10v4.5l-3 6"/><path d="M12 14.5l3 6"/></svg></span>
+    <div class="a11y-head-t"><b>הגדרות נגישות</b><small>התאימו את האתר לנוחותכם</small></div>
+    <button type="button" class="a11y-close" id="a11y-close-btn" aria-label="סגירת תפריט הנגישות"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="a11y-body">
+    <div class="a11y-size" role="group" aria-label="גודל טקסט">
+      <div class="a11y-size-top"><span>גודל טקסט</span><output id="a11y-font-val" aria-live="polite">100%</output></div>
+      <div class="a11y-size-ctrl">
+        <button type="button" class="a11y-step" id="a11y-font-down" aria-label="הקטנת טקסט"><span style="font-size:14px">א</span>−</button>
+        <div class="a11y-dots" aria-hidden="true"><i data-a11y-dot="0"></i><i data-a11y-dot="1"></i><i data-a11y-dot="2"></i><i data-a11y-dot="3"></i></div>
+        <button type="button" class="a11y-step" id="a11y-font-up" aria-label="הגדלת טקסט"><span style="font-size:20px">א</span>+</button>
+      </div>
+    </div>
+    <div class="a11y-grid">
+      <button type="button" class="a11y-tile" id="a11y-contrast-btn" aria-pressed="false"><span class="a11y-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></span>ניגודיות גבוהה</button>
+      <button type="button" class="a11y-tile" id="a11y-underline-btn" aria-pressed="false"><span class="a11y-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg></span>הדגשת קישורים</button>
+      <button type="button" class="a11y-tile" id="a11y-nostop-btn" aria-pressed="false"><span class="a11y-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 9v6M14 9v6"/></svg></span>עצירת אנימציות</button>
+      <button type="button" class="a11y-tile" id="a11y-grayscale-btn" aria-pressed="false"><span class="a11y-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5c3 3.6 5.5 6.6 5.5 9.8a5.5 5.5 0 0 1-11 0c0-3.2 2.5-6.2 5.5-9.8z"/><path d="M12 3.5v15.3" /></svg></span>גווני אפור</button>
+      <button type="button" class="a11y-tile" id="a11y-spacing-btn" aria-pressed="false"><span class="a11y-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h16M4 12h16M4 16h16"/><path d="M7 5l-3 3 3 3" opacity="0"/></svg></span>ריווח קריאה</button>
+      <button type="button" class="a11y-tile" id="a11y-readable-btn" aria-pressed="false"><span class="a11y-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 18l5-12 5 12"/><path d="M6 14h6"/><path d="M15.5 13.5a2.5 2.5 0 1 1 5 0V18"/><path d="M20.5 15.5h-2.5a2 2 0 0 0 0 4c1.4 0 2.5-1 2.5-2"/></svg></span>גופן קריא</button>
+    </div>
+    <div class="a11y-foot">
+      <button type="button" class="a11y-reset" id="a11y-reset-btn">איפוס הגדרות</button>
+      <button type="button" class="a11y-statement" id="a11y-statement-btn">הצהרת נגישות</button>
     </div>
   </div>
-  <div class="a11y-row">
-    <span>ניגודיות גבוהה</span>
-    <button type="button" class="a11y-mini" id="a11y-contrast-btn">◐</button>
-  </div>
-  <div class="a11y-row">
-    <span>הדגשת קישורים</span>
-    <button type="button" class="a11y-mini" id="a11y-underline-btn">A̲</button>
-  </div>
-  <div class="a11y-row">
-    <span>עצירת אנימציות</span>
-    <button type="button" class="a11y-mini" id="a11y-nostop-btn">⏸</button>
-  </div>
-  <div class="a11y-row">
-    <span>גווני אפור</span>
-    <button type="button" class="a11y-mini" id="a11y-grayscale-btn">◑</button>
-  </div>
-  <div class="a11y-row">
-    <span>ריווח קריאה מוגבר</span>
-    <button type="button" class="a11y-mini" id="a11y-spacing-btn">↔</button>
-  </div>
-  <div class="a11y-row">
-    <span>גופן קריא (דיסלקציה)</span>
-    <button type="button" class="a11y-mini" id="a11y-readable-btn">Aa</button>
-  </div>
-  <div class="a11y-row">
-    <span>הצהרת נגישות</span>
-    <button type="button" class="a11y-mini" id="a11y-statement-btn" aria-label="להצהרת הנגישות" style="width:auto;padding:0 10px;">מידע</button>
-  </div>
-  <button type="button" class="a11y-reset" id="a11y-reset-btn">איפוס הגדרות</button>
 </div>
 
 <iframe name="rs-hidden-form-target" style="display:none;" title="hidden"></iframe>
@@ -5927,14 +5938,14 @@ PRODUCTS.push(...TOWELS_DATA);
    ============================================================ */
 const PERFUME_DATA = [
   {
-    id:"perfume-white", name:"מכשיר בישום לבן קלאסי", price:350, category:"perfume",
+    id:"perfume-white", name:"מכשיר בישום לבן קלאסי", price:359, category:"perfume",
     img:"/images/site/perfume-device-white.jpg", tag:"הדגם הדיסקרטי",
     kicker:"Classic White",
     features:["גוף לבן חלק בפינות מעוגלות","פרופיל דק שמתאים לקיר או למדף","מראה מינימליסטי שלא מושך תשומת לב","הדגם המשתלם בסדרה"],
     customDesc:"המכשיר הלבן הקלאסי בנוי סביב עיקרון אחד: להיעלם בעיצוב ולהשאיר את הניחוח. גוף לבן חלק, פינות מעוגלות ופרופיל דק שמתאים לקיר, למדף או לפינה שקטה בחדר.\nקו מינימליסטי שמתחבר לכל סגנון עיצוב, בלי פרטים שמושכים את העין.\nהדגם המשתלם בסדרה, ונקודת פתיחה מצוינת למי שמתחיל להכניס בישום לבית.\nמכשיר בישום על בסיס שמן, המתאים לחלל של עד 400 מ״ר - מדירה ועד חנות או לובי של בניין מגורים. מיכל פנימי בנפח 500 מ״ל ועד 5 תוכניות שבועיות בעוצמות שונות, כדי לכוון את עוצמת הניחוח לימים ולשעות שמתאימים לכם. קל לתפעול בלחצנים שעל המכשיר, והוא מגיע בערכה מלאה כולל שנאי חשמלי. צרפו להזמנה את השמנים הייחודיים שלנו וקבלו ריח של מלון בכל רגע בבית."
   },
   {
-    id:"perfume-gold", name:"מכשיר בישום גולד", price:450, category:"perfume",
+    id:"perfume-gold", name:"מכשיר בישום גולד", price:459, category:"perfume",
     img:"/images/site/perfume-device-v2.jpg", tag:"הדגם הנבחר",
     colors:[
       { id:"white", label:"לבן", swatch:"#FFFFFF" },
@@ -5945,7 +5956,7 @@ const PERFUME_DATA = [
     customDesc:"מכשיר בישום שמעוצב כמו פריט דקורטיבי: גוף בלבן מבריק או בשחור אלגנטי (לבחירתכם), ומסגרת מתכתית בגוון זהב שנותנת לו נוכחות של אביזר עיצוב ולא של מכשיר טכני.\nכפתור ההפעלה בחלק העליון מאפשר שליטה פשוטה בלחיצה אחת, והקו הנקי משתלב בכל חלל - מהכניסה לבית ועד חדר השינה.\nבחירה טבעית למי שרוצה ניחוח של מלון בוטיק בבית, בעיצוב שמתאים לעולם המצעים והמגבות של רפאוז סטייל.\nמכשיר בישום על בסיס שמן לחללים של עד 400 מ״ר - בתים, חנויות ובנייני מגורים. המיכל הפנימי מכיל 500 מ״ל, והמכשיר פועל לפי עד 5 תוכניות שבועיות בעוצמות שונות. ההפעלה נוחה בלחצן, והערכה מגיעה עם שנאי חשמלי ומוכנה לשימוש מיד. הוסיפו להזמנה אחד מהשמנים הייחודיים שלנו, והבית כולו מריח כמו מלון - בכל רגע."
   },
   {
-    id:"perfume-graphite", name:"מכשיר בישום גרפיט חכם", price:560, category:"perfume",
+    id:"perfume-graphite", name:"מכשיר בישום גרפיט חכם", price:569, category:"perfume",
     img:"/images/site/perfume-device-graphite.jpg", tag:"בקרה דרך אפליקציה",
     colors:[
       { id:"graphite", label:"גרפיט", swatch:"#5A5D61" },
@@ -8993,84 +9004,66 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
 (function(){
   const toggleBtn = document.getElementById("a11y-toggle");
   const panel = document.getElementById("a11y-panel");
-  const fontBtns = document.querySelectorAll("[data-a11y-font]");
-  const contrastBtn = document.getElementById("a11y-contrast-btn");
-  const underlineBtn = document.getElementById("a11y-underline-btn");
-  const nostopBtn = document.getElementById("a11y-nostop-btn");
-  const grayscaleBtn = document.getElementById("a11y-grayscale-btn");
-  const spacingBtn = document.getElementById("a11y-spacing-btn");
-  const readableBtn = document.getElementById("a11y-readable-btn");
-  const statementBtn = document.getElementById("a11y-statement-btn");
-  const resetBtn = document.getElementById("a11y-reset-btn");
+  if(!toggleBtn || !panel) return;
+  const STORE = "rs-a11y-v1";
+  const FONT_LABELS = ["100%","108%","116%","125%"];
+  const downBtn = document.getElementById("a11y-font-down");
+  const upBtn = document.getElementById("a11y-font-up");
+  const valEl = document.getElementById("a11y-font-val");
+  const dots = panel.querySelectorAll("[data-a11y-dot]");
+  const TOGGLES = {
+    "a11y-contrast-btn":"a11y-contrast", "a11y-underline-btn":"a11y-underline", "a11y-nostop-btn":"a11y-nostop",
+    "a11y-grayscale-btn":"a11y-grayscale", "a11y-spacing-btn":"a11y-spacing", "a11y-readable-btn":"a11y-readable"
+  };
+  let state = { font:0, on:[] };
+  try{ const s = JSON.parse(localStorage.getItem(STORE) || "null"); if(s && typeof s === "object") state = { font: Math.max(0, Math.min(3, Number(s.font)||0)), on: Array.isArray(s.on) ? s.on : [] }; }catch(e){}
+  function save(){ try{ localStorage.setItem(STORE, JSON.stringify(state)); }catch(e){} }
 
-  function setFont(level){
+  function applyFont(){
     document.body.classList.remove("a11y-font-1","a11y-font-2","a11y-font-3");
-    if(level > 0){ document.body.classList.add(`a11y-font-${level}`); }
-    fontBtns.forEach(b=> b.classList.toggle("active", Number(b.dataset.a11yFont) === level));
+    if(state.font > 0) document.body.classList.add("a11y-font-" + state.font);
+    if(valEl) valEl.textContent = FONT_LABELS[state.font];
+    dots.forEach(d=> d.classList.toggle("on", Number(d.dataset.a11yDot) <= state.font));
+    if(downBtn) downBtn.disabled = state.font === 0;
+    if(upBtn) upBtn.disabled = state.font === 3;
   }
+  function applyToggles(){
+    Object.keys(TOGGLES).forEach(function(id){
+      const cls = TOGGLES[id], on = state.on.indexOf(cls) !== -1, btn = document.getElementById(id);
+      document.body.classList.toggle(cls, on);
+      if(btn){ btn.classList.toggle("active", on); btn.setAttribute("aria-pressed", on ? "true" : "false"); }
+    });
+  }
+  // Settings are remembered across pages and visits.
+  applyFont(); applyToggles();
 
-  toggleBtn.addEventListener("click", ()=>{
-    const isOpen = panel.classList.toggle("open");
-    toggleBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
-  });
-
+  function setOpen(open){
+    panel.classList.toggle("open", open);
+    toggleBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+  toggleBtn.addEventListener("click", ()=> setOpen(!panel.classList.contains("open")));
+  const closeBtn = document.getElementById("a11y-close-btn");
+  if(closeBtn) closeBtn.addEventListener("click", ()=>{ setOpen(false); toggleBtn.focus(); });
+  document.addEventListener("keydown", (e)=>{ if(e.key === "Escape" && panel.classList.contains("open")){ setOpen(false); toggleBtn.focus(); } });
   document.addEventListener("click", (e)=>{
-    if(panel.classList.contains("open") && !panel.contains(e.target) && e.target !== toggleBtn && !toggleBtn.contains(e.target)){
-      panel.classList.remove("open");
-      toggleBtn.setAttribute("aria-expanded", "false");
-    }
+    if(panel.classList.contains("open") && !panel.contains(e.target) && e.target !== toggleBtn && !toggleBtn.contains(e.target)) setOpen(false);
   });
 
-  fontBtns.forEach(b=>{
-    b.addEventListener("click", ()=> setFont(Number(b.dataset.a11yFont)));
+  if(downBtn) downBtn.addEventListener("click", ()=>{ state.font = Math.max(0, state.font - 1); applyFont(); save(); });
+  if(upBtn) upBtn.addEventListener("click", ()=>{ state.font = Math.min(3, state.font + 1); applyFont(); save(); });
+  Object.keys(TOGGLES).forEach(function(id){
+    const btn = document.getElementById(id); if(!btn) return;
+    btn.addEventListener("click", ()=>{
+      const cls = TOGGLES[id], i = state.on.indexOf(cls);
+      if(i === -1) state.on.push(cls); else state.on.splice(i, 1);
+      applyToggles(); save();
+    });
   });
 
-  contrastBtn.addEventListener("click", ()=>{
-    document.body.classList.toggle("a11y-contrast");
-    contrastBtn.classList.toggle("active");
-  });
-
-  underlineBtn.addEventListener("click", ()=>{
-    document.body.classList.toggle("a11y-underline");
-    underlineBtn.classList.toggle("active");
-  });
-
-  nostopBtn.addEventListener("click", ()=>{
-    document.body.classList.toggle("a11y-nostop");
-    nostopBtn.classList.toggle("active");
-  });
-
-  grayscaleBtn.addEventListener("click", ()=>{
-    document.body.classList.toggle("a11y-grayscale");
-    grayscaleBtn.classList.toggle("active");
-  });
-
-  spacingBtn.addEventListener("click", ()=>{
-    document.body.classList.toggle("a11y-spacing");
-    spacingBtn.classList.toggle("active");
-  });
-
-  readableBtn.addEventListener("click", ()=>{
-    document.body.classList.toggle("a11y-readable");
-    readableBtn.classList.toggle("active");
-  });
-
-  statementBtn.addEventListener("click", ()=>{
-    panel.classList.remove("open");
-    toggleBtn.setAttribute("aria-expanded", "false");
-    window.location.href = pathForView("accessibility");
-  });
-
-  resetBtn.addEventListener("click", ()=>{
-    setFont(0);
-    document.body.classList.remove("a11y-contrast","a11y-underline","a11y-nostop","a11y-grayscale","a11y-spacing","a11y-readable");
-    contrastBtn.classList.remove("active");
-    underlineBtn.classList.remove("active");
-    nostopBtn.classList.remove("active");
-    grayscaleBtn.classList.remove("active");
-    spacingBtn.classList.remove("active");
-    readableBtn.classList.remove("active");
-  });
+  const statementBtn = document.getElementById("a11y-statement-btn");
+  if(statementBtn) statementBtn.addEventListener("click", ()=>{ setOpen(false); window.location.href = pathForView("accessibility"); });
+  const resetBtn = document.getElementById("a11y-reset-btn");
+  if(resetBtn) resetBtn.addEventListener("click", ()=>{ state = { font:0, on:[] }; applyFont(); applyToggles(); save(); });
 })();
 
 /* ============================================================
