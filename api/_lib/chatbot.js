@@ -198,6 +198,10 @@ async function callGemini({ apiKey, model, systemPrompt, contents, timeoutMs }) 
 async function callGeminiWithFallback(opts) {
   const models = modelList();
   let lastErr;
+  // What happened with each model - returned/attached for diagnostics
+  // (health check, and the admin panel's chat log on a failed answer).
+  const attempts = [];
+  const fail = (e) => { e.attempts = attempts; return e; };
   // Hard time budget - must finish well inside Vercel's 30s function limit,
   // or the visitor gets a raw timeout instead of a friendly answer.
   const deadline = Date.now() + 20000;
@@ -207,29 +211,33 @@ async function callGeminiWithFallback(opts) {
     // move on to the next model instead of giving up.
     for (let attempt = 0; attempt < 2; attempt++) {
       const left = deadline - Date.now();
-      if (left < 2500) throw lastErr || new Error('Gemini: out of time');
+      if (left < 2500) throw fail(lastErr || new Error('Gemini: out of time'));
       try {
         // A single slow model can't eat the whole budget.
         const text = await callGemini(Object.assign({}, opts, { model, timeoutMs: Math.min(11000, left) }));
         if (!text) { // empty answer (e.g. blocked/cut off) - try the next model
           lastErr = new Error(`Gemini returned an empty reply (${model})`);
+          attempts.push({ model, status: 200, error: 'empty reply' });
           break;
         }
-        return { text, model };
+        attempts.push({ model, status: 200, ok: true });
+        return { text, model, attempts };
       } catch (err) {
         lastErr = err;
+        attempts.push({ model, status: err.status || (err.name === 'AbortError' ? 'timeout' : null),
+          error: String(err.geminiMessage || err.message || '').slice(0, 220) });
         console.error('chatbot:', err.message);
         const busy = err.status === 500 || err.status === 503 || err.status === 504 || err.name === 'AbortError';
         const modelProblem = busy || err.status === 404 || err.status === 429 ||
           (err.status === 400 && /model/i.test(err.geminiMessage || ''));
-        if (!modelProblem) throw err; // bad key / blocked request - same on every model
+        if (!modelProblem) throw fail(err); // bad key / blocked request - same on every model
         // Quick retry only for a fast "busy" answer - a timeout moves straight on.
         if (busy && err.name !== 'AbortError' && attempt === 0) { await new Promise((r) => setTimeout(r, 700)); continue; }
         break;
       }
     }
   }
-  throw lastErr;
+  throw fail(lastErr);
 }
 
 // Plain-language hint for the most common setup problems, shown by the
@@ -262,14 +270,23 @@ async function handleChatHealth(req, res, supabase) {
     await recordRateLimitEvent(supabase, 'chat', ip);
   }
   const started = Date.now();
+  // ?chat_health=full runs a real customer-style question with the full
+  // store prompt (exactly like the chat window does) instead of a tiny ping.
+  const full = req.query && req.query.chat_health === 'full';
+  let systemPrompt = 'Answer in one short Hebrew word.';
+  let question = 'שלום';
+  if (full) {
+    systemPrompt = buildSystemPrompt(buildCatalogText(await getOverrides(supabase)), '');
+    question = 'מה ההבדל בין הקולקציות?';
+  }
   try {
-    const r = await callGeminiWithFallback({ apiKey, systemPrompt: 'Answer in one short Hebrew word.',
-      contents: [{ role: 'user', parts: [{ text: 'שלום' }] }] });
-    return res.status(200).json({ ok: true, key_present: true, model: r.model, sample: r.text.slice(0, 60), ms: Date.now() - started });
+    const r = await callGeminiWithFallback({ apiKey, systemPrompt, contents: [{ role: 'user', parts: [{ text: question }] }] });
+    return res.status(200).json({ ok: true, key_present: true, mode: full ? 'full' : 'ping', model: r.model,
+      sample: r.text.slice(0, full ? 300 : 60), attempts: r.attempts, ms: Date.now() - started });
   } catch (err) {
-    return res.status(200).json({ ok: false, key_present: true, tried_models: modelList(),
+    return res.status(200).json({ ok: false, key_present: true, mode: full ? 'full' : 'ping', tried_models: modelList(),
       http_status: err.status || null, error: (err.geminiMessage || err.message || '').slice(0, 400),
-      hint: hintFor(err), ms: Date.now() - started });
+      attempts: err.attempts || [], hint: hintFor(err), ms: Date.now() - started });
   }
 }
 
@@ -278,14 +295,14 @@ async function handleChatHealth(req, res, supabase) {
 // session; each call appends the visitor's latest question and the bot's
 // answer. Best-effort: a logging problem never affects the visitor.
 const SESSION_RE = /^[A-Za-z0-9_-]{8,64}$/;
-async function saveConversation(supabase, { sessionId, contents, reply, failed, page, ip }) {
+async function saveConversation(supabase, { sessionId, contents, reply, failed, page, ip, errorInfo }) {
   if (!supabase || !SESSION_RE.test(sessionId || '')) return;
   try {
     const now = new Date().toISOString();
     const lastUser = contents[contents.length - 1];
     const newTurns = [
       { role: 'user', text: lastUser.parts[0].text, at: now },
-      { role: 'model', text: reply, at: now, failed: !!failed },
+      Object.assign({ role: 'model', text: reply, at: now, failed: !!failed }, errorInfo ? { error: errorInfo } : {}),
     ];
     const { data: existing } = await supabase
       .from('chat_conversations')
@@ -372,7 +389,8 @@ async function handleChatInner(req, res, supabase, body) {
     return res.status(200).json({ reply });
   } catch (err) {
     console.error('chatbot: Gemini call failed:', err.message);
-    await saveConversation(supabase, { sessionId: body.session_id, contents, reply: FALLBACK_REPLY, failed: true, page: pageUrl, ip });
+    await saveConversation(supabase, { sessionId: body.session_id, contents, reply: FALLBACK_REPLY, failed: true, page: pageUrl, ip,
+      errorInfo: (err.attempts || []).map((a) => `${a.model}: ${a.status || ''} ${a.error || ''}`.trim()).join(' | ') || String(err.message || '').slice(0, 300) });
     return res.status(502).json({ error: 'upstream', reply: FALLBACK_REPLY });
   }
 }

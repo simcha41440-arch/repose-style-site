@@ -3035,6 +3035,7 @@
           html += '<div class="chat-msg ' + who + (m.failed ? ' failed' : '') + '">' +
             escapeHtml(m.text || '') +
             '<small>' + (who === 'user' ? 'מבקר' : 'בוט') + (m.at ? ' · ' + new Date(m.at).toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'}) : '') + '</small>' +
+            (m.failed && m.error ? '<small style="direction:ltr;text-align:left;opacity:.8;">סיבה: ' + escapeHtml(m.error) + '</small>' : '') +
             '</div>';
         });
         html += '</div></td></tr>';
