@@ -38,11 +38,8 @@ const BASE_CATALOG = {
   'simfonia-premium': { price: 1000 },
   elegantia: { price: 700 },
   'towel-bath-classic': { price: 79, category: 'towel' },
-  'towel-spa-set': { price: 99, category: 'towel' },
   'towel-hand-premium': { price: 65, category: 'towel' },
   'towel-body-boutique': { price: 85, category: 'towel' },
-  'towel-folded-set': { price: 95, category: 'towel' },
-  'towel-full-set': { price: 100, category: 'towel' },
   'perfume-gold': { price: 450, category: 'perfume' },
   'perfume-white': { price: 350, category: 'perfume' },
   'perfume-graphite': { price: 560, category: 'perfume' },
@@ -77,6 +74,10 @@ const BASE_CATALOG = {
 // in index.html. Pass the Supabase rows in - this module has no DB client
 // of its own, to keep it a small dependency-free unit callers can test in
 // isolation.
+// Products removed from the catalog - an old override row for one of
+// these must never make it orderable again (see REMOVED_PRODUCT_IDS in index.html).
+const REMOVED_IDS = new Set(['towel-spa-set', 'towel-folded-set', 'towel-full-set']);
+
 function buildPriceMap(overrideRows) {
   const map = {};
   for (const id of Object.keys(BASE_CATALOG)) {
@@ -84,6 +85,7 @@ function buildPriceMap(overrideRows) {
   }
   for (const row of overrideRows || []) {
     if (!row || !row.id) continue;
+    if (REMOVED_IDS.has(row.id)) continue;
     // Products added from the admin panel's "הוספת מוצר חדש" form (towels,
     // bedding, perfume devices, scent bottles) have no entry in BASE_CATALOG -
     // without this they would be rejected at checkout as "unknown product".

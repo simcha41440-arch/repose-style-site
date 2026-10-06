@@ -3494,10 +3494,10 @@ if("serviceWorker" in navigator){
       <div class="nav-dd">
         <a data-nav="towels" href="/towels" aria-haspopup="true">מגבות<svg class="nav-dd-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></a>
         <div class="nav-dd-menu" role="menu" aria-label="מגבות">
-          <a href="/towels"><b>כל המגבות</b><small>כל הדגמים והסטים</small></a>
-          <a href="/towels?type=bath"><b>מגבות רחצה וגוף</b><small>אמבט, גוף ומגבות מתקפלות</small></a>
-          <a href="/towels?type=hand"><b>מגבות ידיים ופנים</b><small>מגבת ידיים פרימיום</small></a>
-          <a href="/towels?type=sets"><b>סטים של מגבות</b><small>סט ספא · סט פנים, ידיים וגוף</small></a>
+          <a href="/towels"><b>כל המגבות</b><small>ידיים, פנים וגוף</small></a>
+          <a href="/towels?type=hand"><b>מגבות ידיים</b><small>מידה 30/50 ס"מ</small></a>
+          <a href="/towels?type=face"><b>מגבות פנים</b><small>מידה 50/90 ס"מ</small></a>
+          <a href="/towels?type=body"><b>מגבות גוף</b><small>מידה 70/130 ס"מ</small></a>
         </div>
       </div>
       <div class="nav-dd">
@@ -3539,9 +3539,9 @@ if("serviceWorker" in navigator){
     <a class="mm-sub" href="/shop/bloom">קולקציית Bloom</a>
     <a class="mm-sub" href="/shop/heritage">קולקציית Heritage</a>
     <a data-nav="towels" href="/towels">מגבות</a>
-    <a class="mm-sub" href="/towels?type=bath">מגבות רחצה וגוף</a>
-    <a class="mm-sub" href="/towels?type=hand">מגבות ידיים ופנים</a>
-    <a class="mm-sub" href="/towels?type=sets">סטים של מגבות</a>
+    <a class="mm-sub" href="/towels?type=hand">מגבות ידיים 30/50</a>
+    <a class="mm-sub" href="/towels?type=face">מגבות פנים 50/90</a>
+    <a class="mm-sub" href="/towels?type=body">מגבות גוף 70/130</a>
     <a data-nav="perfume" href="/perfume">בישום</a>
     <a class="mm-sub" href="/perfume">מכשירי בישום</a>
     <a class="mm-sub" href="/perfume#scents">ניחוחות לבית</a>
@@ -3956,9 +3956,9 @@ if("serviceWorker" in navigator){
     </div>
     <div class="towel-filter" id="towel-filter" role="group" aria-label="סינון מגבות">
       <button type="button" class="chip active" data-towel-type="all">כל המגבות</button>
-      <button type="button" class="chip" data-towel-type="bath">מגבות רחצה וגוף</button>
-      <button type="button" class="chip" data-towel-type="hand">מגבות ידיים ופנים</button>
-      <button type="button" class="chip" data-towel-type="sets">סטים של מגבות</button>
+      <button type="button" class="chip" data-towel-type="hand">מגבות ידיים 30/50</button>
+      <button type="button" class="chip" data-towel-type="face">מגבות פנים 50/90</button>
+      <button type="button" class="chip" data-towel-type="body">מגבות גוף 70/130</button>
     </div>
     <div class="product-grid" id="towel-grid"></div>
   </div>
@@ -5882,36 +5882,26 @@ function attachCardClicks(container){
    ============================================================ */
 const TOWELS_DATA = [
   {
-    id:"towel-bath-classic", name:"מגבת אמבט לבנה קלאסית", price:79, category:"towel",
-    cotton:100, weight:600,
-    img:"https://images.unsplash.com/photo-1616663717839-2fea42e1a1f6?auto=format&fit=crop&w=800&h=600&q=80", tag:"רך וסופג במיוחד"
-  },
-  {
-    id:"towel-spa-set", name:"סט מגבות ספא לבנות", price:99, category:"towel",
-    cotton:100, weight:600,
-    img:"https://images.unsplash.com/photo-1760722974657-f64bce2f9cc5?auto=format&fit=crop&w=800&h=600&q=80", tag:"רב מכר"
-  },
-  {
-    id:"towel-hand-premium", name:"מגבת ידיים לבנה פרימיום", price:65, category:"towel",
+    id:"towel-hand-premium", name:"מגבת ידיים 30/50", price:65, category:"towel",
     cotton:100, weight:600,
     img:"https://images.unsplash.com/photo-1596683705523-eb49540c3934?auto=format&fit=crop&w=800&h=600&q=80"
   },
   {
-    id:"towel-body-boutique", name:"מגבת גוף מלון בוטיק", price:85, category:"towel",
+    id:"towel-bath-classic", name:"מגבת פנים 50/90", price:79, category:"towel",
+    cotton:100, weight:600,
+    img:"https://images.unsplash.com/photo-1616663717839-2fea42e1a1f6?auto=format&fit=crop&w=800&h=600&q=80"
+  },
+  {
+    id:"towel-body-boutique", name:"מגבת גוף 70/130", price:85, category:"towel",
     cotton:100, weight:600,
     img:"https://images.unsplash.com/photo-1639298109207-5a9ccc254481?auto=format&fit=crop&w=800&h=600&q=80"
-  },
-  {
-    id:"towel-folded-set", name:"מגבות רחצה מתקפלות לבנות", price:95, category:"towel",
-    cotton:100, weight:600,
-    img:"https://images.unsplash.com/photo-1728034261564-18930dcb2c8e?auto=format&fit=crop&w=800&h=600&q=80"
-  },
-  {
-    id:"towel-full-set", name:"סט מגבות פנים, ידיים וגוף", price:100, category:"towel",
-    cotton:100, weight:600,
-    img:"/images/products/towel-full-set.jpg"
   }
 ];
+/* Towel ids that were removed from the catalog. Listed so an old admin
+   override row for one of them (in Supabase product_overrides) can never
+   bring it back as a "new" product. Keep in sync with REMOVED_IDS in
+   api/_lib/pricing.js. */
+const REMOVED_PRODUCT_IDS = ["towel-spa-set", "towel-folded-set", "towel-full-set"];
 PRODUCTS.push(...TOWELS_DATA);
 
 /* ============================================================
@@ -6077,6 +6067,7 @@ function applyOverridesData(data){
   Object.keys(overrides).forEach(function(id){
     const o = overrides[id];
     if(PRODUCTS.some(function(p){ return p.id === id; })) return; // existing product, not a new one
+    if(typeof REMOVED_PRODUCT_IDS !== "undefined" && REMOVED_PRODUCT_IDS.indexOf(id) !== -1) return; // deliberately removed from the catalog
     if(o.active === false) return; // saved but turned off
     if(!o.name || o.price === undefined || o.price === null || o.price === "") return; // incomplete row - skip rather than show a broken card
     const d = (o.details && typeof o.details === "object") ? o.details : {};
@@ -6441,9 +6432,9 @@ function renderPerfume(){
    A towel id not listed here still shows under "כל המגבות". Admin-added
    towels can be placed in a group by adding their id to the right list. */
 const TOWEL_TYPES = {
-  bath: ["towel-bath-classic", "towel-body-boutique", "towel-folded-set"],
-  hand: ["towel-hand-premium"],
-  sets: ["towel-spa-set", "towel-full-set"]
+  hand: ["towel-hand-premium"],  // מגבות ידיים 30/50
+  face: ["towel-bath-classic"],  // מגבות פנים 50/90
+  body: ["towel-body-boutique"]  // מגבות גוף 70/130
 };
 function currentTowelType(){
   let t = "all";

@@ -22,12 +22,9 @@ const CATALOG = [
   { id: "aviv", name: "סימפוניה פרימיום", nameEn: "SIMFONIA PREMIUM", price: 1080, type: "bedding", collection: "Renaissance", cotton: 100, thread: 400 },
   { id: "simfonia-premium", name: "פוקסיה", nameEn: "FUCHSIA", price: 1000, type: "bedding", collection: "Bloom", cotton: 100, thread: 400 },
   { id: "elegantia", name: "מלודיה", nameEn: "MELODY", price: 700, type: "bedding", collection: "Heritage", cotton: 50, thread: 250 },
-  { id: "towel-bath-classic", name: "מגבת אמבט לבנה קלאסית", price: 79, type: "towel", tag: "רך וסופג במיוחד" },
-  { id: "towel-spa-set", name: "סט מגבות ספא לבנות", price: 99, type: "towel", tag: "רב מכר" },
-  { id: "towel-hand-premium", name: "מגבת ידיים לבנה פרימיום", price: 65, type: "towel" },
-  { id: "towel-body-boutique", name: "מגבת גוף מלון בוטיק", price: 85, type: "towel" },
-  { id: "towel-folded-set", name: "מגבות רחצה מתקפלות לבנות", price: 95, type: "towel" },
-  { id: "towel-full-set", name: "סט מגבות פנים, ידיים וגוף", price: 100, type: "towel" },
+  { id: "towel-hand-premium", name: "מגבת ידיים 30/50", price: 65, type: "towel" },
+  { id: "towel-bath-classic", name: "מגבת פנים 50/90", price: 79, type: "towel" },
+  { id: "towel-body-boutique", name: "מגבת גוף 70/130", price: 85, type: "towel" },
   { id: "perfume-white", name: "מכשיר בישום לבן קלאסי", price: 350, type: "diffuser", features: ["גוף לבן חלק בפינות מעוגלות","פרופיל דק שמתאים לקיר או למדף","מראה מינימליסטי שלא מושך תשומת לב","הדגם המשתלם בסדרה"] },
   { id: "perfume-gold", name: "מכשיר בישום גולד", price: 450, type: "diffuser", colors: ["לבן","שחור"], features: ["גוף בלבן מבריק או בשחור אלגנטי (לבחירתכם), עם מסגרת מתכתית בגוון זהב","כפתור הפעלה בחלקו העליון","קו נקי שמשתלב בסלון, בחדר שינה ובלובי","מתאים גם כמתנה מעוצבת לבית"] },
   { id: "perfume-graphite", name: "מכשיר בישום גרפיט חכם", price: 560, type: "diffuser", colors: ["גרפיט","לבן"], features: ["גימור גרפיט מתכתי עם פאנל קדמי שחור","חיבור לאפליקציה באמצעות סריקת קוד QR שעל המכשיר","עיצוב עכשווי שמתאים לחללים מודרניים ומוקפדים","הדגם המתקדם בסדרה"] },
@@ -77,7 +74,7 @@ const STORE_INFO = `
 
 רקמת ראשי תיבות: בדגמים "לונדון" ו"יהלום" אפשר להוסיף רקמת ראשי תיבות בעמוד המוצר. בלונדון התוספת היא 200 ₪, ביהלום הרקמה כלולה במחיר (עד 2 אותיות).
 
-מגבות: 100% כותנה, 600 גרם למ"ר. עמוד המגבות: ${SITE_URL}/towels
+מגבות: 100% כותנה, 600 גרם למ"ר. שלוש מידות: ידיים 30/50 ס"מ, פנים 50/90 ס"מ, גוף 70/130 ס"מ. עמוד המגבות: ${SITE_URL}/towels
 מכשירי בישום וניחוחות: עמוד ${SITE_URL}/perfume . בקבוקי ניחוח הם בנפח חצי ליטר, 189 ₪ לבקבוק.
 
 כביסה וטיפול במצעים: כביסה במים פושרים עד 40 מעלות, בתוכנית עדינה, ללא הלבנה. ייבוש בטמפרטורה נמוכה או תלייה בצל.
