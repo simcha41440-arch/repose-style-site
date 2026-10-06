@@ -43,9 +43,10 @@
 
   /* ---------- styles ---------- */
   var css = '' +
+  /* Sits bottom-left, right above the accessibility button. */
   /* Chat button: dark "ink" disc with a slowly turning gold ring and a
      gold sparkle mark - matches the site's black & gold palette. */
-  '#rs-chat-btn{position:fixed;bottom:104px;right:21px;z-index:1140;width:60px;height:60px;border-radius:50%;border:none;padding:0;cursor:pointer;' +
+  '#rs-chat-btn{position:fixed;bottom:96px;left:18px;z-index:1140;width:60px;height:60px;border-radius:50%;border:none;padding:0;cursor:pointer;' +
     'display:flex;align-items:center;justify-content:center;isolation:isolate;' +
     'background:radial-gradient(circle at 35% 28%,#4A3D33 0%,#2B2420 45%,#14100C 100%);' +
     'box-shadow:0 14px 30px -8px rgba(20,16,12,.65),0 0 0 1px rgba(227,195,120,.25);' +
@@ -66,8 +67,8 @@
     'box-shadow:0 3px 8px -3px rgba(0,0,0,.5);}' +
   '#rs-chat-btn.rs-open{transform:scale(.92);}' +
   '#rs-chat-btn.rs-hidden{opacity:0;pointer-events:none;transform:scale(.6);}' +
-  '@media (max-width:680px){#rs-chat-btn{bottom:88px;right:15px;width:54px;height:54px;}#rs-chat-btn svg{width:25px;height:25px;}}' +
-  '#rs-chat-panel{position:fixed;bottom:178px;right:22px;z-index:1160;width:370px;max-width:calc(100vw - 32px);height:540px;max-height:calc(100vh - 190px);' +
+  '@media (max-width:680px){#rs-chat-btn{bottom:94px;left:21px;width:54px;height:54px;}#rs-chat-btn svg{width:25px;height:25px;}}' +
+  '#rs-chat-panel{position:fixed;bottom:170px;left:22px;z-index:1160;width:370px;max-width:calc(100vw - 32px);height:540px;max-height:calc(100vh - 190px);' +
     'background:#FFFDF8;border:1px solid #D8B96C;border-radius:20px;box-shadow:0 24px 60px -18px rgba(28,23,18,.45);' +
     'display:flex;flex-direction:column;overflow:hidden;direction:rtl;font-family:Rubik,"Almoni Neue",Arial,sans-serif;color:#2B2420;' +
     'opacity:0;transform:translateY(14px) scale(.98);pointer-events:none;transition:opacity .22s ease,transform .22s ease;}' +
@@ -161,7 +162,7 @@
   // Same behaviour as the WhatsApp button: step out of the way while the
   // cart, wishlist, search, payment or any other panel/popup is open.
   var HIDE_BEHIND_IDS = ['cart-drawer', 'wishlist-drawer', 'search-panel', 'newsletter-modal',
-    'payment-modal', 'success-modal', 'mobile-menu'];
+    'payment-modal', 'success-modal', 'mobile-menu', 'a11y-panel'];
   setInterval(function () {
     var covered = HIDE_BEHIND_IDS.some(function (id) {
       var el = document.getElementById(id);
