@@ -1212,20 +1212,38 @@ if("serviceWorker" in navigator){
   nav.nav-links .nav-dd > a{display:inline-flex;align-items:center;gap:5px;}
   .nav-dd-chev{width:12px;height:12px;flex:none;opacity:.75;transition:transform .25s ease;}
   .nav-dd:hover .nav-dd-chev,.nav-dd:focus-within .nav-dd-chev{transform:rotate(180deg);}
-  .nav-dd-menu{position:absolute;top:100%;right:50%;transform:translate(50%,8px);z-index:50;min-width:250px;
-    padding:18px 0 0;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .22s ease, transform .22s ease, visibility 0s linear .22s;}
-  .nav-dd-menu::before{content:"";position:absolute;top:12px;left:0;right:0;bottom:0;z-index:-1;background:#FFFDF6;border:1px solid var(--line);
-    border-radius:18px;box-shadow:0 26px 50px -18px rgba(43,36,32,0.38);}
-  .nav-dd-menu::after{content:"";position:absolute;top:7px;right:50%;width:11px;height:11px;margin-right:-6px;background:#FFFDF6;
-    border-top:1px solid var(--line);border-left:1px solid var(--line);transform:rotate(45deg);}
+  /* Dropdown panel: dark ink + gold, with photo thumbnails */
+  .nav-dd-menu{position:absolute;top:100%;right:50%;transform:translate(50%,10px);z-index:50;width:340px;
+    padding:20px 0 0;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .25s ease, transform .3s cubic-bezier(.19,1,.22,1), visibility 0s linear .25s;}
+  .nav-dd-menu::before{content:"";position:absolute;top:12px;left:0;right:0;bottom:0;z-index:-1;border-radius:22px;
+    background:radial-gradient(260px 140px at 100% 0%, rgba(214,177,94,0.22), transparent 70%), linear-gradient(165deg,#2B2420 0%,#14100C 100%);
+    border:1px solid rgba(227,195,120,0.35);box-shadow:0 34px 70px -24px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,0,0,0.25);}
+  .nav-dd-menu::after{content:"";position:absolute;top:6px;right:50%;width:13px;height:13px;margin-right:-7px;background:#2B2420;
+    border-top:1px solid rgba(227,195,120,0.35);border-left:1px solid rgba(227,195,120,0.35);transform:rotate(45deg);}
   .nav-dd:hover .nav-dd-menu,.nav-dd:focus-within .nav-dd-menu{opacity:1;visibility:visible;pointer-events:auto;transform:translate(50%,0);transition-delay:0s;}
-  nav.nav-links .nav-dd-menu a{display:block;margin:0 8px;padding:11px 16px;border-radius:12px;text-align:right;white-space:nowrap;
-    color:var(--text-gold);text-shadow:none;font-size:14px;font-weight:600;letter-spacing:0;transition:background .2s ease;}
-  nav.nav-links .nav-dd-menu a:last-child{margin-bottom:8px;}
-  nav.nav-links .nav-dd-menu a:first-child{margin-top:8px;}
-  nav.nav-links .nav-dd-menu a b{display:block;font-weight:600;}
-  nav.nav-links .nav-dd-menu a small{display:block;margin-top:2px;font-size:12px;font-weight:400;color:var(--taupe);}
-  nav.nav-links .nav-dd-menu a:hover,nav.nav-links .nav-dd-menu a:focus-visible{background:linear-gradient(135deg,#FBF1D3,#F3E2AE);outline:none;}
+  .nav-dd-menu .dd-head{margin:14px 22px 8px;padding-bottom:10px;border-bottom:1px solid rgba(227,195,120,0.22);
+    font-size:11.5px;font-weight:600;letter-spacing:0.16em;color:var(--gold-light);text-align:right;text-shadow:none;}
+  nav.nav-links .nav-dd-menu a{display:flex;align-items:center;gap:14px;margin:2px 10px;padding:9px 12px;border-radius:14px;text-align:right;white-space:nowrap;
+    color:#fff;text-shadow:none;font-size:14px;font-weight:600;letter-spacing:0;background:transparent;
+    transition:background .25s ease, transform .25s ease;opacity:0;transform:translateY(6px);}
+  .nav-dd:hover nav.nav-links .nav-dd-menu a, .nav-dd:hover .nav-dd-menu a, .nav-dd:focus-within .nav-dd-menu a{opacity:1;transform:none;transition:background .25s ease, opacity .3s ease, transform .35s cubic-bezier(.19,1,.22,1);}
+  .nav-dd:hover .nav-dd-menu a:nth-of-type(2), .nav-dd:focus-within .nav-dd-menu a:nth-of-type(2){transition-delay:0s,.04s,.04s;}
+  .nav-dd:hover .nav-dd-menu a:nth-of-type(3), .nav-dd:focus-within .nav-dd-menu a:nth-of-type(3){transition-delay:0s,.08s,.08s;}
+  .nav-dd:hover .nav-dd-menu a:nth-of-type(4), .nav-dd:focus-within .nav-dd-menu a:nth-of-type(4){transition-delay:0s,.12s,.12s;}
+  nav.nav-links .nav-dd-menu a:last-child{margin-bottom:12px;}
+  .nav-dd-menu .dd-thumb{flex:none;width:52px;height:52px;border-radius:12px;overflow:hidden;background:#fff;
+    box-shadow:0 0 0 1px rgba(227,195,120,0.55), 0 8px 18px -8px rgba(0,0,0,0.6);}
+  .nav-dd-menu .dd-thumb img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s cubic-bezier(.19,1,.22,1);}
+  .nav-dd-menu .dd-thumb img[src*="perfume-device"],.nav-dd-menu .dd-thumb img[src*="scent-bottle"]{object-fit:contain;padding:3px;}
+  .nav-dd-menu .dd-txt{flex:1;min-width:0;}
+  nav.nav-links .nav-dd-menu a b{display:block;font-weight:600;color:#fff;}
+  nav.nav-links .nav-dd-menu a small{display:block;margin-top:3px;font-size:12px;font-weight:400;color:rgba(241,223,160,0.75);}
+  .nav-dd-menu .dd-arrow{flex:none;width:16px;height:16px;color:var(--gold-light);opacity:.35;transition:transform .25s ease, opacity .25s ease;}
+  nav.nav-links .nav-dd-menu a:hover, nav.nav-links .nav-dd-menu a:focus-visible{outline:none;
+    background:linear-gradient(90deg, rgba(227,195,120,0.04), rgba(227,195,120,0.16));box-shadow:inset 0 0 0 1px rgba(227,195,120,0.28);}
+  nav.nav-links .nav-dd-menu a:hover .dd-thumb img{transform:scale(1.1);}
+  nav.nav-links .nav-dd-menu a:hover .dd-arrow, nav.nav-links .nav-dd-menu a:focus-visible .dd-arrow{opacity:1;transform:translateX(-4px);}
+  @media (prefers-reduced-motion: reduce){nav.nav-links .nav-dd-menu a{opacity:1;transform:none;transition:none;}}
   .mobile-menu a.mm-sub{padding:10px 18px 10px 4px;font-size:14.5px;color:var(--taupe);border-bottom:1px dashed rgba(216,185,108,0.55);}
   .mobile-menu a.mm-sub::before{content:"–";margin-left:8px;color:var(--gold);}
   .mobile-menu a.mm-sub{justify-content:flex-start;}
@@ -3520,26 +3538,29 @@ if("serviceWorker" in navigator){
       <div class="nav-dd">
         <a data-nav="shop" href="/shop" aria-haspopup="true">מצעים<svg class="nav-dd-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></a>
         <div class="nav-dd-menu" role="menu" aria-label="מצעים">
-          <a href="/shop"><b>כל המצעים</b><small>כל הסטים בכל הקולקציות</small></a>
-          <a href="/shop/renaissance"><b>קולקציית Renaissance</b><small>100% כותנה · 400 חוט</small></a>
-          <a href="/shop/bloom"><b>קולקציית Bloom</b><small>100% כותנה · 400 חוט</small></a>
-          <a href="/shop/heritage"><b>קולקציית Heritage</b><small>50% כותנה · 250 חוט</small></a>
+          <div class="dd-head" aria-hidden="true">קולקציות המצעים</div>
+          <a href="/shop"><span class="dd-thumb"><img src="/images/site/bedding-home-new.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>כל המצעים</b><small>כל הסטים בכל הקולקציות</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
+          <a href="/shop/renaissance"><span class="dd-thumb"><img src="/images/products/yahalom.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>קולקציית Renaissance</b><small>100% כותנה · 400 חוט</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
+          <a href="/shop/bloom"><span class="dd-thumb"><img src="/images/products/simfonia-premium.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>קולקציית Bloom</b><small>100% כותנה · 400 חוט</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
+          <a href="/shop/heritage"><span class="dd-thumb"><img src="/images/products/star.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>קולקציית Heritage</b><small>50% כותנה · 250 חוט</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
         </div>
       </div>
       <div class="nav-dd">
         <a data-nav="towels" href="/towels" aria-haspopup="true">מגבות<svg class="nav-dd-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></a>
         <div class="nav-dd-menu" role="menu" aria-label="מגבות">
-          <a href="/towels"><b>כל המגבות</b><small>ידיים, פנים וגוף</small></a>
-          <a href="/towels?type=hand"><b>מגבות ידיים</b><small>מידה 30/50 ס"מ</small></a>
-          <a href="/towels?type=face"><b>מגבות פנים</b><small>מידה 50/90 ס"מ</small></a>
-          <a href="/towels?type=body"><b>מגבות גוף</b><small>מידה 70/130 ס"מ</small></a>
+          <div class="dd-head" aria-hidden="true">מגבות לפי מידה</div>
+          <a href="/towels"><span class="dd-thumb"><img src="/images/site/towels-home.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>כל המגבות</b><small>ידיים, פנים וגוף</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
+          <a href="/towels?type=hand"><span class="dd-thumb"><img src="/images/products/towel-hand.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>מגבות ידיים</b><small>מידה 30/50 ס"מ</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
+          <a href="/towels?type=face"><span class="dd-thumb"><img src="/images/products/towel-face.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>מגבות פנים</b><small>מידה 50/90 ס"מ</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
+          <a href="/towels?type=body"><span class="dd-thumb"><img src="/images/products/towel-body.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>מגבות גוף</b><small>מידה 70/130 ס"מ</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
         </div>
       </div>
       <div class="nav-dd">
         <a data-nav="perfume" href="/perfume" aria-haspopup="true">בישום<svg class="nav-dd-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></a>
         <div class="nav-dd-menu" role="menu" aria-label="בישום">
-          <a href="/perfume"><b>מכשירי בישום</b><small>דגמים בעיצוב מוקפד לבית</small></a>
-          <a href="/perfume#scents"><b>ניחוחות לבית</b><small>בקבוקי חצי ליטר</small></a>
+          <div class="dd-head" aria-hidden="true">ניחוח של מלון בוטיק</div>
+          <a href="/perfume"><span class="dd-thumb"><img src="/images/site/perfume-device-v2.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>מכשירי בישום</b><small>דגמים בעיצוב מוקפד לבית</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
+          <a href="/perfume#scents"><span class="dd-thumb"><img src="/images/products/scent-bottle-v2.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>ניחוחות לבית</b><small>בקבוקי חצי ליטר</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
         </div>
       </div>
       <a data-nav="sale" href="/sale">מבצעים</a>
