@@ -3417,6 +3417,11 @@ if("serviceWorker" in navigator){
   #scent-showcase{display:grid;direction:rtl;grid-template-columns:repeat(4,1fr);gap:22px;align-items:stretch;max-width:1180px;margin:0 auto 72px;}
   .sc-row .pf-info{padding:18px 16px 20px;}
   .sc-row .pf-media img{width:100%;height:100%;}
+  /* Tester pack card */
+  .sc-testers{border-color:var(--gold);box-shadow:0 0 0 1px rgba(176,138,62,0.35), var(--shadow);}
+  .sc-x6{position:absolute;bottom:14px;left:14px;z-index:2;width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-family:'Rubik','Almoni Neue',sans-serif;font-weight:700;font-size:16px;color:#fff;direction:ltr;
+    background:radial-gradient(circle at 35% 30%,#4A3D33,#1C1712);box-shadow:0 0 0 2px var(--gold-light), 0 8px 18px -8px rgba(0,0,0,0.6);}
   .sc-row h3{font-size:clamp(18px,1.6vw,21px);line-height:1.3;color:var(--text-gold);margin:0 0 4px;font-weight:500;}
   .sc-size{font-size:12.5px;color:var(--taupe);margin:0 0 10px;font-weight:300;}
   .sc-row .pf-price{font-size:22px;margin:0 0 14px;}
@@ -5986,6 +5991,17 @@ const SCENTS_DATA = [
 });
 PRODUCTS.push(...SCENTS_DATA);
 
+/* Tester pack - shown last in the "ניחוחות לבית" section.
+   IMPORTANT: id/price must stay in sync with BASE_CATALOG in
+   api/_lib/pricing.js and CATALOG in admin.html. */
+PRODUCTS.push({
+  id:"scent-testers-6", name:"מארז 6 טסטרים", price:39, category:"perfume", scent:true, testerPack:true,
+  img:"/images/products/scent-testers.png", kicker:"Scent Testers",
+  sizeLabel:"6 טסטרים להתנסות",
+  features:["6 טסטרים באריזה אחת"],
+  customDesc:"מארז של 6 טסטרים - הדרך הנוחה להכיר את הניחוחות שלנו לפני שבוחרים בקבוק גדול.\nמחיר למארז: 39 ₪."
+});
+
 /* ---- Catalog numbers (מק״ט) - shown small under the product title ----
    Format RS-<group>-<number>: BD bedding, TW towels, PF perfume devices,
    SC scent bottles. Products with color options get a short color suffix
@@ -6012,7 +6028,8 @@ const SKU_MAP = {
   "scent-london":"RS-SC-420",
   "scent-pink-lotus":"RS-SC-421",
   "scent-abercrombie":"RS-SC-422",
-  "scent-my-secret":"RS-SC-423"
+  "scent-my-secret":"RS-SC-423",
+  "scent-testers-6":"RS-SC-499"
 };
 const SKU_COLOR_SUFFIX = { white:"WH", black:"BK", graphite:"GR" };
 function skuOf(p, colorId){
@@ -6343,16 +6360,17 @@ function applyPromoBanner(content){
 function renderScents(){
   const wrap = document.getElementById("scent-showcase");
   if(!wrap) return;
-  const list = PRODUCTS.filter(p => p.scent && !p.hidden);
+  // Tester pack always last, after every bottle (incl. admin-added ones).
+  const list = PRODUCTS.filter(p => p.scent && !p.hidden).sort((a,b)=> (a.testerPack?1:0) - (b.testerPack?1:0));
   wrap.innerHTML = list.map(p=>`
-    <article class="pf-row sc-row" data-id="${p.id}">
+    <article class="pf-row sc-row${p.testerPack ? " sc-testers" : ""}" data-id="${p.id}">
       <a class="pf-media" href="${productPath(p.id)}" aria-label="לעמוד המוצר: ${p.name}">
-        ${p.outOfStock ? `<span class="pf-badge out">אזל מהמלאי</span>` : ""}
-        <img src="${p.img}" alt="${p.name} - בקבוק ניחוח חצי ליטר, רפאוז סטייל" loading="lazy" decoding="async">
+        ${p.outOfStock ? `<span class="pf-badge out">אזל מהמלאי</span>` : (p.testerPack ? `<span class="pf-badge">מארז התנסות</span><span class="sc-x6" aria-hidden="true">×6</span>` : "")}
+        <img src="${p.img}" alt="${p.name} - ${p.testerPack ? "טסטרים של ניחוחות" : "בקבוק ניחוח חצי ליטר"}, רפאוז סטייל" loading="lazy" decoding="async">
       </a>
       <div class="pf-info">
         <h3 class="serif">${p.name}</h3>
-        <div class="sc-size">בקבוק חצי ליטר</div>
+        <div class="sc-size">${p.sizeLabel || "בקבוק חצי ליטר"}</div>
         <div class="pf-price">${priceHTML(p)}</div>
         <div class="pf-buy">
           <div class="pf-qty" role="group" aria-label="כמות">

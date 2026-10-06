@@ -66,6 +66,7 @@ const BASE_CATALOG = {
   'scent-pink-lotus': { price: 189, category: 'perfume' },
   'scent-abercrombie': { price: 189, category: 'perfume' },
   'scent-my-secret': { price: 189, category: 'perfume' },
+  'scent-testers-6': { price: 39, category: 'perfume' },
 };
 
 // Merges live product_overrides rows (as returned by a

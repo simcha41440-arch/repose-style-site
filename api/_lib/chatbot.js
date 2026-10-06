@@ -62,6 +62,7 @@ const TYPE_LABELS = {
   towel: 'מגבות',
   diffuser: 'מכשיר בישום',
   scent: 'בקבוק ניחוח (חצי ליטר)',
+  tester: 'מארז טסטרים להתנסות',
 };
 
 function buildCatalogText(overrides) {
