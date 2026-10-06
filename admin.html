@@ -153,6 +153,18 @@
   .bars .bar{width:100%; background:var(--gold); border-radius:4px 4px 0 0; min-height:2px;}
   .bars .bar-label{font-size:10px; color:var(--taupe); white-space:nowrap;}
   .bars .bar-value{font-size:10px; color:var(--text-gold); font-weight:600;}
+  /* ===== AI chat-bot conversations tab ===== */
+  .chat-row-q{max-width:360px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .chat-pill{display:inline-block; padding:3px 10px; border-radius:999px; font-size:11.5px; font-weight:600;}
+  .chat-pill.err{background:#FBE9E5; color:#8A3A2C;}
+  .chat-pill.ok{background:rgba(173,138,78,0.16); color:var(--gold-dark);}
+  .chat-transcript{display:flex; flex-direction:column; gap:8px; padding:14px 6px 18px; max-width:760px;}
+  .chat-msg{max-width:80%; padding:9px 13px; border-radius:14px; font-size:13.5px; line-height:1.6; white-space:pre-wrap; word-wrap:break-word;}
+  .chat-msg.user{align-self:flex-start; background:#2B2420; color:#fff; border-bottom-right-radius:4px;}
+  .chat-msg.model{align-self:flex-end; background:#F6EEDB; color:#2B2420; border-bottom-left-radius:4px;}
+  .chat-msg.failed{background:#FBE9E5; color:#8A3A2C;}
+  .chat-msg small{display:block; margin-top:4px; font-size:10.5px; opacity:.6;}
+  tr.chat-open-row > td{background:#FFFDF8;}
 </style>
 </head>
 <body>
@@ -189,6 +201,7 @@
     <button data-tab="coupons">קופונים</button>
     <button data-tab="inquiries">פניות</button>
     <button data-tab="drafts">טיוטות פניות</button>
+    <button data-tab="chats">שיחות עם הבוט</button>
     <button data-tab="visits">ביקורים באתר</button>
     <button data-tab="activity">יומן פעילות</button>
     <button class="logout" id="logoutBtn">התנתקות</button>
@@ -687,6 +700,23 @@
       </div>
     </section>
 
+    <!-- AI chat-bot conversations tab -->
+    <section id="tab-chats" style="display:none;">
+      <h1 class="serif">שיחות עם הבוט</h1>
+      <p class="sub">כל השיחות שמבקרים ניהלו עם עוזר ה-AI באתר, מהחדשה לישנה. לחצו על "צפייה" כדי לראות את השיחה המלאה. שיחה שבה הבוט לא הצליח לענות מסומנת באדום.</p>
+
+      <div class="panel">
+        <div class="top-row">
+          <h3 style="margin:0">שיחות: <span id="chatsTotalCount">-</span></h3>
+          <input type="text" class="search-field" id="chatsSearch" placeholder="חיפוש בתוך השיחות">
+          <span class="refresh" id="chatsRefreshed"></span>
+          <button class="btn outline small" id="chatsRefreshBtn" type="button">רענון</button>
+          <button class="btn danger small" id="chatsDeleteAllBtn" type="button">מחיקת כל השיחות</button>
+        </div>
+        <div id="chatsTableWrap"><div class="empty">טוען...</div></div>
+      </div>
+    </section>
+
     <!-- Site visits tab -->
     <section id="tab-visits" style="display:none;">
       <h1 class="serif">ביקורים באתר</h1>
@@ -865,6 +895,7 @@
       document.getElementById('tab-coupons').style.display = (tab === 'coupons') ? 'block' : 'none';
       document.getElementById('tab-inquiries').style.display = (tab === 'inquiries') ? 'block' : 'none';
       document.getElementById('tab-drafts').style.display = (tab === 'drafts') ? 'block' : 'none';
+      document.getElementById('tab-chats').style.display = (tab === 'chats') ? 'block' : 'none';
       document.getElementById('tab-visits').style.display = (tab === 'visits') ? 'block' : 'none';
       document.getElementById('tab-activity').style.display = (tab === 'activity') ? 'block' : 'none';
       if (tab === 'overview') renderOverview();
@@ -875,6 +906,7 @@
       if (tab === 'coupons') loadCoupons();
       if (tab === 'inquiries') loadInquiries();
       if (tab === 'drafts') loadDrafts();
+      if (tab === 'chats') loadChats();
       if (tab === 'visits') loadVisits();
       if (tab === 'activity') loadActivity();
     });
@@ -2968,6 +3000,112 @@
     }
   });
 
+  /* ---------- AI chat-bot conversations ---------- */
+  let lastChats = [];
+  const openChats = {};
+
+  function chatPagePath(url){
+    if (!url) return '-';
+    try { return decodeURIComponent(new URL(url).pathname) || '/'; } catch(e) { return url; }
+  }
+
+  function renderChats(chats){
+    const wrap = document.getElementById('chatsTableWrap');
+    if (!chats || !chats.length) {
+      wrap.innerHTML = '<div class="empty">' + (lastChats.length ? 'לא נמצאו שיחות שמתאימות לחיפוש.' : 'עדיין אין שיחות עם הבוט.') + '</div>';
+      return;
+    }
+    let html = '<table><thead><tr>' +
+      '<th>עודכן</th><th>שאלה ראשונה</th><th>שאלות</th><th>עמוד</th><th>מצב</th><th></th>' +
+      '</tr></thead><tbody>';
+    chats.forEach(function(c){
+      const isOpen = !!openChats[c.id];
+      html += '<tr' + (isOpen ? ' class="chat-open-row"' : '') + '>' +
+        '<td>' + (c.updated_at ? new Date(c.updated_at).toLocaleString('he-IL') : '-') + '</td>' +
+        '<td class="chat-row-q" title="' + escapeHtml(c.first_question || '') + '">' + escapeHtml(c.first_question || '-') + '</td>' +
+        '<td>' + (c.message_count || 0) + '</td>' +
+        '<td><bdi dir="ltr">' + escapeHtml(chatPagePath(c.page)) + '</bdi></td>' +
+        '<td>' + (c.had_error ? '<span class="chat-pill err">הייתה תקלה</span>' : '<span class="chat-pill ok">נענתה</span>') + '</td>' +
+        '<td style="display:flex;gap:6px;flex-wrap:wrap;">' +
+          '<button type="button" class="btn outline small" data-toggle-chat="' + escapeHtml(c.id) + '">' + (isOpen ? 'הסתרה' : 'צפייה') + '</button>' +
+          '<button type="button" class="btn danger small" data-delete-chat="' + escapeHtml(c.id) + '">מחיקה</button>' +
+        '</td></tr>';
+      if (isOpen) {
+        html += '<tr class="chat-open-row"><td colspan="6"><div class="chat-transcript">';
+        (Array.isArray(c.messages) ? c.messages : []).forEach(function(m){
+          const who = m.role === 'user' ? 'user' : 'model';
+          html += '<div class="chat-msg ' + who + (m.failed ? ' failed' : '') + '">' +
+            escapeHtml(m.text || '') +
+            '<small>' + (who === 'user' ? 'מבקר' : 'בוט') + (m.at ? ' · ' + new Date(m.at).toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'}) : '') + '</small>' +
+            '</div>';
+        });
+        html += '</div></td></tr>';
+      }
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+
+    wrap.querySelectorAll('[data-toggle-chat]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        const id = btn.getAttribute('data-toggle-chat');
+        openChats[id] = !openChats[id];
+        applyChatsFilter();
+      });
+    });
+    wrap.querySelectorAll('[data-delete-chat]').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        const id = btn.getAttribute('data-delete-chat');
+        if (!confirm('למחוק את השיחה הזו?')) return;
+        btn.disabled = true;
+        try {
+          await api('/api/admin?action=chats&id=' + encodeURIComponent(id), { method: 'DELETE' });
+          loadChats();
+        } catch (e) {
+          alert(e.message || 'שגיאה במחיקה.');
+          btn.disabled = false;
+        }
+      });
+    });
+  }
+
+  function applyChatsFilter(){
+    const q = (document.getElementById('chatsSearch').value || '').trim().toLowerCase();
+    if (!q) { renderChats(lastChats); return; }
+    renderChats(lastChats.filter(function(c){
+      const text = (Array.isArray(c.messages) ? c.messages : []).map(function(m){ return m.text || ''; }).join(' ');
+      return (text + ' ' + (c.page || '')).toLowerCase().indexOf(q) !== -1;
+    }));
+  }
+  document.getElementById('chatsSearch').addEventListener('input', applyChatsFilter);
+
+  async function loadChats(){
+    const wrap = document.getElementById('chatsTableWrap');
+    try {
+      const data = await api('/api/admin?action=chats');
+      lastChats = data.chats || [];
+      document.getElementById('chatsTotalCount').textContent = lastChats.length;
+      document.getElementById('chatsRefreshed').textContent = 'עודכן: ' + new Date().toLocaleTimeString('he-IL');
+      applyChatsFilter();
+    } catch (e) {
+      wrap.innerHTML = '<div class="empty">שגיאה בטעינה: ' + escapeHtml(e.message) + '</div>';
+    }
+  }
+  document.getElementById('chatsRefreshBtn').addEventListener('click', loadChats);
+
+  document.getElementById('chatsDeleteAllBtn').addEventListener('click', async function(){
+    if (!confirm('למחוק את כל השיחות עם הבוט לצמיתות?')) return;
+    const btn = this;
+    btn.disabled = true;
+    try {
+      await api('/api/admin?action=chats&all=1', { method: 'DELETE' });
+      loadChats();
+    } catch (e) {
+      alert(e.message || 'שגיאה במחיקה.');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
   /* ---------- Activity log ---------- */
   const ACTION_LABELS = {
     login: 'התחברות',
@@ -2981,7 +3119,9 @@
     site_visit_delete: 'מחיקת ביקור',
     site_visits_delete_all: 'מחיקת כל הביקורים',
     form_draft_delete: 'מחיקת טיוטת פנייה',
-    form_drafts_delete_all: 'מחיקת כל טיוטות הפנייה'
+    form_drafts_delete_all: 'מחיקת כל טיוטות הפנייה',
+    chat_delete: 'מחיקת שיחת בוט',
+    chats_delete_all: 'מחיקת כל שיחות הבוט'
   };
 
   function renderActivity(entries){

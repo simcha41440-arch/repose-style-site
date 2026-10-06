@@ -16,6 +16,8 @@
 //   GET  /api/admin?action=audit-log     - admin action log + failed logins
 //   POST /api/admin?action=upload-image  - { filename, dataUrl } -> { url }
 //   POST /api/admin?action=test-email    - { to? } -> sends a real test email
+//   GET  /api/admin?action=chats         - AI chat-bot conversations
+//   DELETE /api/admin?action=chats&id=.. - delete one (or &all=1 for all)
 
 const crypto = require('crypto');
 const { getSupabase, withFriendlyError } = require('./_lib/supabase');
@@ -462,6 +464,45 @@ async function handleTestEmail(req, res) {
   return res.status(200).json({ ok: true, to, missingEnv });
 }
 
+// Conversations visitors had with the AI chat assistant (table
+// chat_conversations - created by CHAT-LOG-SETUP.sql, written by
+// api/_lib/chatbot.js). Admin-only.
+async function handleChats(req, res) {
+  const session = requireAdmin(req, res);
+  if (!session) return;
+  let supabase;
+  try {
+    supabase = getSupabase();
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+  const missingTableHint = (msg) => /chat_conversations|relation|does not exist|schema cache/i.test(msg || '')
+    ? ' (נראה שהטבלה עוד לא נוצרה - הריצו את CHAT-LOG-SETUP.sql ב-Supabase > SQL Editor)'
+    : '';
+
+  if (req.method === 'GET') {
+    const { data, error } = await withFriendlyError(
+      supabase.from('chat_conversations').select('*').order('updated_at', { ascending: false }).limit(300)
+    );
+    if (error) return res.status(500).json({ error: error.message + missingTableHint(error.message) });
+    return res.status(200).json({ chats: data || [] });
+  }
+
+  if (req.method === 'DELETE') {
+    const all = req.query && req.query.all;
+    const id = req.query && req.query.id;
+    if (!all && !id) return res.status(400).json({ error: 'id is required.' });
+    const q = supabase.from('chat_conversations').delete();
+    const { error } = await withFriendlyError(all ? q.not('id', 'is', null) : q.eq('id', id));
+    if (error) return res.status(500).json({ error: error.message + missingTableHint(error.message) });
+    await logAdminAction(supabase, session.user, all ? 'chats_delete_all' : 'chat_delete', all ? null : id, null, getClientIp(req));
+    return res.status(200).json({ ok: true });
+  }
+
+  res.setHeader('Allow', 'GET, DELETE');
+  return res.status(405).json({ error: 'Method not allowed.' });
+}
+
 module.exports = async (req, res) => {
   const action = req.query && req.query.action;
   switch (action) {
@@ -479,6 +520,8 @@ module.exports = async (req, res) => {
       return handleUploadImage(req, res);
     case 'test-email':
       return handleTestEmail(req, res);
+    case 'chats':
+      return handleChats(req, res);
     default:
       return res.status(400).json({ error: 'Unknown or missing action.' });
   }

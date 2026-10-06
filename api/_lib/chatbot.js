@@ -266,6 +266,52 @@ async function handleChatHealth(req, res, supabase) {
   }
 }
 
+// Saves the conversation for the admin panel's "שיחות עם הבוט" tab
+// (table chat_conversations - see CHAT-LOG-SETUP.sql). One row per chat
+// session; each call appends the visitor's latest question and the bot's
+// answer. Best-effort: a logging problem never affects the visitor.
+const SESSION_RE = /^[A-Za-z0-9_-]{8,64}$/;
+async function saveConversation(supabase, { sessionId, contents, reply, failed, page, ip }) {
+  if (!supabase || !SESSION_RE.test(sessionId || '')) return;
+  try {
+    const now = new Date().toISOString();
+    const lastUser = contents[contents.length - 1];
+    const newTurns = [
+      { role: 'user', text: lastUser.parts[0].text, at: now },
+      { role: 'model', text: reply, at: now, failed: !!failed },
+    ];
+    const { data: existing } = await supabase
+      .from('chat_conversations')
+      .select('messages, had_error')
+      .eq('session_id', sessionId)
+      .maybeSingle();
+    let messages;
+    if (existing && Array.isArray(existing.messages)) {
+      messages = existing.messages.concat(newTurns);
+    } else {
+      // First save for this chat: keep whatever earlier turns the browser
+      // sent too (e.g. if saving was briefly unavailable).
+      messages = contents.slice(0, -1).map((c) => ({ role: c.role, text: c.parts[0].text })).concat(newTurns);
+    }
+    messages = messages.slice(-200);
+    const firstUser = messages.find((m) => m.role === 'user');
+    const row = {
+      session_id: sessionId,
+      messages,
+      message_count: messages.filter((m) => m.role === 'user').length,
+      first_question: firstUser ? String(firstUser.text).slice(0, 300) : null,
+      ip: ip || null,
+      had_error: !!failed || !!(existing && existing.had_error),
+      updated_at: now,
+    };
+    if (page) row.page = page; // last page the visitor chatted from
+    const { error } = await supabase.from('chat_conversations').upsert(row, { onConflict: 'session_id' });
+    if (error) console.error('chatbot: saving conversation failed (non-fatal):', error.message);
+  } catch (err) {
+    console.error('chatbot: saving conversation failed (non-fatal):', err.message);
+  }
+}
+
 const FALLBACK_REPLY =
   'מצטערים, לא הצלחתי לענות כרגע. אפשר לפנות אלינו בטלפון או בוואטסאפ 055-6713828, או דרך עמוד צור קשר - ונשמח לעזור.';
 
@@ -305,9 +351,12 @@ async function handleChat(req, res, supabase, body) {
   const systemPrompt = buildSystemPrompt(buildCatalogText(overrides), pageUrl);
   try {
     const r = await callGeminiWithFallback({ apiKey, systemPrompt, contents });
-    return res.status(200).json({ reply: r.text || FALLBACK_REPLY });
+    const reply = r.text || FALLBACK_REPLY;
+    await saveConversation(supabase, { sessionId: body.session_id, contents, reply, failed: !r.text, page: pageUrl, ip });
+    return res.status(200).json({ reply });
   } catch (err) {
     console.error('chatbot: Gemini call failed:', err.message);
+    await saveConversation(supabase, { sessionId: body.session_id, contents, reply: FALLBACK_REPLY, failed: true, page: pageUrl, ip });
     return res.status(502).json({ error: 'upstream', reply: FALLBACK_REPLY });
   }
 }

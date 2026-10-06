@@ -24,6 +24,19 @@
     var saved = JSON.parse(sessionStorage.getItem(STORE_KEY) || '[]');
     if (Array.isArray(saved)) history = saved.slice(-30);
   } catch (e) {}
+  // Identifies this chat so the server can keep the whole conversation
+  // together for the admin panel ("שיחות עם הבוט"). New id on "שיחה חדשה".
+  function newSessionId() {
+    var r = '';
+    try { r = (crypto.randomUUID && crypto.randomUUID()) || ''; } catch (e) {}
+    return (r || (Date.now().toString(36) + Math.random().toString(36).slice(2, 12))).replace(/[^A-Za-z0-9_-]/g, '');
+  }
+  var sessionId = null;
+  try { sessionId = sessionStorage.getItem('rs-chat-session'); } catch (e) {}
+  if (!sessionId) {
+    sessionId = newSessionId();
+    try { sessionStorage.setItem('rs-chat-session', sessionId); } catch (e) {}
+  }
   function persist() {
     try { sessionStorage.setItem(STORE_KEY, JSON.stringify(history.slice(-30))); } catch (e) {}
   }
@@ -119,7 +132,7 @@
       '<textarea id="rs-chat-input" rows="1" maxlength="800" placeholder="כתבו כאן את השאלה…" aria-label="הודעה"></textarea>' +
       '<button type="submit" id="rs-chat-send" aria-label="שליחה">' + ICON_SEND + '</button>' +
     '</form>' +
-    '<div id="rs-chat-foot">התשובות נוצרות ע"י בינה מלאכותית ועשויות לטעות · לנציג אנושי: <a href="https://wa.me/972556713828" target="_blank" rel="noopener">וואטסאפ</a></div>';
+    '<div id="rs-chat-foot">התשובות נוצרות ע"י בינה מלאכותית ועשויות לטעות · השיחות נשמרות לשיפור השירות · לנציג אנושי: <a href="https://wa.me/972556713828" target="_blank" rel="noopener">וואטסאפ</a></div>';
 
   function mount() {
     document.body.appendChild(btn);
@@ -232,6 +245,8 @@
     if (busy) return;
     history = [];
     persist();
+    sessionId = newSessionId();
+    try { sessionStorage.setItem('rs-chat-session', sessionId); } catch (e) {}
     renderAll();
     input.focus();
   });
@@ -285,6 +300,7 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         type: 'chat',
+        session_id: sessionId,
         messages: history.slice(-16),
         page: location.origin + location.pathname
       })
