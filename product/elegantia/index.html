@@ -1873,6 +1873,16 @@ if("serviceWorker" in navigator){
     .cta-band::before{top:22px;bottom:22px;left:14px;right:14px;border-radius:24px;}
   }
 
+  /* ===== HERO WINDOW (bottom of home page) ===== */
+  .hero-window{position:relative;height:100vh;height:100svh;clip-path:inset(0);-webkit-clip-path:inset(0);background:#8C837B;}
+  .hero-window-bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+  .hero-window-bg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 30%;
+    opacity:0;transition:opacity 1.6s ease-in-out;animation:kenburns 16s ease-in-out infinite;}
+  .hero-window-bg img.active{opacity:0.92;}
+  .hero-window-bg::after{content:"";position:absolute;inset:0;
+    background:linear-gradient(180deg, rgba(20,16,12,0.18) 0%, rgba(20,16,12,0.08) 40%, rgba(20,16,12,0.30) 100%);}
+  @media (prefers-reduced-motion: reduce){.hero-window-bg img{animation:none;transition:none;}}
+
   /* ===== FOOTER ===== */
   footer{
     position:relative;
@@ -3681,11 +3691,12 @@ if("serviceWorker" in navigator){
     </div>
   </section>
 
-  <div class="cta-band">
-    <div class="eyebrow reveal">מוכנים לשדרג את חדר השינה?</div>
-    <h2 class="reveal">מצאו את הסט המושלם בשבילכם</h2>
-    <button class="btn light reveal" data-nav="shop">לקטלוג המלא</button>
-  </div>
+  <!-- "Window" onto the hero slideshow: an empty, see-through strip at the
+       bottom of the home page - as you scroll, the same rotating hero photos
+       show through it (fixed layer, clipped to this strip). -->
+  <section class="hero-window" aria-hidden="true">
+    <div class="hero-window-bg" id="hero-window-bg"></div>
+  </section>
 
 </section>
 
@@ -8744,6 +8755,33 @@ if(document.readyState !== "complete"){
   window.addEventListener("load", setCollectionNavPhotos);
 }
 document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
+
+/* ============================================================
+   HERO WINDOW - mirrors the hero slideshow (same photos, same active
+   slide, including photos changed from the admin panel) into the
+   see-through strip at the bottom of the home page.
+   ============================================================ */
+(function(){
+  const bg = document.getElementById("hero-window-bg");
+  if(!bg) return;
+  const heroSlides = Array.from(document.querySelectorAll(".hero .bg.slide"));
+  if(!heroSlides.length) return;
+  const copies = heroSlides.map(function(s){
+    const img = document.createElement("img");
+    img.alt = ""; img.loading = "lazy"; img.decoding = "async";
+    bg.appendChild(img);
+    return img;
+  });
+  function sync(){
+    heroSlides.forEach(function(s, i){
+      const src = s.currentSrc || s.src;
+      if(src && copies[i].getAttribute("src") !== src) copies[i].setAttribute("src", src);
+      copies[i].classList.toggle("active", s.classList.contains("active"));
+    });
+  }
+  sync();
+  setInterval(sync, 400);
+})();
 
 /* ============================================================
    FLOATING WHATSAPP BUTTON
