@@ -9,7 +9,7 @@ const {
   looksLikeBot,
   logAdminAction,
 } = require('./_lib/security');
-const { handleChat } = require('./_lib/chatbot');
+const { handleChat, handleChatHealth } = require('./_lib/chatbot');
 
 const TYPE_LABELS = {
   contact: 'פנייה חדשה מעמוד צור קשר',
@@ -224,6 +224,12 @@ module.exports = async (req, res) => {
     }
 
     return res.status(201).json({ inquiry: data && data[0] });
+  }
+
+  // Public AI-chat health check: open /api/inquiries?chat_health=1 in a
+  // browser to see whether Gemini answers (never reveals the key).
+  if (req.method === 'GET' && req.query && req.query.chat_health) {
+    return handleChatHealth(req, res, supabase);
   }
 
   // Listing all inquiries and updating their status is admin-only.

@@ -17,7 +17,15 @@ const { sanitizeEnvValue } = require('./mailer');
 const { getClientIp, checkRateLimit, recordRateLimitEvent } = require('./security');
 const { CATALOG, STORE_INFO, SITE_URL } = require('./chatKnowledge');
 
-const DEFAULT_MODEL = 'gemini-2.5-flash';
+// Tried in order until one works. "gemini-flash-latest" is Google's
+// auto-updating alias for the current Flash model, so the bot keeps
+// working when an older model (like gemini-2.5-flash) is retired.
+// GEMINI_MODEL in Vercel, if set, is tried first.
+const FALLBACK_MODELS = ['gemini-flash-latest', 'gemini-2.5-flash'];
+function modelList() {
+  const preferred = sanitizeEnvValue(process.env.GEMINI_MODEL);
+  return [preferred].concat(FALLBACK_MODELS).filter((m, i, a) => m && a.indexOf(m) === i);
+}
 
 // Per-IP limit: 40 messages per 15 minutes is plenty for a real shopper
 // and stops anyone from burning through the Gemini quota.
@@ -138,6 +146,9 @@ async function callGemini({ apiKey, model, systemPrompt, contents }) {
   // 2.5 Flash "thinks" by default, which is slower and eats the output
   // token budget - a store FAQ bot doesn't need it.
   if (/2\.5-flash/.test(model)) generationConfig.thinkingConfig = { thinkingBudget: 0 };
+  // Newer models think before answering and that counts toward the output
+  // budget - give them room so the visible reply isn't cut off/empty.
+  else generationConfig.maxOutputTokens = 4096;
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 25000);
@@ -164,7 +175,10 @@ async function callGemini({ apiKey, model, systemPrompt, contents }) {
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok) {
       const msg = (data && data.error && data.error.message) || `HTTP ${resp.status}`;
-      throw new Error(`Gemini API error: ${msg}`);
+      const err = new Error(`Gemini API error (${model}, HTTP ${resp.status}): ${msg}`);
+      err.status = resp.status;
+      err.geminiMessage = msg;
+      throw err;
     }
     const cand = data.candidates && data.candidates[0];
     const text = cand && cand.content && Array.isArray(cand.content.parts)
@@ -173,6 +187,67 @@ async function callGemini({ apiKey, model, systemPrompt, contents }) {
     return text;
   } finally {
     clearTimeout(timer);
+  }
+}
+
+// Tries each model in modelList(); moves on only when the failure is
+// about the model itself (retired/unknown/no quota on it) - a bad key or
+// a blocked request fails the same way on every model, so stop there.
+async function callGeminiWithFallback(opts) {
+  const models = modelList();
+  let lastErr;
+  for (const model of models) {
+    try {
+      const text = await callGemini(Object.assign({}, opts, { model }));
+      return { text, model };
+    } catch (err) {
+      lastErr = err;
+      const modelProblem = err.status === 404 || err.status === 429 ||
+        (err.status === 400 && /model/i.test(err.geminiMessage || ''));
+      console.error('chatbot:', err.message);
+      if (!modelProblem) break;
+    }
+  }
+  throw lastErr;
+}
+
+// Plain-language hint for the most common setup problems, shown by the
+// health check (GET /api/inquiries?chat_health=1).
+function hintFor(err) {
+  const m = (err && (err.geminiMessage || err.message)) || '';
+  const st = err && err.status;
+  if (err && err.name === 'AbortError') return 'Gemini לא ענה בזמן (timeout). נסו שוב בעוד דקה.';
+  if (/API key not valid|API_KEY_INVALID/i.test(m)) return 'המפתח GEMINI_API_KEY שגוי. צרו מפתח חדש ב-aistudio.google.com/apikey, עדכנו אותו ב-Vercel ועשו Redeploy.';
+  if (/referer|referrer|restrict/i.test(m)) return 'המפתח מוגבל (API restrictions / referrer). ב-Google Cloud Console > Credentials בטלו את הגבלת ה-HTTP referrers של המפתח, או צרו מפתח חדש ב-AI Studio.';
+  if (/has not been used|is disabled|SERVICE_DISABLED/i.test(m)) return 'ה-Generative Language API לא מופעל בפרויקט של המפתח. צרו מפתח דרך aistudio.google.com/apikey (שם זה מופעל אוטומטית).';
+  if (st === 429 || /quota|RESOURCE_EXHAUSTED/i.test(m)) return 'נגמרה המכסה (quota) של המפתח. המתינו, או הפעילו חיוב ב-Google AI Studio.';
+  if (st === 404) return 'המודל לא נמצא. אפשר להגדיר ב-Vercel משתנה GEMINI_MODEL עם שם מודל עדכני.';
+  if (/location|region|not supported/i.test(m)) return 'Gemini לא זמין באזור של שרת Vercel. ב-Vercel > Settings > Functions שנו את Function Region (למשל ל-fra1 או iad1).';
+  return 'שגיאה לא צפויה - שלחו את הטקסט הזה לתמיכה.';
+}
+
+async function handleChatHealth(req, res, supabase) {
+  res.setHeader('Cache-Control', 'no-store');
+  const apiKey = sanitizeEnvValue(process.env.GEMINI_API_KEY);
+  if (!apiKey) {
+    return res.status(200).json({ ok: false, key_present: false,
+      hint: 'GEMINI_API_KEY לא מוגדר ב-Vercel (או שלא נעשה Redeploy אחרי שהוגדר).' });
+  }
+  const ip = getClientIp(req);
+  if (supabase) {
+    const rate = await checkRateLimit(supabase, 'chat', ip, CHAT_RATE_LIMIT);
+    if (!rate.allowed) return res.status(429).json({ ok: false, error: 'rate_limited' });
+    await recordRateLimitEvent(supabase, 'chat', ip);
+  }
+  const started = Date.now();
+  try {
+    const r = await callGeminiWithFallback({ apiKey, systemPrompt: 'Answer in one short Hebrew word.',
+      contents: [{ role: 'user', parts: [{ text: 'שלום' }] }] });
+    return res.status(200).json({ ok: true, key_present: true, model: r.model, sample: r.text.slice(0, 60), ms: Date.now() - started });
+  } catch (err) {
+    return res.status(200).json({ ok: false, key_present: true, tried_models: modelList(),
+      http_status: err.status || null, error: (err.geminiMessage || err.message || '').slice(0, 400),
+      hint: hintFor(err), ms: Date.now() - started });
   }
 }
 
@@ -213,15 +288,13 @@ async function handleChat(req, res, supabase, body) {
   const pageUrl = typeof body.page === 'string' && body.page.startsWith(SITE_URL) ? body.page.slice(0, 200) : '';
   const overrides = await getOverrides(supabase);
   const systemPrompt = buildSystemPrompt(buildCatalogText(overrides), pageUrl);
-  const model = sanitizeEnvValue(process.env.GEMINI_MODEL) || DEFAULT_MODEL;
-
   try {
-    const reply = await callGemini({ apiKey, model, systemPrompt, contents });
-    return res.status(200).json({ reply: reply || FALLBACK_REPLY });
+    const r = await callGeminiWithFallback({ apiKey, systemPrompt, contents });
+    return res.status(200).json({ reply: r.text || FALLBACK_REPLY });
   } catch (err) {
     console.error('chatbot: Gemini call failed:', err.message);
     return res.status(502).json({ error: 'upstream', reply: FALLBACK_REPLY });
   }
 }
 
-module.exports = { handleChat, buildCatalogText, buildSystemPrompt, sanitizeHistory };
+module.exports = { handleChat, handleChatHealth, buildCatalogText, buildSystemPrompt, sanitizeHistory };
