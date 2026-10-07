@@ -51,6 +51,8 @@ const BASE_CATALOG = {
   'towel-oriya': { price: 25, category: 'towel', sizes: TOWEL_SIZES },
   'towel-liya': { price: 25, category: 'towel', sizes: TOWEL_SIZES },
   'towel-iziva': { price: 25, category: 'towel', sizes: TOWEL_SIZES },
+  'towel-tenerife': { price: 25, category: 'towel', sizes: TOWEL_SIZES },
+  'towel-liam': { price: 25, category: 'towel', sizes: TOWEL_SIZES },
   'perfume-gold': { price: 459, category: 'perfume' },
   'perfume-white': { price: 359, category: 'perfume' },
   'perfume-graphite': { price: 569, category: 'perfume' },
