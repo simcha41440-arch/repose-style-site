@@ -1244,6 +1244,12 @@ if("serviceWorker" in navigator){
   nav.nav-links .nav-dd-menu a:hover .dd-thumb img{transform:scale(1.1);}
   nav.nav-links .nav-dd-menu a:hover .dd-arrow, nav.nav-links .nav-dd-menu a:focus-visible .dd-arrow{opacity:1;transform:translateX(-4px);}
   @media (prefers-reduced-motion: reduce){nav.nav-links .nav-dd-menu a{opacity:1;transform:none;transition:none;}}
+  /* Towels dropdown: many designs -> two columns */
+  .nav-dd-menu.dd-grid{width:560px;display:grid;grid-template-columns:1fr 1fr;align-content:start;padding-bottom:12px;}
+  .nav-dd-menu.dd-grid .dd-head, nav.nav-links .nav-dd-menu.dd-grid a:first-of-type{grid-column:1 / -1;}
+  nav.nav-links .nav-dd-menu.dd-grid a{margin:2px 8px;}
+  nav.nav-links .nav-dd-menu.dd-grid a:last-child{margin-bottom:2px;}
+  nav.nav-links .nav-dd-menu.dd-grid a .dd-thumb{width:46px;height:46px;}
   /* Light dropdown on every page except home */
   body:not(:has(#view-home.active)) .nav-dd-menu::before{background:radial-gradient(260px 140px at 100% 0%, rgba(214,177,94,0.16), transparent 70%), linear-gradient(165deg,#FFFDF8 0%,#FBF4E2 100%);border-color:rgba(176,138,62,0.4);box-shadow:0 24px 50px -18px rgba(90,64,20,0.28),0 6px 16px -8px rgba(90,64,20,0.16);}
   body:not(:has(#view-home.active)) .nav-dd-menu::after{background:#FFFDF8;border-color:rgba(176,138,62,0.4);}
@@ -3559,12 +3565,16 @@ if("serviceWorker" in navigator){
       </div>
       <div class="nav-dd">
         <a data-nav="towels" href="/towels" aria-haspopup="true">מגבות<svg class="nav-dd-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></a>
-        <div class="nav-dd-menu" role="menu" aria-label="מגבות">
+        <div class="nav-dd-menu dd-grid" role="menu" aria-label="מגבות">
           <div class="dd-head" aria-hidden="true">קולקציית המגבות</div>
-          <a href="/towels"><span class="dd-thumb"><img src="/images/site/towels-home.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>כל המגבות</b><small>כל הדגמים · 3 מידות</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
+          <a href="/towels"><span class="dd-thumb"><img src="/images/site/towels-home.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>כל המגבות</b><small>7 דגמים · 3 מידות</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
           <a href="/product/towel-hand-premium"><span class="dd-thumb"><img src="/images/products/towel-hand.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>מגבת פילדלפיה</b><small>ידיים · פנים · גוף</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
           <a href="/product/towel-bath-classic"><span class="dd-thumb"><img src="/images/products/towel-face.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>מגבת שוהם</b><small>ידיים · פנים · גוף</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
           <a href="/product/towel-body-boutique"><span class="dd-thumb"><img src="/images/products/towel-body.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>מגבת מילאנו</b><small>ידיים · פנים · גוף</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
+          <a href="/product/towel-natali"><span class="dd-thumb"><img src="/images/products/towel-natali.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>מגבת נטלי</b><small>ידיים · פנים · גוף</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
+          <a href="/product/towel-avishag"><span class="dd-thumb"><img src="/images/products/towel-avishag.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>מגבת אבישג</b><small>ידיים · פנים · גוף</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
+          <a href="/product/towel-venezia"><span class="dd-thumb"><img src="/images/products/towel-venezia.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>מגבת ונציה</b><small>ידיים · פנים · גוף</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
+          <a href="/product/towel-oriya"><span class="dd-thumb"><img src="/images/products/towel-oriya.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>מגבת אוריה</b><small>ידיים · פנים · גוף</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
         </div>
       </div>
       <div class="nav-dd">
@@ -3610,6 +3620,10 @@ if("serviceWorker" in navigator){
     <a class="mm-sub" href="/product/towel-hand-premium">מגבת פילדלפיה</a>
     <a class="mm-sub" href="/product/towel-bath-classic">מגבת שוהם</a>
     <a class="mm-sub" href="/product/towel-body-boutique">מגבת מילאנו</a>
+    <a class="mm-sub" href="/product/towel-natali">מגבת נטלי</a>
+    <a class="mm-sub" href="/product/towel-avishag">מגבת אבישג</a>
+    <a class="mm-sub" href="/product/towel-venezia">מגבת ונציה</a>
+    <a class="mm-sub" href="/product/towel-oriya">מגבת אוריה</a>
     <a data-nav="perfume" href="/perfume">בישום</a>
     <a class="mm-sub" href="/perfume">מכשירי בישום</a>
     <a class="mm-sub" href="/perfume#scents">ניחוחות לבית</a>
@@ -5979,6 +5993,26 @@ const TOWELS_DATA = [
     id:"towel-body-boutique", name:"מגבת מילאנו", price:25, category:"towel", sizes:TOWEL_SIZES,
     cotton:100, weight:600,
     img:"/images/products/towel-body.jpg"
+  },
+  {
+    id:"towel-natali", name:"מגבת נטלי", price:25, category:"towel", sizes:TOWEL_SIZES,
+    cotton:100, weight:600,
+    img:"/images/products/towel-natali.jpg"
+  },
+  {
+    id:"towel-avishag", name:"מגבת אבישג", price:25, category:"towel", sizes:TOWEL_SIZES,
+    cotton:100, weight:600,
+    img:"/images/products/towel-avishag.jpg"
+  },
+  {
+    id:"towel-venezia", name:"מגבת ונציה", price:25, category:"towel", sizes:TOWEL_SIZES,
+    cotton:100, weight:600,
+    img:"/images/products/towel-venezia.jpg"
+  },
+  {
+    id:"towel-oriya", name:"מגבת אוריה", price:25, category:"towel", sizes:TOWEL_SIZES,
+    cotton:100, weight:600,
+    img:"/images/products/towel-oriya.jpg"
   }
 ];
 /* Towel ids that were removed from the catalog. Listed so an old admin
@@ -6092,7 +6126,7 @@ const SKU_MAP = {
   "london":"RS-BD-105","royal":"RS-BD-106","star":"RS-BD-107","okeanos":"RS-BD-108",
   "classic":"RS-BD-109","aviv":"RS-BD-110","simfonia-premium":"RS-BD-111","elegantia":"RS-BD-112",
   "towel-bath-classic":"RS-TW-201","towel-spa-set":"RS-TW-202","towel-hand-premium":"RS-TW-203",
-  "towel-body-boutique":"RS-TW-204","towel-folded-set":"RS-TW-205","towel-full-set":"RS-TW-206",
+  "towel-body-boutique":"RS-TW-204","towel-folded-set":"RS-TW-205","towel-full-set":"RS-TW-206","towel-natali":"RS-TW-207","towel-avishag":"RS-TW-208","towel-venezia":"RS-TW-209","towel-oriya":"RS-TW-210",
   "perfume-white":"RS-PF-301","perfume-gold":"RS-PF-302","perfume-graphite":"RS-PF-303",
   "scent-holyland":"RS-SC-401","scent-miami":"RS-SC-402","scent-spring":"RS-SC-403","scent-newyork":"RS-SC-404",
   "scent-paris":"RS-SC-405","scent-lacoste":"RS-SC-406","scent-tea-time":"RS-SC-407","scent-royal-beach":"RS-SC-408",
