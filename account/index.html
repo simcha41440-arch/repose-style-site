@@ -2301,6 +2301,8 @@ if("serviceWorker" in navigator){
     background:linear-gradient(135deg, var(--gold-pale) 0%, #fff 75%);
     box-shadow:0 6px 18px -8px rgba(138,108,57,0.5);
   }
+  #pd-towel-size-options .pd-size-option{flex:1 1 0;min-width:0;padding:12px 14px;}
+  @media (max-width:420px){#pd-towel-size-options .pd-size-option{flex:1 1 100%;}}
   .pd-color-select{margin:0 0 22px;}
   .pd-color-select .pss-label{font-size:12px;color:var(--taupe);letter-spacing:.04em;margin-bottom:10px;text-transform:uppercase;}
   .pd-color-select .pss-label b{color:var(--ink);font-weight:700;text-transform:none;}
@@ -3558,11 +3560,11 @@ if("serviceWorker" in navigator){
       <div class="nav-dd">
         <a data-nav="towels" href="/towels" aria-haspopup="true">מגבות<svg class="nav-dd-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></a>
         <div class="nav-dd-menu" role="menu" aria-label="מגבות">
-          <div class="dd-head" aria-hidden="true">מגבות לפי מידה</div>
-          <a href="/towels"><span class="dd-thumb"><img src="/images/site/towels-home.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>כל המגבות</b><small>ידיים, פנים וגוף</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
-          <a href="/towels?type=hand"><span class="dd-thumb"><img src="/images/products/towel-hand.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>מגבות ידיים</b><small>מידה 30/50 ס"מ</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
-          <a href="/towels?type=face"><span class="dd-thumb"><img src="/images/products/towel-face.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>מגבות פנים</b><small>מידה 50/90 ס"מ</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
-          <a href="/towels?type=body"><span class="dd-thumb"><img src="/images/products/towel-body.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>מגבות גוף</b><small>מידה 70/130 ס"מ</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
+          <div class="dd-head" aria-hidden="true">קולקציית המגבות</div>
+          <a href="/towels"><span class="dd-thumb"><img src="/images/site/towels-home.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>כל המגבות</b><small>כל הדגמים · 3 מידות</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
+          <a href="/product/towel-hand-premium"><span class="dd-thumb"><img src="/images/products/towel-hand.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>מגבת פילדלפיה</b><small>ידיים · פנים · גוף</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
+          <a href="/product/towel-bath-classic"><span class="dd-thumb"><img src="/images/products/towel-face.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>מגבת שוהם</b><small>ידיים · פנים · גוף</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
+          <a href="/product/towel-body-boutique"><span class="dd-thumb"><img src="/images/products/towel-body.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>מגבת מילאנו</b><small>ידיים · פנים · גוף</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
         </div>
       </div>
       <div class="nav-dd">
@@ -3605,9 +3607,9 @@ if("serviceWorker" in navigator){
     <a class="mm-sub" href="/shop/bloom">קולקציית Bloom</a>
     <a class="mm-sub" href="/shop/heritage">קולקציית Heritage</a>
     <a data-nav="towels" href="/towels">מגבות</a>
-    <a class="mm-sub" href="/towels?type=hand">מגבות ידיים 30/50</a>
-    <a class="mm-sub" href="/towels?type=face">מגבות פנים 50/90</a>
-    <a class="mm-sub" href="/towels?type=body">מגבות גוף 70/130</a>
+    <a class="mm-sub" href="/product/towel-hand-premium">מגבת פילדלפיה</a>
+    <a class="mm-sub" href="/product/towel-bath-classic">מגבת שוהם</a>
+    <a class="mm-sub" href="/product/towel-body-boutique">מגבת מילאנו</a>
     <a data-nav="perfume" href="/perfume">בישום</a>
     <a class="mm-sub" href="/perfume">מכשירי בישום</a>
     <a class="mm-sub" href="/perfume#scents">ניחוחות לבית</a>
@@ -3944,6 +3946,11 @@ if("serviceWorker" in navigator){
           </div>
         </div>
 
+        <div class="pd-size-select" id="pd-towel-sizes" style="display:none;">
+          <div class="pss-label">✦ בחירת מידה</div>
+          <div class="pd-size-options" id="pd-towel-size-options" role="radiogroup" aria-label="בחירת מידה"></div>
+        </div>
+
         <div class="pd-color-select" id="pd-color-select" style="display:none;">
           <div class="pss-label">✦ בחירת צבע: <b id="pd-color-name"></b></div>
           <div class="pd-color-options" id="pd-color-options" role="radiogroup" aria-label="בחירת צבע"></div>
@@ -4020,12 +4027,6 @@ if("serviceWorker" in navigator){
       <div class="eyebrow">רפאוז סטייל · קולקציית מגבות</div>
       <h1>מגבות יוקרה</h1>
       <p>מגבות כותנה לבנות, רכות ועבות במיוחד, בגימור המעניק לחדר האמבטיה שלכם תחושה של ספא במלון בוטיק.</p>
-    </div>
-    <div class="towel-filter" id="towel-filter" role="group" aria-label="סינון מגבות">
-      <button type="button" class="chip active" data-towel-type="all">כל המגבות</button>
-      <button type="button" class="chip" data-towel-type="hand">מגבות ידיים 30/50</button>
-      <button type="button" class="chip" data-towel-type="face">מגבות פנים 50/90</button>
-      <button type="button" class="chip" data-towel-type="body">מגבות גוף 70/130</button>
     </div>
     <div class="product-grid" id="towel-grid"></div>
   </div>
@@ -5184,6 +5185,13 @@ function isOnSale(p){
    a price is shown (cards, featured rows, product page, search results)
    so a sale set in the admin panel appears consistently across the site. */
 function priceHTML(p){
+  const ss = sizeOptions(p);
+  if(ss){
+    const ps = ss.map(x => x.price);
+    const lo = Math.min.apply(null, ps).toFixed(2), hi = Math.max.apply(null, ps).toFixed(2);
+    return lo === hi ? `${lo} ש"ח` : `<span class="price-range">${lo} ש"ח - ${hi} ש"ח</span>`;
+  }
+  if(p.sizeFmt) return `${p.price.toFixed(2)} ש"ח`;
   const price = p.price.toLocaleString('he-IL');
   if(isOnSale(p)){
     const was = Number(p.compareAtPrice).toLocaleString('he-IL');
@@ -5196,7 +5204,23 @@ function priceHTML(p){
    sale price, if any) halved for the "יחיד" (single-set) option. Towels
    and any other non-bedding category are unaffected regardless of size,
    since the size choice only applies to bedding. */
+function sizeOptions(p){
+  return (p && Array.isArray(p.sizes) && p.sizes.length) ? p.sizes : null;
+}
+function sizeById(p, id){
+  const ss = sizeOptions(p);
+  if(!ss) return null;
+  return ss.find(x => x.id === id) || ss[0];
+}
+/* Short label of the chosen size for cart / checkout / order lines. */
+function sizeSuffix(p, size){
+  const so = sizeById(p, size);
+  if(so) return ` (${so.label} ${so.dims})`;
+  return (isBedding(p) && size === "single") ? ` (סט יחיד)` : "";
+}
 function productForSize(p, size){
+  const so = sizeById(p, size);
+  if(so) return Object.assign({}, p, { price: so.price, compareAtPrice: null, sizes: null, sizeFmt: true });
   if(!isBedding(p) || size !== "single") return p;
   return Object.assign({}, p, {
     price: Math.round(p.price / 2),
@@ -5239,7 +5263,8 @@ function specLabel(p, size){
     return (p.features && p.features.length ? p.features.slice(0,2).join(" · ") : "מכשיר בישום");
   }
   if(p.category === "towel"){
-    return `${p.cotton}% כותנה · ${p.weight} גרם למ"ר`;
+    const so = sizeById(p, size);
+    return `${so ? so.label + " " + so.dims + " · " : ""}${p.cotton}% כותנה · ${p.weight} גרם למ"ר`;
   }
   const bedLabel = size === "single" ? "סט יחיד" : (p.bedType === "twin" ? "זוג יחידים" : "זוגי");
   return `${p.cotton}% כותנה · ${p.thread} חוט לאינצ׳ · ${bedLabel}`;
@@ -5935,19 +5960,23 @@ function attachCardClicks(container){
 /* ============================================================
    TOWELS DATA + RENDER
    ============================================================ */
+/* Every towel design is sold in three sizes, each with its own price.
+   The card shows the price range; the product page shows a button per size.
+   IMPORTANT: keep in sync with TOWEL_SIZES in api/_lib/pricing.js. */
+const TOWEL_SIZES = [{id:"hand",label:"מגבת ידיים",dims:"30/50",price:25},{id:"face",label:"מגבת פנים",dims:"50/90",price:42},{id:"body",label:"מגבת גוף",dims:"70/130",price:85}];
 const TOWELS_DATA = [
   {
-    id:"towel-hand-premium", name:"מגבת ידיים 30/50", price:25, category:"towel",
+    id:"towel-hand-premium", name:"מגבת פילדלפיה", price:25, category:"towel", sizes:TOWEL_SIZES,
     cotton:100, weight:600,
     img:"/images/products/towel-hand.jpg"
   },
   {
-    id:"towel-bath-classic", name:"מגבת פנים 50/90", price:42, category:"towel",
+    id:"towel-bath-classic", name:"מגבת שוהם", price:25, category:"towel", sizes:TOWEL_SIZES,
     cotton:100, weight:600,
     img:"/images/products/towel-face.jpg"
   },
   {
-    id:"towel-body-boutique", name:"מגבת גוף 70/130", price:85, category:"towel",
+    id:"towel-body-boutique", name:"מגבת מילאנו", price:25, category:"towel", sizes:TOWEL_SIZES,
     cotton:100, weight:600,
     img:"/images/products/towel-body.jpg"
   }
@@ -6507,7 +6536,8 @@ const TOWEL_TYPES = {
 function currentTowelType(){
   let t = "all";
   try{ t = new URLSearchParams(location.search).get("type") || "all"; }catch(e){}
-  return TOWEL_TYPES[t] ? t : "all";
+  /* Sizes are now chosen inside each towel design, so old ?type= links show all designs. */
+  return "all";
 }
 function renderTowels(){
   const grid = document.getElementById("towel-grid");
@@ -6859,6 +6889,7 @@ function renderProductDetail(){
   } else {
     sizeSelectBox.style.display = "none";
   }
+  renderPdTowelSizes(p);
   document.getElementById("pd-price").innerHTML = priceHTML(productForSize(p, currentSize));
   const addBtn = document.getElementById("add-to-cart-btn");
   if(addBtn){
@@ -7165,6 +7196,37 @@ function selectPdColor(id){
     if(btn) selectPdColor(btn.dataset.color);
   });
 })();
+function renderPdTowelSizes(p){
+  const box = document.getElementById("pd-towel-sizes");
+  const wrap = document.getElementById("pd-towel-size-options");
+  if(!box || !wrap) return;
+  const ss = sizeOptions(p);
+  if(!ss){ box.style.display = "none"; wrap.innerHTML = ""; return; }
+  currentSize = ss[0].id;
+  box.style.display = "block";
+  wrap.innerHTML = ss.map((x,i)=>`
+    <button type="button" class="pd-size-option${i===0 ? " active" : ""}" data-tsize="${x.id}" role="radio" aria-checked="${i===0}">
+      <div class="t">${x.label} <small>${x.dims} ס"מ</small></div>
+      <div class="p">${x.price.toFixed(2)} ש"ח</div>
+    </button>`).join("");
+}
+(function bindPdTowelSizes(){
+  const wrap = document.getElementById("pd-towel-size-options");
+  if(!wrap) return;
+  wrap.addEventListener("click", (e)=>{
+    const btn = e.target.closest("button[data-tsize]");
+    if(!btn) return;
+    const p = PRODUCTS.find(x=>x.id===currentProductId);
+    if(!p || !sizeOptions(p)) return;
+    currentSize = sizeById(p, btn.dataset.tsize).id;
+    wrap.querySelectorAll("button[data-tsize]").forEach(b=>{
+      const on = b.dataset.tsize === currentSize;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-checked", on ? "true" : "false");
+    });
+    document.getElementById("pd-price").innerHTML = priceHTML(productForSize(p, currentSize));
+  });
+})();
 function selectPdSize(size){
   const p = PRODUCTS.find(x=>x.id===currentProductId);
   if(!p || !isBedding(p)) return;
@@ -7183,7 +7245,7 @@ document.getElementById("add-to-cart-btn").addEventListener("click", ()=>{
   if(!p || p.outOfStock) return;
   const embroideryInput = document.getElementById("pd-embroidery-input");
   const embroidery = embroideryInput && embroideryInput.value.trim() ? embroideryInput.value.trim() : null;
-  const size = isBedding(p) ? currentSize : "pair";
+  const size = (isBedding(p) || sizeOptions(p)) ? currentSize : "pair";
   addToCart(currentProductId, currentQty, embroidery, size, currentColor);
   const msg = document.getElementById("added-msg");
   msg.classList.add("show");
@@ -7240,7 +7302,7 @@ function updateWishlistUI(){
       <div class="ci-info">
         <div class="ci-name serif">${displayName(p)}</div>
         <div class="ci-bottom">
-          <span class="ci-price">${p.price.toLocaleString('he-IL')} ₪</span>
+          <span class="ci-price">${sizeOptions(p) ? priceHTML(p) : p.price.toLocaleString('he-IL') + " ₪"}</span>
         </div>
       </div>
       <button class="ci-remove" data-act="remove" aria-label="הסרה מהמועדפים"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></button>
@@ -7351,6 +7413,7 @@ function addToCart(id, qty, embroidery, size, color){
   embroidery = embroidery || null;
   size = size || "pair";
   const prod = PRODUCTS.find(x => x.id === id);
+  if(sizeOptions(prod)) size = sizeById(prod, size).id;
   color = colorOptions(prod) ? colorById(prod, color).id : null;
   const existing = cart.find(c => c.id === id && (c.embroidery || null) === embroidery && (c.size || "pair") === size && (cartColorId(c) || null) === color);
   if(existing){ existing.qty += qty; }
@@ -7629,7 +7692,7 @@ function renderCheckoutSummary(){
   itemsWrap.innerHTML = cart.map(c=>{
     const p = PRODUCTS.find(x=>x.id===c.id);
     if(!p) return "";
-    return `<div class="ci-row"><span>${displayName(p)}${c.size === "single" ? ` (סט יחיד)` : ""}${cartColorLabel(c) ? ` (צבע: ${cartColorLabel(c)})` : ""} × ${c.qty}${c.embroidery ? ` (רקמה: ${escapeHTML(c.embroidery)})` : ""}</span><span>${(cartItemUnitPrice(c,p)*c.qty).toLocaleString('he-IL')} ₪</span></div>`;
+    return `<div class="ci-row"><span>${displayName(p)}${sizeSuffix(p, c.size)}${cartColorLabel(c) ? ` (צבע: ${cartColorLabel(c)})` : ""} × ${c.qty}${c.embroidery ? ` (רקמה: ${escapeHTML(c.embroidery)})` : ""}</span><span>${(cartItemUnitPrice(c,p)*c.qty).toLocaleString('he-IL')} ₪</span></div>`;
   }).join("");
   const subtotal = cartTotal();
   const shipping = checkoutShippingPrice();
@@ -7933,7 +7996,7 @@ function renderAccountPage(){
       <div class="account-item" data-id="${p.id}">
         <img src="${p.img}" alt="${p.name}" loading="lazy" decoding="async">
         <div>
-          <div class="ai-name">${displayName(p)}${c.size === "single" ? ` (סט יחיד)` : ""} × ${c.qty}</div>
+          <div class="ai-name">${displayName(p)}${sizeSuffix(p, c.size)} × ${c.qty}</div>
           <div class="ai-price">${(cartItemUnitPrice(c,p)*c.qty).toLocaleString('he-IL')} ₪</div>
         </div>
       </div>`;
@@ -7966,7 +8029,7 @@ async function saveOrder(paymentConfirmationCode){
         sentence. `name` is kept too, purely as the human-readable label. */
   const items = cart.map(c=>{
     const p = PRODUCTS.find(x=>x.id===c.id);
-    return p ? { id:p.id, name:displayName(p) + (c.size === "single" ? ` (סט יחיד)` : "") + (cartColorLabel(c) ? ` (צבע: ${cartColorLabel(c)})` : "") + (c.embroidery ? ` (רקמת ראשי תיבות: ${escapeHTML(c.embroidery)})` : ""), qty:c.qty, price:cartItemUnitPrice(c, p), size:c.size || null, embroidery:c.embroidery || null, color:cartColorLabel(c) || null } : null;
+    return p ? { id:p.id, name:displayName(p) + sizeSuffix(p, c.size) + (cartColorLabel(c) ? ` (צבע: ${cartColorLabel(c)})` : "") + (c.embroidery ? ` (רקמת ראשי תיבות: ${escapeHTML(c.embroidery)})` : ""), qty:c.qty, price:cartItemUnitPrice(c, p), size:c.size || null, embroidery:c.embroidery || null, color:cartColorLabel(c) || null } : null;
   }).filter(Boolean);
   /* Reuse the server-verified numbers from openPaymentModal() rather than
      recomputing from cartTotal() again - that keeps the saved order in

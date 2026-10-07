@@ -23,6 +23,11 @@ const EMBROIDERY_SURCHARGE = 200;
 const FREE_SHIPPING_THRESHOLD = 299;
 const STANDARD_SHIPPING = 29;
 
+// Every towel design is sold in three sizes with their own prices (the
+// size id is sent as item.size). Keep in sync with TOWEL_SIZES in index.html.
+const TOWEL_SIZES = { hand: 25, face: 42, body: 85 };
+const TOWEL_SIZE_ORDER = ['hand', 'face', 'body'];
+
 // id -> { price, category, customizable }
 const BASE_CATALOG = {
   prachim: { price: 1080 },
@@ -37,9 +42,9 @@ const BASE_CATALOG = {
   aviv: { price: 1080 },
   'simfonia-premium': { price: 1000 },
   elegantia: { price: 700 },
-  'towel-bath-classic': { price: 42, category: 'towel' },
-  'towel-hand-premium': { price: 25, category: 'towel' },
-  'towel-body-boutique': { price: 85, category: 'towel' },
+  'towel-bath-classic': { price: 25, category: 'towel', sizes: TOWEL_SIZES },
+  'towel-hand-premium': { price: 25, category: 'towel', sizes: TOWEL_SIZES },
+  'towel-body-boutique': { price: 25, category: 'towel', sizes: TOWEL_SIZES },
   'perfume-gold': { price: 459, category: 'perfume' },
   'perfume-white': { price: 359, category: 'perfume' },
   'perfume-graphite': { price: 569, category: 'perfume' },
@@ -119,7 +124,11 @@ function unitPrice(priceMap, item) {
   const catalogEntry = priceMap[item.id];
   if (!catalogEntry) return null; // unknown id - caller should reject the order
   let price = catalogEntry.price;
-  if (item.size === 'single' && catalogEntry.category !== 'towel' && catalogEntry.category !== 'perfume') {
+  if (catalogEntry.sizes) {
+    // Unknown/missing size falls back to the first (smallest) size - same as the client.
+    const sizeId = Object.prototype.hasOwnProperty.call(catalogEntry.sizes, item.size) ? item.size : TOWEL_SIZE_ORDER[0];
+    price = catalogEntry.sizes[sizeId];
+  } else if (item.size === 'single' && catalogEntry.category !== 'towel' && catalogEntry.category !== 'perfume') {
     price = Math.round(price / 2);
   }
   if (catalogEntry.customizable && item.embroidery && !catalogEntry.embroideryFree) {

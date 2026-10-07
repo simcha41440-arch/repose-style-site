@@ -92,7 +92,8 @@ function buildCatalogText(overrides) {
     const parts = [`${name}${p.nameEn ? ` (${p.nameEn})` : ''}`, TYPE_LABELS[p.type] || p.type];
     if (p.collection) parts.push(`קולקציית ${p.collection}`);
     if (p.cotton) parts.push(`${p.cotton}% כותנה, ${p.thread} חוט`);
-    parts.push(
+    if (p.sizes) parts.push(`מידות ומחירים: ${p.sizes}`);
+    else parts.push(
       wasPrice && wasPrice > price
         ? `מחיר מבצע ${price} ₪ (במקום ${wasPrice} ₪)`
         : `מחיר ${price} ₪`
