@@ -4490,7 +4490,7 @@ if("serviceWorker" in navigator){
             <span class="so-price">0 ₪</span>
           </label>
           <label class="shipping-option">
-            <span class="so-label"><input type="radio" name="shipping-method" value="delivery" checked>משלוח בחינם עד הבית בקנייה מעל 299 ש"ח, תוך 2 עד 12 ימי עסקים</span>
+            <span class="so-label"><input type="radio" name="shipping-method" value="delivery" checked>משלוח בחינם עד הבית בקנייה מעל 299 ₪, תוך 2 עד 12 ימי עסקים</span>
             <span class="so-price">29 ₪</span>
           </label>
         </div>
@@ -5207,9 +5207,9 @@ function priceHTML(p){
   if(ss){
     const ps = ss.map(x => x.price);
     const lo = Math.min.apply(null, ps).toFixed(2), hi = Math.max.apply(null, ps).toFixed(2);
-    return lo === hi ? `${lo} ש"ח` : `<span class="price-range">${lo} ש"ח - ${hi} ש"ח</span>`;
+    return lo === hi ? `${lo} ₪` : `<span class="price-range">${lo} ₪ - ${hi} ₪</span>`;
   }
-  if(p.sizeFmt) return `${p.price.toFixed(2)} ש"ח`;
+  if(p.sizeFmt) return `${p.price.toFixed(2)} ₪`;
   const price = p.price.toLocaleString('he-IL');
   if(isOnSale(p)){
     const was = Number(p.compareAtPrice).toLocaleString('he-IL');
@@ -7255,7 +7255,7 @@ function renderPdTowelSizes(p){
   wrap.innerHTML = ss.map((x,i)=>`
     <button type="button" class="pd-size-option${i===0 ? " active" : ""}" data-tsize="${x.id}" role="radio" aria-checked="${i===0}">
       <div class="t">${x.label} <small>${x.dims} ס"מ</small></div>
-      <div class="p">${x.price.toFixed(2)} ש"ח</div>
+      <div class="p">${x.price.toFixed(2)} ₪</div>
     </button>`).join("");
 }
 (function bindPdTowelSizes(){
