@@ -96,6 +96,25 @@
   tbody tr:hover{background:#FBF6E9;}
   .tag{display:inline-block; padding:3px 10px; border-radius:999px; font-size:11.5px; font-weight:600;}
   .tag.active{background:#E1F3E9; color:var(--green-wa);}
+  /* product order (drag & drop) */
+  .ord-tabs{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 14px;}
+  .ord-tabs button{border:1px solid var(--line); background:#fff; border-radius:999px; padding:7px 16px; font-family:inherit; font-size:13.5px; cursor:pointer; color:var(--ink);}
+  .ord-tabs button.on{background:linear-gradient(135deg,#C9A45A,#8A6C2E); color:#fff; border-color:transparent;}
+  .ord-list{list-style:none; margin:0 0 16px; padding:0; display:grid; gap:8px; max-width:640px;}
+  .ord-item{display:flex; align-items:center; gap:12px; padding:8px 10px; background:#FFFDF7; border:1px solid var(--line); border-radius:12px; cursor:grab; user-select:none; transition:box-shadow .2s, transform .2s, background .2s;}
+  .ord-item:hover{box-shadow:0 6px 16px -10px rgba(90,64,20,.45);}
+  .ord-item.dragging{opacity:.45; transform:scale(.98);}
+  .ord-item.over-top{box-shadow:inset 0 3px 0 #B58A3C;}
+  .ord-item.over-bottom{box-shadow:inset 0 -3px 0 #B58A3C;}
+  .ord-item .ord-num{width:26px; height:26px; border-radius:50%; background:#F3E7C8; color:#8A6C2E; font-weight:700; font-size:12.5px; display:flex; align-items:center; justify-content:center; flex:none;}
+  .ord-item img{width:44px; height:44px; border-radius:8px; object-fit:cover; background:#fff; border:1px solid var(--line); flex:none;}
+  .ord-item .ord-name{flex:1; font-size:14px; font-weight:600;}
+  .ord-item .ord-grip{color:#B9A57A; font-size:18px; letter-spacing:-2px; flex:none; touch-action:none; padding:6px 4px; cursor:grab;}
+  .ord-item.dragging{cursor:grabbing;}
+  .ord-item img{pointer-events:none;}
+  .ord-item .ord-btns{display:flex; gap:4px; flex:none;}
+  .ord-item .ord-btns button{width:30px; height:30px; border-radius:8px; border:1px solid var(--line); background:#fff; cursor:pointer; font-size:13px; color:#8A6C2E;}
+  .ord-item .ord-btns button:disabled{opacity:.35; cursor:default;}
   .tag.inactive{background:#F4E4E0; color:var(--danger);}
   .tag.hot{background:#FBE7DD; color:#C1571F;}
   .tag.cold{background:#E4EEF7; color:#2E6DA4;}
@@ -376,6 +395,22 @@
         </div>
         <p class="sub" style="margin:-6px 0 14px;">לחיצה על "איפוס הכל למקור" מוחקת את השינויים (מחיר, שם, תמונה, תיאור ומאפיינים) ומחזירה את המוצר למקור באתר.</p>
         <div id="productsTableWrap"><div class="empty">טוען...</div></div>
+      </div>
+
+      <div class="panel" id="orderPanel">
+        <h3>סדר המוצרים באתר</h3>
+        <p class="sub" style="margin:-6px 0 14px;">גררו מוצר למעלה או למטה (או השתמשו בחיצים) ולחצו "שמירת הסדר". המוצר הראשון ברשימה יופיע ראשון בעמוד באתר, אצל כל הגולשים.</p>
+        <div class="ord-tabs" id="ordTabs">
+          <button type="button" data-ord-cat="bedding" class="on">מצעים</button>
+          <button type="button" data-ord-cat="towel">מגבות</button>
+          <button type="button" data-ord-cat="perfume">מכשירי בישום</button>
+          <button type="button" data-ord-cat="scent">ניחוחות</button>
+        </div>
+        <ul class="ord-list" id="ordList"><li class="empty">טוען...</li></ul>
+        <button type="button" class="btn small" id="ordSaveBtn">שמירת הסדר</button>
+        <button type="button" class="btn outline small" id="ordResetBtn">חזרה לסדר המקורי</button>
+        <div class="err-msg" id="ordErr"></div>
+        <div class="ok-msg" id="ordOk"></div>
       </div>
 
       <div class="panel">
@@ -1668,6 +1703,7 @@
     renderHeroSimpleToggle();
     renderHeroBannerPanel();
     renderPromoFields();
+    ordState = null; if (typeof renderOrderList === 'function') renderOrderList();
   }
 
   function renderProducts(products){
@@ -1841,6 +1877,180 @@
 
   let lastProductOverrides = {};
 
+  /* ---------- Product order on the site (drag & drop) ----------
+     Saved as site_content key "product_order" = JSON array of ids (read by
+     index.html setProductOrderFromContent). No SQL change needed. */
+  const ORDER_DEFAULT_BEDDING = ['yahalom','london','royal','aviv','prachim','rakefet','simfonia-premium','simfonia','star','okeanos','classic','elegantia'];
+  const ORDER_IMG = {
+    'towel-hand-premium':'/images/products/towel-hand.jpg','towel-bath-classic':'/images/products/towel-face.jpg','towel-body-boutique':'/images/products/towel-body.jpg',
+    'perfume-white':'/images/site/perfume-device-white.jpg','perfume-gold':'/images/site/perfume-device-v2.jpg','perfume-graphite':'/images/site/perfume-device-graphite.jpg',
+    'scent-testers-6':'/images/products/scent-testers.png'
+  };
+  function orderCat(id, ov){
+    if (ov && !CATALOG_BY_ID[id] && ov.category) {
+      if (ov.category === 'towel') return 'towel';
+      if (ov.category === 'scent') return 'scent';
+      if (ov.category === 'perfume') return 'perfume';
+      return 'bedding';
+    }
+    if (/^towel-/.test(id)) return 'towel';
+    if (/^perfume-/.test(id)) return 'perfume';
+    if (/^scent-/.test(id)) return 'scent';
+    return 'bedding';
+  }
+  function orderImg(id){
+    const ov = lastProductOverrides[id];
+    if (ov && ov.image) return ov.image;
+    if (ORDER_IMG[id]) return ORDER_IMG[id];
+    if (/^scent-/.test(id)) return '/images/products/scent-bottle-v2.jpg';
+    if (/^towel-/.test(id)) return '/images/products/' + id + '.jpg';
+    return '/images/products/' + id + '.jpg';
+  }
+  function orderName(id){
+    const ov = lastProductOverrides[id];
+    return (ov && ov.name) || (CATALOG_BY_ID[id] && CATALOG_BY_ID[id].name) || id;
+  }
+  let ordState = null, ordCat = 'bedding';
+  function buildOrderState(){
+    const saved = (function(){ try { const a = JSON.parse((lastContent && lastContent.product_order) || 'null'); return Array.isArray(a) ? a : null; } catch(e){ return null; } })();
+    const all = [];
+    const bedding = ORDER_DEFAULT_BEDDING.filter(function(id){ return CATALOG_BY_ID[id]; });
+    CATALOG.forEach(function(c){ if (orderCat(c.id) === 'bedding' && bedding.indexOf(c.id) === -1) bedding.push(c.id); });
+    bedding.forEach(function(id){ all.push(id); });
+    CATALOG.forEach(function(c){ if (orderCat(c.id) !== 'bedding') all.push(c.id); });
+    Object.keys(lastProductOverrides).forEach(function(id){
+      const ov = lastProductOverrides[id];
+      if (!CATALOG_BY_ID[id] && ov && ov.name && ov.price != null) all.push(id);
+    });
+    const live = all.filter(function(id){ const ov = lastProductOverrides[id]; return !(ov && ov.active === false); });
+    let ordered = live;
+    if (saved) {
+      const rank = {}; saved.forEach(function(id, i){ if (rank[id] === undefined) rank[id] = i; });
+      const n = saved.length;
+      ordered = live.map(function(id, i){ return { id: id, k: rank[id] !== undefined ? rank[id] : n + i }; })
+        .sort(function(a, b){ return a.k - b.k; }).map(function(x){ return x.id; });
+    }
+    ordState = { bedding:[], towel:[], perfume:[], scent:[] };
+    ordered.forEach(function(id){ ordState[orderCat(id, lastProductOverrides[id])].push(id); });
+  }
+  function renderOrderList(){
+    const list = document.getElementById('ordList');
+    if (!ordState) buildOrderState();
+    const ids = ordState[ordCat];
+    if (!ids.length) { list.innerHTML = '<li class="empty">אין מוצרים בקטגוריה הזו.</li>'; return; }
+    list.innerHTML = ids.map(function(id, i){
+      return '<li class="ord-item" data-ord-id="' + escapeHtml(id) + '">' +
+        '<span class="ord-grip" aria-hidden="true">⋮⋮</span>' +
+        '<span class="ord-num">' + (i + 1) + '</span>' +
+        '<img src="' + escapeHtml(orderImg(id)) + '" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
+        '<span class="ord-name">' + escapeHtml(orderName(id)) + '</span>' +
+        '<span class="ord-btns"><button type="button" data-ord-move="-1" aria-label="למעלה"' + (i === 0 ? ' disabled' : '') + '>▲</button>' +
+        '<button type="button" data-ord-move="1" aria-label="למטה"' + (i === ids.length - 1 ? ' disabled' : '') + '>▼</button></span>' +
+        '</li>';
+    }).join('');
+  }
+  (function bindOrderPanel(){
+    const list = document.getElementById('ordList');
+    const tabs = document.getElementById('ordTabs');
+    if (!list || !tabs) return;
+    tabs.addEventListener('click', function(e){
+      const b = e.target.closest('[data-ord-cat]');
+      if (!b) return;
+      ordCat = b.getAttribute('data-ord-cat');
+      tabs.querySelectorAll('button').forEach(function(x){ x.classList.toggle('on', x === b); });
+      renderOrderList();
+    });
+    list.addEventListener('click', function(e){
+      const b = e.target.closest('[data-ord-move]');
+      if (!b) return;
+      const li = b.closest('[data-ord-id]');
+      const ids = ordState[ordCat];
+      const i = ids.indexOf(li.getAttribute('data-ord-id'));
+      const j = i + Number(b.getAttribute('data-ord-move'));
+      if (i < 0 || j < 0 || j >= ids.length) return;
+      ids.splice(j, 0, ids.splice(i, 1)[0]);
+      renderOrderList();
+      document.getElementById('ordOk').textContent = '';
+    });
+    /* Drag with the mouse anywhere on a row, or by the ⋮⋮ handle on a phone
+       (pointer events - works with touch too, unlike native HTML5 drag). */
+    let drag = null;
+    function clearMarks(){ list.querySelectorAll('.ord-item').forEach(function(x){ x.classList.remove('over-top','over-bottom'); }); }
+    function targetAt(y){
+      const items = Array.prototype.slice.call(list.querySelectorAll('.ord-item'));
+      for (const li of items) {
+        const r = li.getBoundingClientRect();
+        if (y < r.top + r.height / 2) return { li: li, before: true };
+      }
+      return items.length ? { li: items[items.length - 1], before: false } : null;
+    }
+    list.addEventListener('pointerdown', function(e){
+      const li = e.target.closest('.ord-item');
+      if (!li || e.target.closest('button')) return;
+      if (e.pointerType !== 'mouse' && !e.target.closest('.ord-grip')) return;
+      if (e.button !== undefined && e.button !== 0) return;
+      drag = { id: li.getAttribute('data-ord-id'), li: li, y0: e.clientY, on: false, pid: e.pointerId };
+      try { li.setPointerCapture(e.pointerId); } catch(err){}
+    });
+    list.addEventListener('pointermove', function(e){
+      if (!drag || e.pointerId !== drag.pid) return;
+      if (!drag.on && Math.abs(e.clientY - drag.y0) < 5) return;
+      drag.on = true;
+      e.preventDefault();
+      drag.li.classList.add('dragging');
+      clearMarks();
+      const t = targetAt(e.clientY);
+      if (t && t.li !== drag.li) t.li.classList.add(t.before ? 'over-top' : 'over-bottom');
+    });
+    function endDrag(e){
+      if (!drag || (e && e.pointerId !== drag.pid)) return;
+      const d = drag; drag = null;
+      d.li.classList.remove('dragging');
+      clearMarks();
+      if (!d.on || !e || e.type === 'pointercancel') return;
+      const t = targetAt(e.clientY);
+      if (!t || t.li === d.li) return;
+      const ids = ordState[ordCat];
+      const targetId = t.li.getAttribute('data-ord-id');
+      ids.splice(ids.indexOf(d.id), 1);
+      let k = ids.indexOf(targetId);
+      if (!t.before) k += 1;
+      ids.splice(k, 0, d.id);
+      renderOrderList();
+      document.getElementById('ordOk').textContent = '';
+    }
+    list.addEventListener('pointerup', endDrag);
+    list.addEventListener('pointercancel', endDrag);
+    document.getElementById('ordSaveBtn').addEventListener('click', async function(){
+      const btn = this, err = document.getElementById('ordErr'), ok = document.getElementById('ordOk');
+      err.textContent = ''; ok.textContent = '';
+      if (!ordState) return;
+      const all = [].concat(ordState.bedding, ordState.towel, ordState.perfume, ordState.scent);
+      btn.disabled = true;
+      try {
+        await api('/api/content', { method:'POST', body: JSON.stringify({ key:'product_order', value: JSON.stringify(all) }) });
+        if (lastContent) lastContent.product_order = JSON.stringify(all);
+        ok.textContent = 'הסדר נשמר - כך המוצרים יופיעו עכשיו באתר.';
+      } catch(e) {
+        err.textContent = e.message || 'שגיאה בשמירת הסדר.';
+      } finally { btn.disabled = false; }
+    });
+    document.getElementById('ordResetBtn').addEventListener('click', async function(){
+      const btn = this, err = document.getElementById('ordErr'), ok = document.getElementById('ordOk');
+      if (!confirm('להחזיר את כל המוצרים לסדר המקורי של האתר?')) return;
+      err.textContent = ''; ok.textContent = '';
+      btn.disabled = true;
+      try {
+        await api('/api/content?key=product_order', { method:'DELETE' });
+        if (lastContent) delete lastContent.product_order;
+        ordState = null; renderOrderList();
+        ok.textContent = 'הסדר חזר למקור.';
+      } catch(e) {
+        err.textContent = e.message || 'שגיאה באיפוס הסדר.';
+      } finally { btn.disabled = false; }
+    });
+  })();
+
   async function loadProducts(){
     const wrap = document.getElementById('productsTableWrap');
     try {
@@ -1849,6 +2059,7 @@
       (data.products || []).forEach(function(p){ lastProductOverrides[p.id] = p; });
       renderProducts(data.products);
       updateCiResetVisibility();
+      ordState = null; renderOrderList();
       document.getElementById('productsRefreshed').textContent =
         'עודכן: ' + new Date().toLocaleTimeString('he-IL');
     } catch (e) {

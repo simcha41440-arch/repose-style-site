@@ -6526,6 +6526,7 @@ async function applyContentOverrides(){
         el.textContent = val;
       }
     });
+    setProductOrderFromContent(content.product_order);
     applyHeroSimpleMode(content);
     applyHeroBanner(content);
     applyPromoBanner(content);
@@ -6934,8 +6935,9 @@ function filteredProducts(){
   } else if(activeSort === "price-desc"){
     list = [...list].sort((a,b)=>b.price-a.price);
   } else {
-    // recommended order: grouped by collection (Renaissance -> Bloom -> Heritage), shown together without dividers
-    list = [...list].sort((a,b)=> COLLECTION_INDEX[a.collection]-COLLECTION_INDEX[b.collection]);
+    // recommended order: grouped by collection (Renaissance -> Bloom -> Heritage), shown together without dividers -
+    // unless the admin set a custom order (drag & drop in the admin panel), which then wins.
+    if(!(PRODUCT_ORDER && PRODUCT_ORDER.length)) list = [...list].sort((a,b)=> COLLECTION_INDEX[a.collection]-COLLECTION_INDEX[b.collection]);
   }
   return list;
 }
@@ -9360,7 +9362,62 @@ document.addEventListener("DOMContentLoaded", setCollectionNavPhotos);
    Safe to call twice: showView/
    renderViewNow, history.replaceState and initScrollReveal are all
    idempotent. */
+/* ---- Product display order (admin panel "סדר המוצרים באתר", drag & drop) ----
+   Saved in site_content under the key "product_order" as a JSON array of
+   product ids (no SQL change needed). Every grid on the site lists products
+   in PRODUCTS order, so sorting PRODUCTS once is enough. Products that
+   aren't in the list (e.g. newly added) keep their place after the listed ones.
+   Cached in localStorage so a returning visitor sees the order on first paint. */
+var PRODUCT_ORDER_CACHE_KEY = "rs-product-order-v1";
+var PRODUCT_ORDER = null;
+try{
+  const cachedOrder = JSON.parse(localStorage.getItem(PRODUCT_ORDER_CACHE_KEY) || "null");
+  if(Array.isArray(cachedOrder) && cachedOrder.length) PRODUCT_ORDER = cachedOrder;
+}catch(e){}
+function applyProductOrder(){
+  PRODUCTS.forEach(function(p, i){ if(p._oi === undefined) p._oi = i; });
+  if(!PRODUCT_ORDER || !PRODUCT_ORDER.length){
+    PRODUCTS.sort(function(a, b){ return a._oi - b._oi; });
+    return;
+  }
+  const rank = {};
+  PRODUCT_ORDER.forEach(function(id, i){ if(typeof id === "string" && rank[id] === undefined) rank[id] = i; });
+  const n = PRODUCT_ORDER.length;
+  PRODUCTS.sort(function(a, b){
+    const ra = rank[a.id] !== undefined ? rank[a.id] : n + a._oi;
+    const rb = rank[b.id] !== undefined ? rank[b.id] : n + b._oi;
+    return ra - rb;
+  });
+}
+function setProductOrderFromContent(raw){
+  let next = null;
+  if(raw){
+    try{ const a = JSON.parse(raw); if(Array.isArray(a) && a.length) next = a; }catch(e){}
+  }
+  if(JSON.stringify(next) === JSON.stringify(PRODUCT_ORDER)) return;
+  PRODUCT_ORDER = next;
+  try{
+    if(next) localStorage.setItem(PRODUCT_ORDER_CACHE_KEY, JSON.stringify(next));
+    else localStorage.removeItem(PRODUCT_ORDER_CACHE_KEY);
+  }catch(e){}
+  applyProductOrder();
+  rerenderActiveProductGrid();
+}
+/* Re-draws only the product grid of the page that's open (no scroll jump). */
+function rerenderActiveProductGrid(){
+  const v = document.querySelector(".view.active");
+  if(!v) return;
+  try{
+    if(v.id === "view-shop") renderShop();
+    else if(v.id === "view-shop-renaissance" || v.id === "view-shop-bloom" || v.id === "view-shop-heritage") renderCollectionPage(v.id.replace("view-shop-", ""));
+    else if(v.id === "view-sale") renderSalePage();
+    else if(v.id === "view-towels") renderTowels();
+    else if(v.id === "view-perfume"){ renderPerfume(); renderScents(); }
+  }catch(e){}
+}
+
 function renderCurrentView(){
+  applyProductOrder();
   /* renderFeatured()/renderCircleStrip() (and the gap-closing measurement
      right after them) only build/adjust markup that lives inside the
      home view - but this function used to run them unconditionally on
