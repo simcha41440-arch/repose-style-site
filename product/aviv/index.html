@@ -2249,6 +2249,38 @@ if("serviceWorker" in navigator){
     .customizable-ribbon{width:120px;top:14px;right:-36px;padding:4px 0;}
     .customizable-ribbon span{font-size:9.5px;}
   }
+  /* Sale seal - a round gold "medallion" on the product photo (top corner),
+     instead of a text pill next to the price. See saleSealHTML(). */
+  .sale-seal{
+    position:absolute;top:14px;right:14px;z-index:4;
+    width:66px;height:66px;border-radius:50%;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+    color:#fff;text-align:center;line-height:1;pointer-events:none;
+    background:radial-gradient(circle at 30% 25%, #F6E3A6 0%, #D9B261 38%, #B58A3C 72%, #8A6A2C 100%);
+    box-shadow:0 10px 22px -8px rgba(90,64,20,0.65), 0 2px 5px rgba(90,64,20,0.25), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -2px 4px rgba(90,64,20,0.35);
+    text-shadow:0 1px 2px rgba(70,48,12,0.45);
+    overflow:hidden;
+    animation:sealIn .6s cubic-bezier(.19,1,.22,1) both;
+  }
+  .sale-seal::before{content:"";position:absolute;inset:4px;border-radius:50%;border:1px dashed rgba(255,255,255,0.7);}
+  .sale-seal::after{content:"";position:absolute;top:-30%;left:-80%;width:45%;height:160%;transform:rotate(25deg);
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);transition:left .8s ease;}
+  .product-card:hover .sale-seal::after, .pf-row:hover .sale-seal::after{left:140%;}
+  .sale-seal .ss-top{font-size:10.5px;font-weight:600;letter-spacing:0.06em;position:relative;}
+  .sale-seal .ss-num{font-size:17px;font-weight:800;letter-spacing:0.01em;position:relative;direction:ltr;}
+  .sale-seal .ss-num small{font-size:10px;font-weight:700;margin-inline-end:2px;}
+  .sale-seal.only-word .ss-top{font-size:13.5px;font-weight:700;}
+  .sale-seal.low{top:86px;}
+  .pf-media .sale-seal{right:auto;left:18px;top:18px;}
+  @keyframes sealIn{from{opacity:0;transform:scale(.6) rotate(-18deg);}to{opacity:1;transform:none;}}
+  @media (max-width:640px){
+    .sale-seal{width:54px;height:54px;top:10px;right:10px;}
+    .sale-seal .ss-top{font-size:9px;} .sale-seal .ss-num{font-size:14px;}
+    .sale-seal.low{top:72px;}
+  }
+  @media (prefers-reduced-motion:reduce){ .sale-seal{animation:none;} .sale-seal::after{display:none;} }
+  /* the seal replaces the small "מבצע" pill on cards (product page keeps it) */
+  .card-body .cprice .sale-badge, .pf-price .sale-badge{display:none;}
   .card-body{padding:20px 16px 6px;text-align:center;}
   .card-body .cname{font-size:19px;margin-bottom:8px;}
   .card-body .cspec{font-size:12px;color:var(--taupe);margin-bottom:12px;letter-spacing:0.02em;}
@@ -5951,14 +5983,35 @@ function customizableRibbonHTML(p){
     : "";
 }
 
+/* Round "מבצע" seal for the product photo, with the discount when known:
+   "-18%" for a single price, "עד 18%" when sizes are discounted differently. */
+function saleDiscountPct(p){
+  const ss = sizeOptions(p);
+  if(ss){
+    const ds = ss.filter(x => x.was && x.was > x.price).map(x => Math.round((1 - x.price / x.was) * 100));
+    if(!ds.length) return null;
+    return { pct: Math.max.apply(null, ds), upTo: ds.length < ss.length || Math.min.apply(null, ds) !== Math.max.apply(null, ds) };
+  }
+  if(!isOnSale(p)) return null;
+  return { pct: Math.round((1 - p.price / Number(p.compareAtPrice)) * 100), upTo:false };
+}
+function saleSealHTML(p, extraClass){
+  if(!p || p.outOfStock || !isOnSale(p)) return "";
+  const d = saleDiscountPct(p);
+  const cls = "sale-seal" + (extraClass ? " " + extraClass : "");
+  if(!d || !(d.pct > 0)) return `<span class="${cls} only-word" aria-label="מוצר במבצע"><span class="ss-top">מבצע</span></span>`;
+  return `<span class="${cls}" aria-label="מבצע: ${d.upTo ? "עד " : ""}${d.pct}% הנחה"><span class="ss-top">${d.upTo ? "הנחה עד" : "מבצע"}</span><span class="ss-num">${d.upTo ? "" : "-"}${d.pct}%</span></span>`;
+}
+
 function productCardHTML(p){
   if(p.hidden) return "";
   const isWished = wishlist.includes(p.id);
   return `
   <div class="product-card ${p.outOfStock ? "out-of-stock" : ""}" data-id="${p.id}" tabindex="0" role="button" aria-label="לצפייה במוצר ${p.name}">
     <div class="card-frame" style="background:var(--ivory)">
-      ${p.outOfStock ? `<span class="card-tag out-of-stock">אזל מהמלאי</span>` : (isOnSale(p) ? `<span class="card-tag">✦ מבצע</span>` : (p.tag ? `<span class="card-tag">${p.tag}</span>` : ""))}
+      ${p.outOfStock ? `<span class="card-tag out-of-stock">אזל מהמלאי</span>` : (p.tag ? `<span class="card-tag">${p.tag}</span>` : "")}
       ${customizableRibbonHTML(p)}
+      ${saleSealHTML(p, p.customizable ? "low" : "")}
       <button class="wish-btn ${isWished ? "active" : ""}" data-id="${p.id}" aria-label="${isWished ? "הסרה מהמועדפים" : "הוספה למועדפים"}" aria-pressed="${isWished}">
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.35-9.5-8.8C.7 8.3 2.2 4.3 6.2 4.3c2 0 3.5 1 5.8 2.5 2.3-1.5 3.8-2.5 5.8-2.5 4 0 5.5 4 3.5 7.9C19 16.65 12 21 12 21z"/></svg>
       </button>
@@ -6564,6 +6617,7 @@ function renderScents(){
     <article class="pf-row sc-row${p.testerPack ? " sc-testers" : ""}" data-id="${p.id}">
       <a class="pf-media" href="${productPath(p.id)}" aria-label="לעמוד המוצר: ${p.name}">
         ${p.outOfStock ? `<span class="pf-badge out">אזל מהמלאי</span>` : (p.testerPack ? `<span class="pf-badge">מארז התנסות</span><span class="sc-x6" aria-hidden="true">×6</span>` : "")}
+        ${saleSealHTML(p)}
         <img src="${p.img}" alt="${p.name} - ${p.testerPack ? "טסטרים של ניחוחות" : "בקבוק ניחוח חצי ליטר"}, רפאוז סטייל" loading="lazy" decoding="async">
       </a>
       <div class="pf-info">
@@ -6589,6 +6643,7 @@ function renderPerfume(){
     <article class="pf-row" data-id="${p.id}">
       <a class="pf-media" href="${productPath(p.id)}" aria-label="לעמוד המוצר: ${p.name}">
         ${p.outOfStock ? `<span class="pf-badge out">אזל מהמלאי</span>` : (p.tag ? `<span class="pf-badge">${p.tag}</span>` : "")}
+        ${saleSealHTML(p)}
         <img src="${p.img}" alt="${p.name} - רפאוז סטייל" loading="${i === 0 ? "eager" : "lazy"}" decoding="async">
       </a>
       <div class="pf-info">
