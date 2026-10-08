@@ -79,6 +79,13 @@
 
   .grid-form{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; align-items:end;}
   .grid-form .field{margin-bottom:0;}
+  .ts-box{grid-column:1/-1; border:1px solid var(--line); border-radius:12px; padding:14px 16px; background:#FFFDF7;}
+  .ts-box h4{margin:0 0 4px; font-size:14px;}
+  .ts-box .ts-note{font-size:12.5px; color:var(--taupe); margin:0 0 10px;}
+  .ts-grid{display:grid; grid-template-columns:1.2fr 0.8fr 1fr 1fr; gap:8px 12px; align-items:center; font-size:13px;}
+  .ts-grid .ts-h{font-weight:700; color:var(--taupe); font-size:12px;}
+  .ts-grid input{width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:14px; font-family:inherit; background:#fff;}
+  @media (max-width:640px){ .ts-grid{grid-template-columns:1fr 1fr;} .ts-grid .ts-h{display:none;} }
   .chk-field{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--taupe);}
 
   table{width:100%; border-collapse:collapse; font-size:13.5px; min-width:640px;}
@@ -304,7 +311,7 @@
 
       <div class="panel">
         <h3>שינוי מחיר / שם / תיאור ומאפיינים למוצר קיים</h3>
-        <p class="sub" style="margin:-6px 0 14px;">כדי ליצור מבצע: מלאו את "מחיר חדש" (המחיר שהלקוח בפועל ישלם) ואת "מחיר לפני מבצע" (המחיר הגבוה יותר שיוצג מחוק בקו לצידו). כדי לבטל מבצע קיים בלי לשנות את המחיר, שמרו את "מחיר לפני מבצע" ריק.</p>
+        <p class="sub" style="margin:-6px 0 14px;">כדי ליצור מבצע: מלאו את "מחיר חדש" (המחיר שהלקוח בפועל ישלם) ואת "מחיר לפני מבצע" (המחיר הגבוה יותר שיוצג מחוק בקו לצידו). כדי לבטל מבצע ולהחזיר את המחיר שהיה לפני המבצע - לחצו "ביטול מבצע". במגבות מופיע מחיר נפרד לכל מידה (ידיים / פנים / גוף), ואפשר לשים מבצע על כל מידה בנפרד.</p>
         <form id="productForm" class="grid-form">
           <div class="field">
             <label for="pPicker">בחרו מוצר</label>
@@ -324,13 +331,18 @@
             <label for="pName">שם חלופי (אופציונלי)</label>
             <input type="text" id="pName" placeholder="השאירו ריק כדי לא לשנות את השם">
           </div>
-          <div class="field">
+          <div class="field" id="pPriceField">
             <label for="pPrice">מחיר חדש (₪)</label>
             <input type="number" id="pPrice" min="0" step="1" placeholder="לדוגמה: 790">
           </div>
-          <div class="field">
+          <div class="field" id="pCompareAtField">
             <label for="pCompareAt">מחיר לפני מבצע (₪, אופציונלי)</label>
             <input type="number" id="pCompareAt" min="0" step="1" placeholder="לדוגמה: 900">
+          </div>
+          <div class="ts-box" id="pTowelSizes" style="display:none;">
+            <h4>מחירים לפי מידה</h4>
+            <p class="ts-note">מבצע: כתבו ב"מחיר חדש" את המחיר שהלקוח ישלם, וב"מחיר לפני מבצע" את המחיר הגבוה שיוצג מחוק בקו. שדה ריק = המחיר המקורי.</p>
+            <div class="ts-grid" id="pTowelSizesGrid"></div>
           </div>
           <div class="chk-field">
             <input type="checkbox" id="pActive" checked>
@@ -349,6 +361,7 @@
             <textarea id="pFeatures" rows="4" style="width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:8px; font-size:14px; font-family:inherit; background:#FFFDF7;" placeholder="לדוגמה:&#10;גוף לבן חלק בפינות מעוגלות&#10;פרופיל דק שמתאים לקיר&#10;השאירו ריק כדי להשתמש במאפיינים המקוריים"></textarea>
           </div>
           <button type="submit" class="btn small" id="productSaveBtn">שמירה</button>
+          <button type="button" class="btn outline small" id="productCancelSaleBtn" style="display:none;">ביטול מבצע והחזרת המחיר הקודם</button>
         </form>
         <div class="err-msg" id="productErr"></div>
         <div class="ok-msg" id="productOk"></div>
@@ -1030,10 +1043,89 @@
   const CATALOG_BY_ID = {};
   CATALOG.forEach(function(c){ CATALOG_BY_ID[c.id] = c; });
 
+  /* ---------- Towels: price per size (+ sale per size) ----------
+     Saved in the override row's details.sizes = { hand:{price,was}, ... }
+     (read by index.html applyOverridesData and api/_lib/pricing.js). */
+  const TOWEL_SIZES_ADMIN = [
+    { id:'hand', label:'מגבת ידיים 30/50', price:25 },
+    { id:'face', label:'מגבת פנים 50/90', price:42 },
+    { id:'body', label:'מגבת גוף 70/130', price:85 }
+  ];
+  function isTowelId(id){ return /^towel-/.test(String(id || '')); }
+  function towelSizeOv(ov){
+    return (ov && ov.details && typeof ov.details === 'object' && ov.details.sizes && typeof ov.details.sizes === 'object') ? ov.details.sizes : {};
+  }
+  function towelOnSale(ov){
+    const so = towelSizeOv(ov);
+    return TOWEL_SIZES_ADMIN.some(function(z){
+      const v = so[z.id] || {};
+      const pr = (v.price != null && v.price !== '') ? Number(v.price) : z.price;
+      return v.was != null && v.was !== '' && Number(v.was) > pr;
+    });
+  }
+  function towelPriceSummary(ov){
+    const so = towelSizeOv(ov);
+    return TOWEL_SIZES_ADMIN.map(function(z){
+      const v = so[z.id] || {};
+      const pr = (v.price != null && v.price !== '') ? Number(v.price) : z.price;
+      const was = (v.was != null && v.was !== '' && Number(v.was) > pr) ? Number(v.was) : null;
+      return z.label.split(' ')[1] + ' ₪' + pr + (was ? ' (במקום ₪' + was + ')' : '');
+    }).join(' · ');
+  }
+  function renderTowelSizeInputs(ov){
+    const grid = document.getElementById('pTowelSizesGrid');
+    const so = towelSizeOv(ov);
+    grid.innerHTML = '<div class="ts-h">מידה</div><div class="ts-h">מחיר מקורי</div><div class="ts-h">מחיר חדש (₪)</div><div class="ts-h">מחיר לפני מבצע (₪)</div>' +
+      TOWEL_SIZES_ADMIN.map(function(z){
+        const v = so[z.id] || {};
+        return '<div><b>' + z.label + '</b></div><div>₪' + z.price + '</div>' +
+          '<input type="number" min="1" step="1" data-ts-price="' + z.id + '" placeholder="' + z.price + '" value="' + (v.price != null && v.price !== '' ? escapeHtml(v.price) : '') + '" aria-label="מחיר חדש - ' + z.label + '">' +
+          '<input type="number" min="1" step="1" data-ts-was="' + z.id + '" placeholder="ללא מבצע" value="' + (v.was != null && v.was !== '' ? escapeHtml(v.was) : '') + '" aria-label="מחיר לפני מבצע - ' + z.label + '">';
+      }).join('');
+  }
+  /* "ביטול מבצע": the price goes back to the "before sale" price and the
+     sale marking disappears. Other changes (name, text, stock) are kept. */
+  async function cancelSale(id){
+    const ov = lastProductOverrides[id];
+    if (!ov) return;
+    const catalogEntry = CATALOG_BY_ID[id];
+    if (isTowelId(id) && catalogEntry) {
+      const d = (ov.details && typeof ov.details === 'object') ? Object.assign({}, ov.details) : {};
+      const so = Object.assign({}, towelSizeOv(ov));
+      TOWEL_SIZES_ADMIN.forEach(function(z){
+        const v = so[z.id];
+        if (!v) return;
+        const pr = (v.price != null && v.price !== '') ? Number(v.price) : z.price;
+        if (v.was != null && v.was !== '' && Number(v.was) > pr) {
+          const back = Number(v.was);
+          if (back === z.price) delete so[z.id]; else so[z.id] = { price: back };
+        } else if (v.was != null) {
+          so[z.id] = { price: v.price };
+          if (v.price == null || v.price === '') delete so[z.id];
+        }
+      });
+      if (Object.keys(so).length) d.sizes = so; else delete d.sizes;
+      await api('/api/products', { method:'POST', body: JSON.stringify({ id: id, compareAtPrice: null, details: Object.keys(d).length ? d : null }) });
+    } else {
+      const was = ov.compare_at_price != null ? Number(ov.compare_at_price) : null;
+      const body = { id: id, compareAtPrice: null };
+      if (was) body.price = (catalogEntry && Number(catalogEntry.price) === was) ? '' : was;
+      await api('/api/products', { method:'POST', body: JSON.stringify(body) });
+    }
+  }
+  function productIsOnSale(id){
+    const ov = lastProductOverrides[id];
+    if (!ov) return false;
+    if (isTowelId(id) && CATALOG_BY_ID[id]) return towelOnSale(ov);
+    const catalogEntry = CATALOG_BY_ID[id];
+    const price = ov.price != null && ov.price !== '' ? Number(ov.price) : (catalogEntry ? Number(catalogEntry.price) : 0);
+    return ov.compare_at_price != null && Number(ov.compare_at_price) > price;
+  }
+
   CATALOG.forEach(function(c){
     const opt = document.createElement('option');
     opt.value = c.id;
-    opt.textContent = c.name + ' (מחיר מקורי: ₪' + c.price + ')';
+    opt.textContent = c.name + (/^towel-/.test(c.id) ? ' (מחירים מקוריים: ₪25 / ₪42 / ₪85)' : ' (מחיר מקורי: ₪' + c.price + ')');
     pPicker.appendChild(opt);
   });
 
@@ -1045,6 +1137,39 @@
     const od = (ov && ov.details && typeof ov.details === 'object') ? ov.details : {};
     document.getElementById('pDesc').value = od.desc || '';
     document.getElementById('pFeatures').value = Array.isArray(od.features) ? od.features.join('\n') : '';
+    const towel = !!c && isTowelId(c.id);
+    if (towel) pDefaultPriceField.value = TOWEL_SIZES_ADMIN.map(function(z){ return '₪' + z.price; }).join(' / ');
+    document.getElementById('pTowelSizes').style.display = towel ? '' : 'none';
+    document.getElementById('pPriceField').style.display = towel ? 'none' : '';
+    document.getElementById('pCompareAtField').style.display = towel ? 'none' : '';
+    if (towel) renderTowelSizeInputs(ov);
+    // Show what's saved now, so it can be edited (or cleared) instead of typed again.
+    document.getElementById('pName').value = (ov && ov.name) || '';
+    document.getElementById('pPrice').value = (!towel && ov && ov.price != null) ? ov.price : '';
+    document.getElementById('pCompareAt').value = (!towel && ov && ov.compare_at_price != null) ? ov.compare_at_price : '';
+    document.getElementById('pOutOfStock').checked = !!(ov && ov.out_of_stock);
+    document.getElementById('pActive').checked = !(ov && ov.active === false);
+    document.getElementById('productCancelSaleBtn').style.display = (c && productIsOnSale(c.id)) ? '' : 'none';
+  });
+
+  document.getElementById('productCancelSaleBtn').addEventListener('click', async function(){
+    const id = pIdField.value.trim();
+    if (!id) return;
+    if (!confirm('לבטל את המבצע על המוצר הזה ולהחזיר את המחיר שהיה לפני המבצע?')) return;
+    const btn = this;
+    btn.disabled = true;
+    productErr.textContent = '';
+    try {
+      await cancelSale(id);
+      productOk.textContent = 'המבצע בוטל והמחיר חזר למחיר שלפני המבצע.';
+      btn.style.display = 'none';
+      await loadProducts();
+      pPicker.dispatchEvent(new Event('change'));
+    } catch(e) {
+      productErr.textContent = e.message || 'שגיאה בביטול המבצע.';
+    } finally {
+      btn.disabled = false;
+    }
   });
 
   /* ---------- Content editing ---------- */
@@ -1573,7 +1698,8 @@
       const displayName = isCustom ? ((p && p.name) || id) + ' (' + escapeHtml(id) + ') - מוצר שנוסף'
         : catalogEntry.name + ' (' + escapeHtml(id) + ')';
       const price = p && p.price != null ? p.price : null;
-      const onSale = p && p.compare_at_price != null && Number(p.compare_at_price) > Number(price != null ? price : (catalogEntry ? catalogEntry.price : 0));
+      const towelRow = !!catalogEntry && isTowelId(id);
+      const onSale = towelRow ? (p ? towelOnSale(p) : false) : (p && p.compare_at_price != null && Number(p.compare_at_price) > Number(price != null ? price : (catalogEntry ? catalogEntry.price : 0)));
 
       let actions;
       if (isDeleted) {
@@ -1586,7 +1712,8 @@
            '<button type="button" class="btn outline small" data-duplicate-product="' + escapeHtml(id) + '">שכפול</button> ' +
            '<button type="button" class="btn danger small" data-delete-product="' + escapeHtml(id) + '">מחיקת מוצר</button>';
       } else {
-        actions = '<button type="button" class="btn outline small" data-duplicate-product="' + escapeHtml(id) + '">שכפול</button> ' +
+        actions = (onSale ? '<button type="button" class="btn outline small" data-cancel-sale="' + escapeHtml(id) + '">ביטול מבצע</button> ' : '') +
+           '<button type="button" class="btn outline small" data-duplicate-product="' + escapeHtml(id) + '">שכפול</button> ' +
            (p ? '<button type="button" class="btn outline small" data-reset-product="' + escapeHtml(id) + '">איפוס הכל למקור</button> ' : '') +
            '<button type="button" class="btn danger small" data-delete-product="' + escapeHtml(id) + '">מחיקת מוצר</button>';
       }
@@ -1594,9 +1721,11 @@
       html += '<tr>' +
         '<td>' + escapeHtml(displayName) + '</td>' +
         '<td>' + escapeHtml((p && p.name) || '-') + '</td>' +
-        '<td>' + (catalogEntry ? '₪' + escapeHtml(catalogEntry.price) : '-') + '</td>' +
-        '<td>' + (price != null ? '₪' + escapeHtml(price) : '-') + '</td>' +
-        '<td>' + (p && p.compare_at_price != null ? '₪' + escapeHtml(p.compare_at_price) + (onSale ? ' <span class="tag active">במבצע</span>' : '') : '-') + '</td>' +
+        '<td>' + (towelRow ? TOWEL_SIZES_ADMIN.map(function(z){ return '₪' + z.price; }).join(' / ') : (catalogEntry ? '₪' + escapeHtml(catalogEntry.price) : '-')) + '</td>' +
+        (towelRow
+          ? '<td colspan="2">' + (p ? escapeHtml(towelPriceSummary(p)) + (onSale ? ' <span class="tag active">במבצע</span>' : '') : '-') + '</td>'
+          : '<td>' + (price != null ? '₪' + escapeHtml(price) : '-') + '</td>' +
+            '<td>' + (p && p.compare_at_price != null ? '₪' + escapeHtml(p.compare_at_price) + (onSale ? ' <span class="tag active">במבצע</span>' : '') : '-') + '</td>') +
         '<td>' + (p && p.out_of_stock ? '<span class="tag inactive">אזל מהמלאי</span>' : '<span class="tag active">במלאי</span>') + '</td>' +
         '<td>' + (isDeleted ? '<span class="tag inactive">נמחק</span>' : '<span class="tag active">פעיל</span>') + '</td>' +
         '<td>' + (p && p.updated_at ? new Date(p.updated_at).toLocaleString('he-IL') : '-') + '</td>' +
@@ -1635,6 +1764,21 @@
           loadProducts();
         } catch(e) {
           alert(e.message || 'שגיאה במחיקה.');
+          btn.disabled = false;
+        }
+      });
+    });
+
+    wrap.querySelectorAll('[data-cancel-sale]').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        const id = btn.getAttribute('data-cancel-sale');
+        if (!confirm('לבטל את המבצע על "' + ((CATALOG_BY_ID[id] && CATALOG_BY_ID[id].name) || id) + '" ולהחזיר את המחיר שהיה לפני המבצע?')) return;
+        btn.disabled = true;
+        try {
+          await cancelSale(id);
+          loadProducts();
+        } catch(e) {
+          alert(e.message || 'שגיאה בביטול המבצע.');
           btn.disabled = false;
         }
       });
@@ -1721,9 +1865,25 @@
     const priceRaw = document.getElementById('pPrice').value;
     const compareAtRaw = document.getElementById('pCompareAt').value;
     const name = document.getElementById('pName').value.trim();
-    if (compareAtRaw !== '' && priceRaw !== '' && Number(compareAtRaw) <= Number(priceRaw)) {
+    const towelMode = isTowelId(id) && !!CATALOG_BY_ID[id];
+    if (!towelMode && compareAtRaw !== '' && priceRaw !== '' && Number(compareAtRaw) <= Number(priceRaw)) {
       productErr.textContent = 'מחיר לפני מבצע חייב להיות גבוה מהמחיר החדש, אחרת המבצע לא יוצג.';
       return;
+    }
+    let towelSizes = null;
+    if (towelMode) {
+      towelSizes = {};
+      for (const z of TOWEL_SIZES_ADMIN) {
+        const pv = (document.querySelector('[data-ts-price="' + z.id + '"]') || {}).value || '';
+        const wv = (document.querySelector('[data-ts-was="' + z.id + '"]') || {}).value || '';
+        const pr = pv !== '' ? Number(pv) : z.price;
+        if (pv !== '' && !(pr > 0)) { productErr.textContent = 'מחיר לא תקין ב' + z.label + '.'; return; }
+        if (wv !== '' && !(Number(wv) > pr)) { productErr.textContent = 'ב' + z.label + ': "מחיר לפני מבצע" חייב להיות גבוה מהמחיר החדש (' + pr + ' ₪).'; return; }
+        const entry = {};
+        if (pv !== '' && pr !== z.price) entry.price = pr;
+        if (wv !== '') { entry.was = Number(wv); if (pv !== '') entry.price = pr; }
+        if (Object.keys(entry).length) towelSizes[z.id] = entry;
+      }
     }
 
     productSaveBtn.disabled = true;
@@ -1745,6 +1905,10 @@
       if (featVal.length) detailsBase.features = featVal; else delete detailsBase.features;
       detailsToSend = Object.keys(detailsBase).length ? detailsBase : null;
     }
+    if (towelMode) {
+      if (Object.keys(towelSizes).length) detailsBase.sizes = towelSizes; else delete detailsBase.sizes;
+      detailsToSend = Object.keys(detailsBase).length ? detailsBase : null;
+    }
 
     try {
       await api('/api/products', {
@@ -1752,8 +1916,8 @@
         body: JSON.stringify({
           id: id,
           name: name || undefined,
-          price: priceRaw !== '' ? Number(priceRaw) : undefined,
-          compareAtPrice: compareAtRaw !== '' ? Number(compareAtRaw) : undefined,
+          price: towelMode ? '' : (priceRaw !== '' ? Number(priceRaw) : ''),
+          compareAtPrice: towelMode ? null : (compareAtRaw !== '' ? Number(compareAtRaw) : null),
           outOfStock: outOfStock,
           active: active,
           details: detailsToSend
@@ -1766,6 +1930,10 @@
       pDefaultPriceField.value = '';
       document.getElementById('pActive').checked = true;
       document.getElementById('pOutOfStock').checked = false;
+      document.getElementById('pTowelSizes').style.display = 'none';
+      document.getElementById('pPriceField').style.display = '';
+      document.getElementById('pCompareAtField').style.display = '';
+      document.getElementById('productCancelSaleBtn').style.display = 'none';
       loadProducts();
     } catch (e) {
       productErr.textContent = e.message || 'שגיאה בשמירה.';

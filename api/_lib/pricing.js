@@ -116,7 +116,18 @@ function buildPriceMap(overrideRows) {
       if (row.out_of_stock) map[row.id].outOfStock = true;
       continue;
     }
-    if (row.price !== undefined && row.price !== null && row.price !== '') {
+    if (map[row.id].sizes) {
+      // Towels: per-size prices set in the admin panel (details.sizes =
+      // { hand: { price, was }, ... }). The plain price column is ignored.
+      const ov = row.details && typeof row.details === 'object' && row.details.sizes && typeof row.details.sizes === 'object' ? row.details.sizes : {};
+      const sizes = {};
+      for (const k of Object.keys(map[row.id].sizes)) {
+        const v = ov[k] || {};
+        const n = Number(v.price);
+        sizes[k] = (v.price !== undefined && v.price !== null && v.price !== '' && Number.isFinite(n) && n > 0) ? n : map[row.id].sizes[k];
+      }
+      map[row.id].sizes = sizes;
+    } else if (row.price !== undefined && row.price !== null && row.price !== '') {
       map[row.id].price = Number(row.price);
     }
     if (row.out_of_stock) {

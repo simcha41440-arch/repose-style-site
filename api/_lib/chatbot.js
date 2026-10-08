@@ -81,6 +81,11 @@ function buildCatalogText(overrides) {
   const byId = {};
   (overrides || []).forEach((o) => { byId[o.id] = o; });
 
+  const TOWEL_SIZE_INFO = [
+    { id: 'hand', label: 'ידיים', dims: '30/50', price: 25 },
+    { id: 'face', label: 'פנים', dims: '50/90', price: 42 },
+    { id: 'body', label: 'גוף', dims: '70/130', price: 85 },
+  ];
   const lines = [];
   CATALOG.forEach((p) => {
     const o = byId[p.id];
@@ -92,7 +97,18 @@ function buildCatalogText(overrides) {
     const parts = [`${name}${p.nameEn ? ` (${p.nameEn})` : ''}`, TYPE_LABELS[p.type] || p.type];
     if (p.collection) parts.push(`קולקציית ${p.collection}`);
     if (p.cotton) parts.push(`${p.cotton}% כותנה, ${p.thread} חוט`);
-    if (p.sizes) parts.push(`מידות ומחירים: ${p.sizes}`);
+    if (p.sizes && p.type === 'towel') {
+      // Live per-size prices (admin panel can change them / put a size on sale).
+      const ov = o && o.details && typeof o.details === 'object' && o.details.sizes && typeof o.details.sizes === 'object' ? o.details.sizes : {};
+      const txt = TOWEL_SIZE_INFO.map((z) => {
+        const v = ov[z.id] || {};
+        const n = Number(v.price);
+        const pr = (v.price !== undefined && v.price !== null && v.price !== '' && Number.isFinite(n) && n > 0) ? n : z.price;
+        const was = Number(v.was);
+        return `${z.label} ${z.dims} – ${pr} ₪${Number.isFinite(was) && was > pr ? ` (מבצע, במקום ${was} ₪)` : ''}`;
+      }).join(', ');
+      parts.push(`מידות ומחירים: ${txt}`);
+    } else if (p.sizes) parts.push(`מידות ומחירים: ${p.sizes}`);
     else parts.push(
       wasPrice && wasPrice > price
         ? `מחיר מבצע ${price} ₪ (במקום ${wasPrice} ₪)`
