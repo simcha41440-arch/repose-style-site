@@ -53,6 +53,7 @@
       "/sale": "sale",
       "/towels": "towels",
       "/perfume": "perfume",
+      "/scents": "perfume",
       "/about": "about",
       "/contact": "contact",
       "/shipping": "shipping",
@@ -63,6 +64,12 @@
       "/checkout": "checkout",
       "/account": "account"
     };
+    /* Old "/perfume#scents" links now open the dedicated /scents page. */
+    if(path === "/perfume" && location.hash === "#scents"){
+      path = "/scents";
+      try{ history.replaceState(history.state, "", "/scents" + location.search); }catch(e){}
+    }
+    if(path === "/scents") document.documentElement.classList.add("rs-scents");
     var view = map[path];
     if(!view && /^\/product\/[^/?#]+$/.test(path)){ view = "product"; }
     if(!view) view = "home";
@@ -1250,6 +1257,18 @@ if("serviceWorker" in navigator){
   nav.nav-links .nav-dd-menu.dd-grid a{margin:2px 8px;}
   nav.nav-links .nav-dd-menu.dd-grid a:last-child{margin-bottom:2px;}
   nav.nav-links .nav-dd-menu.dd-grid a .dd-thumb{width:46px;height:46px;}
+  /* /scents - the perfume view in "scents only" mode (no device cards, no
+     scroll jump): see renderViewNow("scents"). */
+  html.rs-scents #view-perfume .shop-header:not(.sc-page-head),
+  html.rs-scents #view-perfume .pf-trust,
+  html.rs-scents #perfume-showcase,
+  html.rs-scents #view-perfume .pf-gallery,
+  html.rs-scents #view-perfume .pf-help{display:none !important;}
+  #view-perfume .sc-page-head{display:none;}
+  html.rs-scents #view-perfume .sc-page-head{display:block;}
+  html.rs-scents #view-perfume .sc-head{display:none;}
+  .sc-page-head .sc-back{display:inline-flex;align-items:center;gap:6px;margin-top:14px;font-size:14px;color:var(--gold-dark);text-decoration:none;border-bottom:1px solid currentColor;padding-bottom:2px;}
+  .sc-page-head .sc-back:hover{color:var(--text-gold);}
   /* Light dropdown on every page except home */
   body:not(:has(#view-home.active)) .nav-dd-menu::before{background:radial-gradient(260px 140px at 100% 0%, rgba(214,177,94,0.16), transparent 70%), linear-gradient(165deg,#FFFDF8 0%,#FBF4E2 100%);border-color:rgba(176,138,62,0.4);box-shadow:0 24px 50px -18px rgba(90,64,20,0.28),0 6px 16px -8px rgba(90,64,20,0.16);}
   body:not(:has(#view-home.active)) .nav-dd-menu::after{background:#FFFDF8;border-color:rgba(176,138,62,0.4);}
@@ -3586,7 +3605,7 @@ if("serviceWorker" in navigator){
         <div class="nav-dd-menu" role="menu" aria-label="בישום">
           <div class="dd-head" aria-hidden="true">ניחוח של מלון בוטיק</div>
           <a href="/perfume"><span class="dd-thumb"><img src="/images/site/perfume-device-v2.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>מכשירי בישום</b><small>דגמים בעיצוב מוקפד לבית</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
-          <a href="/perfume#scents"><span class="dd-thumb"><img src="/images/products/scent-bottle-v2.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>ניחוחות לבית</b><small>בקבוקי חצי ליטר</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
+          <a href="/scents"><span class="dd-thumb"><img src="/images/products/scent-bottle-v2.jpg" alt="" loading="lazy" decoding="async"></span><span class="dd-txt"><b>ניחוחות לבית</b><small>בקבוקי חצי ליטר</small></span><svg class="dd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a>
         </div>
       </div>
       <a data-nav="sale" href="/sale">מבצעים</a>
@@ -3634,7 +3653,7 @@ if("serviceWorker" in navigator){
     <a class="mm-sub" href="/product/towel-liam">מגבת ליאם</a>
     <a data-nav="perfume" href="/perfume">בישום</a>
     <a class="mm-sub" href="/perfume">מכשירי בישום</a>
-    <a class="mm-sub" href="/perfume#scents">ניחוחות לבית</a>
+    <a class="mm-sub" href="/scents">ניחוחות לבית</a>
     <a data-nav="sale" href="/sale">מבצעים</a>
     <a data-nav="about" href="/about">אודות</a>
     <a data-nav="contact" href="/contact">צור קשר</a>
@@ -4081,6 +4100,12 @@ if("serviceWorker" in navigator){
         <figure class="pf-shot"><img src="/images/site/perfume-inside-wide.jpg" alt="מכשיר בישום פתוח עם בקבוק השמן בתוכו" loading="lazy" decoding="async"><figcaption>דלת נפתחת וגישה נוחה לבקבוק השמן</figcaption></figure>
       </div>
     </section>
+    <div class="shop-header sc-page-head">
+      <div class="eyebrow">רפאוז סטייל · ניחוח של מלון בוטיק</div>
+      <h1>ניחוחות לבית</h1>
+      <p>בקבוקי חצי ליטר במחיר 169 ₪ לבקבוק, לשימוש במכשירי הבישום שלנו. בחרו את הניחוח שמתאים לבית שלכם.</p>
+      <a class="sc-back" href="/perfume">למכשירי הבישום ←</a>
+    </div>
     <div class="sc-head" id="scents">
       <h2 class="serif">ניחוחות לבית</h2>
       <p>בקבוקי חצי ליטר במחיר 169 ₪ לבקבוק</p>
@@ -5328,6 +5353,7 @@ const VIEW_SEO = {
   "shop-heritage":   { path:"/shop/heritage",  title:"קולקציית Heritage | רפאוז סטייל", desc:"קולקציית Heritage ממבחר מצעי היוקרה של רפאוז סטייל." },
   "towels":          { path:"/towels",         title:"מגבות יוקרה | רפאוז סטייל", desc:"מגבות יוקרה איכותיות מבית רפאוז סטייל — רכות, סופגות ועמידות לאורך זמן." },
   "perfume":         { path:"/perfume",        title:"מכשירי בישום | רפאוז סטייל", desc:"מכשירי בישום אלגנטיים מבית רפאוז סטייל — ניחוח יוקרתי לבית." },
+  "scents":          { path:"/scents",         title:"ניחוחות לבית | רפאוז סטייל", desc:"ניחוחות לבית מבית רפאוז סטייל — בקבוקי חצי ליטר למכשירי הבישום, בניחוחות של מלון בוטיק." },
   "sale":            { path:"/sale",           title:"מבצעים | רפאוז סטייל", desc:"הדגמים שנמצאים כרגע במבצע אצל רפאוז סטייל — במחיר מוזל לזמן מוגבל." },
   "about":           { path:"/about",          title:"אודות | רפאוז סטייל", desc:"על רפאוז סטייל — הסיפור שמאחורי המותג, הערכים והדרך בה אנו בונים כל סט מצעים." },
   "contact":         { path:"/contact",        title:"צור קשר | רפאוז סטייל", desc:"צרו קשר עם צוות רפאוז סטייל בכל שאלה או בקשה." },
@@ -5470,6 +5496,7 @@ function showView(name, updateHistory, productId){
 
 function renderViewNow(name, updateHistory, productId){
   if(updateHistory === undefined) updateHistory = true;
+  document.documentElement.classList.toggle("rs-scents", name === "scents");
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active", "view-fade-out"));
   if(name === "home"){
     document.getElementById("view-home").classList.add("active");
@@ -5494,11 +5521,10 @@ function renderViewNow(name, updateHistory, productId){
   } else if(name === "towels"){
     document.getElementById("view-towels").classList.add("active");
     renderTowels();
-  } else if(name === "perfume"){
+  } else if(name === "perfume" || name === "scents"){
     document.getElementById("view-perfume").classList.add("active");
     renderPerfume();
     renderScents();
-    scrollToScentsIfRequested();
   } else if(name === "about"){
     document.getElementById("view-about").classList.add("active");
   } else if(name === "contact"){
@@ -5542,7 +5568,7 @@ function renderViewNow(name, updateHistory, productId){
     });
   })();
   document.dispatchEvent(new Event("app:view-changed"));
-  const navHighlight = name.startsWith("shop") ? "shop" : name;
+  const navHighlight = name.startsWith("shop") ? "shop" : (name === "scents" ? "perfume" : name);
   document.querySelectorAll("nav.nav-links button, nav.nav-links a").forEach(b=>{
     b.classList.toggle("active", b.dataset.nav === navHighlight);
   });
@@ -6637,7 +6663,8 @@ function renderTowels(){
    rendered by JS, so the browser's own jump to the anchor can land in the
    wrong place - re-scroll once everything has rendered. */
 function scrollToScentsIfRequested(){
-  if(location.hash !== "#scents") return;
+  /* Kept for in-page "#scents" anchors only - the menus now link to /scents. */
+  if(location.hash !== "#scents" || document.documentElement.classList.contains("rs-scents")) return;
   const el = document.getElementById("scents");
   if(!el) return;
   setTimeout(()=> el.scrollIntoView({ behavior:"smooth", block:"start" }), 350);
