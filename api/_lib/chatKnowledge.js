@@ -36,29 +36,29 @@ const CATALOG = [
   { id: "perfume-white", name: "מכשיר בישום דגם בייסיק", price: 339, type: "diffuser", features: ["גוף לבן חלק בפינות מעוגלות","פרופיל דק שמתאים לקיר או למדף","מראה מינימליסטי שלא מושך תשומת לב","הדגם המשתלם בסדרה"] },
   { id: "perfume-gold", name: "מכשיר בישום גולד דגם A300", price: 449, type: "diffuser", colors: ["לבן","שחור"], features: ["גוף בלבן מבריק או בשחור אלגנטי (לבחירתכם), עם מסגרת מתכתית בגוון זהב","כפתור הפעלה בחלקו העליון","קו נקי שמשתלב בסלון, בחדר שינה ובלובי","מתאים גם כמתנה מעוצבת לבית"] },
   { id: "perfume-graphite", name: "מכשיר בישום גרפיט חכם דגם A400", price: 539, type: "diffuser", colors: ["גרפיט","לבן"], features: ["גימור גרפיט מתכתי עם פאנל קדמי שחור","חיבור לאפליקציה באמצעות סריקת קוד QR שעל המכשיר","עיצוב עכשווי שמתאים לחללים מודרניים ומוקפדים","הדגם המתקדם בסדרה"] },
-  { id: "scent-holyland", name: "הולילנד", price: 189, type: "scent" },
-  { id: "scent-miami", name: "מיאמי", price: 189, type: "scent" },
-  { id: "scent-spring", name: "ספרינג", price: 189, type: "scent" },
-  { id: "scent-newyork", name: "ניו יורק", price: 189, type: "scent" },
-  { id: "scent-paris", name: "פריז", price: 189, type: "scent" },
-  { id: "scent-lacoste", name: "לקוסט", price: 189, type: "scent" },
-  { id: "scent-tea-time", name: "תה טיים", price: 189, type: "scent" },
-  { id: "scent-royal-beach", name: "רויאל ביץ", price: 189, type: "scent" },
-  { id: "scent-olympia", name: "אולימפיה", price: 189, type: "scent" },
-  { id: "scent-delta", name: "דלתא", price: 189, type: "scent" },
-  { id: "scent-boutique-hotel", name: "מלון בוטיק", price: 189, type: "scent" },
-  { id: "scent-nautica-home", name: "נאוטיקה הום", price: 189, type: "scent" },
-  { id: "scent-jasmine", name: "יסמין", price: 189, type: "scent" },
-  { id: "scent-black-jasmine", name: "בלאק יסמין", price: 189, type: "scent" },
-  { id: "scent-luxury-spa", name: "ספא יוקרתי", price: 189, type: "scent" },
-  { id: "scent-karamim", name: "כרמים", price: 189, type: "scent" },
-  { id: "scent-bereshit", name: "בראשית", price: 189, type: "scent" },
-  { id: "scent-patal", name: "פתאל", price: 189, type: "scent" },
-  { id: "scent-blue-chanel", name: "בלו שאנל", price: 189, type: "scent" },
-  { id: "scent-london", name: "לונדון", price: 189, type: "scent" },
-  { id: "scent-pink-lotus", name: "פינק לוטוס", price: 189, type: "scent" },
-  { id: "scent-abercrombie", name: "אמרקומבי", price: 189, type: "scent" },
-  { id: "scent-my-secret", name: "My secret", price: 189, type: "scent" },
+  { id: "scent-holyland", name: "הולילנד", price: 169, type: "scent" },
+  { id: "scent-miami", name: "מיאמי", price: 169, type: "scent" },
+  { id: "scent-spring", name: "ספרינג", price: 169, type: "scent" },
+  { id: "scent-newyork", name: "ניו יורק", price: 169, type: "scent" },
+  { id: "scent-paris", name: "פריז", price: 169, type: "scent" },
+  { id: "scent-lacoste", name: "לקוסט", price: 169, type: "scent" },
+  { id: "scent-tea-time", name: "תה טיים", price: 169, type: "scent" },
+  { id: "scent-royal-beach", name: "רויאל ביץ", price: 169, type: "scent" },
+  { id: "scent-olympia", name: "אולימפיה", price: 169, type: "scent" },
+  { id: "scent-delta", name: "דלתא", price: 169, type: "scent" },
+  { id: "scent-boutique-hotel", name: "מלון בוטיק", price: 169, type: "scent" },
+  { id: "scent-nautica-home", name: "נאוטיקה הום", price: 169, type: "scent" },
+  { id: "scent-jasmine", name: "יסמין", price: 169, type: "scent" },
+  { id: "scent-black-jasmine", name: "בלאק יסמין", price: 169, type: "scent" },
+  { id: "scent-luxury-spa", name: "ספא יוקרתי", price: 169, type: "scent" },
+  { id: "scent-karamim", name: "כרמים", price: 169, type: "scent" },
+  { id: "scent-bereshit", name: "בראשית", price: 169, type: "scent" },
+  { id: "scent-patal", name: "פתאל", price: 169, type: "scent" },
+  { id: "scent-blue-chanel", name: "בלו שאנל", price: 169, type: "scent" },
+  { id: "scent-london", name: "לונדון", price: 169, type: "scent" },
+  { id: "scent-pink-lotus", name: "פינק לוטוס", price: 169, type: "scent" },
+  { id: "scent-abercrombie", name: "אמרקומבי", price: 169, type: "scent" },
+  { id: "scent-my-secret", name: "My secret", price: 169, type: "scent" },
   { id: "scent-testers-6", name: "מארז 6 טסטרים", price: 39, type: "tester" },
 ];
 
@@ -84,7 +84,7 @@ const STORE_INFO = `
 רקמת ראשי תיבות: בדגמים "לונדון" ו"יהלום" אפשר להוסיף רקמת ראשי תיבות בעמוד המוצר. בלונדון התוספת היא 200 ₪, ביהלום הרקמה כלולה במחיר (עד 2 אותיות).
 
 מגבות: 100% כותנה, 600 גרם למ"ר. כל דגם מגבת מגיע בשלוש מידות לבחירה בעמוד המוצר: מגבת ידיים 30/50 ס"מ – 25 ₪, מגבת פנים 50/90 ס"מ – 42 ₪, מגבת גוף 70/130 ס"מ – 85 ₪. עמוד המגבות: ${SITE_URL}/towels
-מכשירי בישום וניחוחות: עמוד ${SITE_URL}/perfume . בקבוקי ניחוח הם בנפח חצי ליטר, 189 ₪ לבקבוק. יש גם מארז 6 טסטרים להתנסות ב-39 ₪.
+מכשירי בישום וניחוחות: עמוד ${SITE_URL}/perfume . בקבוקי ניחוח הם בנפח חצי ליטר, 169 ₪ לבקבוק. יש גם מארז 6 טסטרים להתנסות ב-39 ₪.
 
 כביסה וטיפול במצעים: כביסה במים פושרים עד 40 מעלות, בתוכנית עדינה, ללא הלבנה. ייבוש בטמפרטורה נמוכה או תלייה בצל.
 
