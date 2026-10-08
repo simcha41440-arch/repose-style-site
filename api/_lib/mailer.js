@@ -45,6 +45,27 @@ function escapeHtml(str) {
 // { ok: true, id } or { ok: false, error }, so a mail problem never
 // crashes the API route that called it (the order/contact was already
 // saved/handled before this runs).
+// Pulls clean email addresses out of whatever was given (a single string,
+// a comma/semicolon/space separated list, "Name <a@b.com>", an array, a
+// value with invisible RTL marks or Hebrew text around it from a Hebrew
+// keyboard / auto-translated page). Resend rejects the whole request with
+// "Invalid `to` field" if even one entry isn't a bare valid address.
+const EMAIL_RE = /[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}/g;
+function extractEmails(value) {
+  const list = Array.isArray(value) ? value : [value];
+  const out = [];
+  for (const item of list) {
+    if (item == null) continue;
+    const clean = String(item).replace(/[\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]/g, '');
+    const found = clean.match(EMAIL_RE) || [];
+    for (const e of found) {
+      const addr = e.replace(/^[.\-]+|[.\-]+$/g, '');
+      if (!out.some((x) => x.toLowerCase() === addr.toLowerCase())) out.push(addr);
+    }
+  }
+  return out;
+}
+
 async function sendEmail({ to, subject, html, text, replyTo }) {
   const apiKey = sanitizeEnvValue(process.env.RESEND_API_KEY);
   const from = sanitizeEnvValue(process.env.RESEND_FROM_EMAIL) || 'רפאוז סטייל <onboarding@resend.dev>';
@@ -55,14 +76,22 @@ async function sendEmail({ to, subject, html, text, replyTo }) {
     return { ok: false, error: msg };
   }
 
+  const recipients = extractEmails(to);
+  if (!recipients.length) {
+    const msg = `כתובת הנמען לא תקינה ("${String(Array.isArray(to) ? to.join(', ') : (to == null ? '' : to)).slice(0, 80)}") - יש לכתוב כתובת מייל מלאה, למשל name@gmail.com`;
+    console.error('sendEmail: no valid recipient for "%s": %j', subject, to);
+    return { ok: false, error: msg };
+  }
+
   const payload = {
     from,
-    to: Array.isArray(to) ? to : [to],
+    to: recipients,
     subject,
     html,
   };
   if (text) payload.text = text;
-  if (replyTo) payload.reply_to = replyTo;
+  const replyList = replyTo ? extractEmails(replyTo) : [];
+  if (replyList.length) payload.reply_to = replyList;
 
   try {
     const res = await fetch(RESEND_API_URL, {
@@ -90,4 +119,5 @@ async function sendEmail({ to, subject, html, text, replyTo }) {
   }
 }
 
-module.exports = { sendEmail, escapeHtml, sanitizeEnvValue };
+module.exports = {
+  extractEmails, sendEmail, escapeHtml, sanitizeEnvValue };

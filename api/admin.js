@@ -35,7 +35,7 @@ const {
   recordLoginAttempt,
   logAdminAction,
 } = require('./_lib/security');
-const { sendEmail, sanitizeEnvValue } = require('./_lib/mailer');
+const { sendEmail, sanitizeEnvValue, extractEmails } = require('./_lib/mailer');
 // Reusing the same scrypt-based hashPassword/verifyPassword the customer
 // account system already uses (see api/_lib/customerSession.js) - it's a
 // generic password-hashing helper, not actually tied to customer sessions.
@@ -432,7 +432,13 @@ async function handleTestEmail(req, res) {
   }
 
   const requestedTo = body && body.to ? String(body.to).trim() : '';
-  const to = requestedTo || sanitizeEnvValue(process.env.ORDER_NOTIFY_EMAIL) || 'simcha41440@gmail.com';
+  if (requestedTo && !extractEmails(requestedTo).length) {
+    return res.status(200).json({ ok: false, error: 'הכתובת שהוקלדה אינה כתובת מייל תקינה. יש לכתוב כתובת מלאה, למשל name@gmail.com', to: requestedTo });
+  }
+  const envTo = extractEmails(sanitizeEnvValue(process.env.ORDER_NOTIFY_EMAIL) || '');
+  const to = requestedTo
+    ? extractEmails(requestedTo).join(', ')
+    : (envTo.length ? envTo.join(', ') : 'simcha41440@gmail.com');
 
   const missingEnv = [];
   if (!sanitizeEnvValue(process.env.RESEND_API_KEY)) missingEnv.push('RESEND_API_KEY');
