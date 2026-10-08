@@ -105,6 +105,7 @@ function buildCatalogText(overrides) {
         const n = Number(v.price);
         const pr = (v.price !== undefined && v.price !== null && v.price !== '' && Number.isFinite(n) && n > 0) ? n : z.price;
         const was = Number(v.was);
+        if (v.oos) return `${z.label} ${z.dims} – אזל מהמלאי`;
         return `${z.label} ${z.dims} – ${pr} ₪${Number.isFinite(was) && was > pr ? ` (מבצע, במקום ${was} ₪)` : ''}`;
       }).join(', ');
       parts.push(`מידות ומחירים: ${txt}`);

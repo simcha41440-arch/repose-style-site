@@ -127,6 +127,9 @@ function buildPriceMap(overrideRows) {
         sizes[k] = (v.price !== undefined && v.price !== null && v.price !== '' && Number.isFinite(n) && n > 0) ? n : map[row.id].sizes[k];
       }
       map[row.id].sizes = sizes;
+      // Sizes marked "אזל מהמלאי" on their own in the admin panel.
+      const oos = Object.keys(sizes).filter((k) => ov[k] && ov[k].oos);
+      if (oos.length) map[row.id].oosSizes = oos;
     } else if (row.price !== undefined && row.price !== null && row.price !== '') {
       map[row.id].price = Number(row.price);
     }
@@ -147,6 +150,9 @@ function unitPrice(priceMap, item) {
     // Unknown/missing size falls back to the first (smallest) size - same as the client.
     const sizeId = Object.prototype.hasOwnProperty.call(catalogEntry.sizes, item.size) ? item.size : TOWEL_SIZE_ORDER[0];
     price = catalogEntry.sizes[sizeId];
+    if (catalogEntry.oosSizes && catalogEntry.oosSizes.includes(sizeId)) {
+      return { price, outOfStock: true };
+    }
   } else if (item.size === 'single' && catalogEntry.category !== 'towel' && catalogEntry.category !== 'perfume') {
     price = Math.round(price / 2);
   }

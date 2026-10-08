@@ -2359,6 +2359,10 @@ if("serviceWorker" in navigator){
     box-shadow:0 6px 18px -8px rgba(138,108,57,0.5);
   }
   #pd-towel-size-options .pd-size-option{flex:1 1 0;min-width:0;padding:12px 14px;}
+  #pd-towel-size-options .pd-size-option.oos{cursor:not-allowed;background:repeating-linear-gradient(135deg,#FBF8F2 0 8px,#F4EFE6 8px 16px);border-style:dashed;opacity:.75;}
+  #pd-towel-size-options .pd-size-option.oos:hover{border-color:var(--line);}
+  #pd-towel-size-options .pd-size-option.oos .t{color:var(--taupe);text-decoration:line-through;text-decoration-color:rgba(138,108,46,.5);}
+  #pd-towel-size-options .pd-size-option .oos-txt{color:#9A5B4E;font-weight:700;font-size:12.5px;}
   @media (max-width:420px){#pd-towel-size-options .pd-size-option{flex:1 1 100%;}}
   .pd-color-select{margin:0 0 22px;}
   .pd-color-select .pss-label{font-size:12px;color:var(--taupe);letter-spacing:.04em;margin-bottom:10px;text-transform:uppercase;}
@@ -6366,7 +6370,7 @@ function applyOverridesData(data){
         const v = ov[s.id] || {};
         const pr = Number(v.price), was = Number(v.was);
         const price = (v.price !== undefined && v.price !== null && v.price !== "" && Number.isFinite(pr) && pr > 0) ? pr : s.price;
-        return Object.assign({}, s, { price: price, was: (Number.isFinite(was) && was > price) ? was : null });
+        return Object.assign({}, s, { price: price, was: (Number.isFinite(was) && was > price) ? was : null, oos: !!v.oos });
       });
     }
     if(!o) return;
@@ -6376,6 +6380,8 @@ function applyOverridesData(data){
     p.compareAtPrice = (o.compare_at_price !== undefined && o.compare_at_price !== null && o.compare_at_price !== "") ? Number(o.compare_at_price) : null;
     p.outOfStock = !!o.out_of_stock;
     if(p.baseSizes){ p.price = p.sizes[0].price; p.compareAtPrice = null; }
+    /* Every size marked "אזל מהמלאי" in the admin panel = the whole towel is out of stock. */
+    if(p.baseSizes && p.sizes.every(function(s){ return s.oos; })) p.outOfStock = true;
     /* Text edits saved from the admin panel ("תיאור" / "מאפיינים") for built-in products,
        e.g. perfume devices and scent bottles. Empty/missing = keep the built-in text. */
     const od = (o.details && typeof o.details === "object") ? o.details : null;
@@ -7377,13 +7383,20 @@ function renderPdTowelSizes(p){
   if(!box || !wrap) return;
   const ss = sizeOptions(p);
   if(!ss){ box.style.display = "none"; wrap.innerHTML = ""; return; }
-  currentSize = ss[0].id;
+  /* Start on the first size that's in stock (a size can be marked "אזל מהמלאי" on its own). */
+  const first = ss.find(x => !x.oos) || ss[0];
+  currentSize = first.id;
   box.style.display = "block";
-  wrap.innerHTML = ss.map((x,i)=>`
-    <button type="button" class="pd-size-option${i===0 ? " active" : ""}" data-tsize="${x.id}" role="radio" aria-checked="${i===0}">
+  wrap.innerHTML = ss.map((x)=>{
+    const on = x.id === first.id && !x.oos;
+    return `
+    <button type="button" class="pd-size-option${on ? " active" : ""}${x.oos ? " oos" : ""}" data-tsize="${x.id}" role="radio" aria-checked="${on}"${x.oos ? ` disabled aria-disabled="true" title="אזל מהמלאי"` : ""}>
       <div class="t">${x.label} <small>${x.dims} ס"מ</small></div>
-      <div class="p">${x.was && x.was > x.price ? `<span class="was-price" style="margin-inline-end:8px;font-weight:400;"><span class="was-num">${x.was.toFixed(2)}</span></span>` : ""}${x.price.toFixed(2)} ₪</div>
-    </button>`).join("");
+      ${x.oos
+        ? `<div class="p oos-txt">אזל מהמלאי</div>`
+        : `<div class="p">${x.was && x.was > x.price ? `<span class="was-price" style="margin-inline-end:8px;font-weight:400;"><span class="was-num">${x.was.toFixed(2)}</span></span>` : ""}${x.price.toFixed(2)} ₪</div>`}
+    </button>`;
+  }).join("");
 }
 (function bindPdTowelSizes(){
   const wrap = document.getElementById("pd-towel-size-options");

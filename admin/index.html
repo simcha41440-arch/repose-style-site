@@ -82,10 +82,12 @@
   .ts-box{grid-column:1/-1; border:1px solid var(--line); border-radius:12px; padding:14px 16px; background:#FFFDF7;}
   .ts-box h4{margin:0 0 4px; font-size:14px;}
   .ts-box .ts-note{font-size:12.5px; color:var(--taupe); margin:0 0 10px;}
-  .ts-grid{display:grid; grid-template-columns:1.2fr 0.8fr 1fr 1fr; gap:8px 12px; align-items:center; font-size:13px;}
+  .ts-grid{display:grid; grid-template-columns:1.2fr 0.7fr 1fr 1fr 0.8fr; gap:8px 12px; align-items:center; font-size:13px;}
+  .ts-grid .ts-oos{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--taupe); white-space:nowrap;}
+  .ts-grid .ts-oos input{width:auto;}
   .ts-grid .ts-h{font-weight:700; color:var(--taupe); font-size:12px;}
   .ts-grid input{width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:14px; font-family:inherit; background:#fff;}
-  @media (max-width:640px){ .ts-grid{grid-template-columns:1fr 1fr;} .ts-grid .ts-h{display:none;} }
+  @media (max-width:640px){ .ts-grid{grid-template-columns:1fr 1fr;} .ts-grid .ts-h{display:none;} .ts-grid .ts-oos{grid-column:1/-1;} }
   .chk-field{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--taupe);}
 
   table{width:100%; border-collapse:collapse; font-size:13.5px; min-width:640px;}
@@ -341,7 +343,7 @@
           </div>
           <div class="ts-box" id="pTowelSizes" style="display:none;">
             <h4>מחירים לפי מידה</h4>
-            <p class="ts-note">מבצע: כתבו ב"מחיר חדש" את המחיר שהלקוח ישלם, וב"מחיר לפני מבצע" את המחיר הגבוה שיוצג מחוק בקו. שדה ריק = המחיר המקורי.</p>
+            <p class="ts-note">מבצע: כתבו ב"מחיר חדש" את המחיר שהלקוח ישלם, וב"מחיר לפני מבצע" את המחיר הגבוה שיוצג מחוק בקו. שדה ריק = המחיר המקורי. "אזל" מסמן מידה אחת שאזלה מהמלאי - שאר המידות נשארות זמינות להזמנה.</p>
             <div class="ts-grid" id="pTowelSizesGrid"></div>
           </div>
           <div class="chk-field">
@@ -1069,18 +1071,19 @@
       const v = so[z.id] || {};
       const pr = (v.price != null && v.price !== '') ? Number(v.price) : z.price;
       const was = (v.was != null && v.was !== '' && Number(v.was) > pr) ? Number(v.was) : null;
-      return z.label.split(' ')[1] + ' ₪' + pr + (was ? ' (במקום ₪' + was + ')' : '');
+      return z.label.split(' ')[1] + ' ₪' + pr + (was ? ' (במקום ₪' + was + ')' : '') + (v.oos ? ' - אזל' : '');
     }).join(' · ');
   }
   function renderTowelSizeInputs(ov){
     const grid = document.getElementById('pTowelSizesGrid');
     const so = towelSizeOv(ov);
-    grid.innerHTML = '<div class="ts-h">מידה</div><div class="ts-h">מחיר מקורי</div><div class="ts-h">מחיר חדש (₪)</div><div class="ts-h">מחיר לפני מבצע (₪)</div>' +
+    grid.innerHTML = '<div class="ts-h">מידה</div><div class="ts-h">מחיר מקורי</div><div class="ts-h">מחיר חדש (₪)</div><div class="ts-h">מחיר לפני מבצע (₪)</div><div class="ts-h">מלאי</div>' +
       TOWEL_SIZES_ADMIN.map(function(z){
         const v = so[z.id] || {};
         return '<div><b>' + z.label + '</b></div><div>₪' + z.price + '</div>' +
           '<input type="number" min="1" step="1" data-ts-price="' + z.id + '" placeholder="' + z.price + '" value="' + (v.price != null && v.price !== '' ? escapeHtml(v.price) : '') + '" aria-label="מחיר חדש - ' + z.label + '">' +
-          '<input type="number" min="1" step="1" data-ts-was="' + z.id + '" placeholder="ללא מבצע" value="' + (v.was != null && v.was !== '' ? escapeHtml(v.was) : '') + '" aria-label="מחיר לפני מבצע - ' + z.label + '">';
+          '<input type="number" min="1" step="1" data-ts-was="' + z.id + '" placeholder="ללא מבצע" value="' + (v.was != null && v.was !== '' ? escapeHtml(v.was) : '') + '" aria-label="מחיר לפני מבצע - ' + z.label + '">' +
+          '<label class="ts-oos"><input type="checkbox" data-ts-oos="' + z.id + '"' + (v.oos ? ' checked' : '') + '> אזל</label>';
       }).join('');
   }
   /* "ביטול מבצע": the price goes back to the "before sale" price and the
@@ -1096,13 +1099,14 @@
         const v = so[z.id];
         if (!v) return;
         const pr = (v.price != null && v.price !== '') ? Number(v.price) : z.price;
+        const keep = {};
         if (v.was != null && v.was !== '' && Number(v.was) > pr) {
-          const back = Number(v.was);
-          if (back === z.price) delete so[z.id]; else so[z.id] = { price: back };
-        } else if (v.was != null) {
-          so[z.id] = { price: v.price };
-          if (v.price == null || v.price === '') delete so[z.id];
+          if (Number(v.was) !== z.price) keep.price = Number(v.was);
+        } else if (v.price != null && v.price !== '') {
+          keep.price = v.price;
         }
+        if (v.oos) keep.oos = true;
+        if (Object.keys(keep).length) so[z.id] = keep; else delete so[z.id];
       });
       if (Object.keys(so).length) d.sizes = so; else delete d.sizes;
       await api('/api/products', { method:'POST', body: JSON.stringify({ id: id, compareAtPrice: null, details: Object.keys(d).length ? d : null }) });
@@ -1882,6 +1886,8 @@
         const entry = {};
         if (pv !== '' && pr !== z.price) entry.price = pr;
         if (wv !== '') { entry.was = Number(wv); if (pv !== '') entry.price = pr; }
+        const oosBox = document.querySelector('[data-ts-oos="' + z.id + '"]');
+        if (oosBox && oosBox.checked) entry.oos = true;
         if (Object.keys(entry).length) towelSizes[z.id] = entry;
       }
     }
