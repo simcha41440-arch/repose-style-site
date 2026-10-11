@@ -151,7 +151,7 @@
       '<textarea id="rs-chat-input" rows="1" maxlength="800" placeholder="כתבו כאן את השאלה…" aria-label="הודעה"></textarea>' +
       '<button type="submit" id="rs-chat-send" aria-label="שליחה">' + ICON_SEND + '</button>' +
     '</form>' +
-    '<div id="rs-chat-foot">התשובות נוצרות ע"י בינה מלאכותית ועשויות לטעות · השיחות נשמרות לשיפור השירות · לנציג אנושי: <a href="https://wa.me/972556713828" target="_blank" rel="noopener">וואטסאפ</a></div>';
+    '<div id="rs-chat-foot">התשובות נוצרות ע"י בינה מלאכותית ועשויות לטעות · השיחות נשמרות לשיפור השירות · לנציג אנושי: <a href="https://wa.me/97225097333" target="_blank" rel="noopener">וואטסאפ</a></div>';
 
   function mount() {
     document.body.appendChild(btn);
@@ -358,7 +358,7 @@
           // Drop the unanswered question so a retry starts clean.
           history.pop();
           persist();
-          addBubble('model', reply || 'אירעה תקלה זמנית. נסו שוב בעוד רגע, או פנו אלינו בוואטסאפ 055-6713828.', 'rs-err');
+          addBubble('model', reply || 'אירעה תקלה זמנית. נסו שוב בעוד רגע, או פנו אלינו בוואטסאפ 02-5097333.', 'rs-err');
         }
       })
       .catch(function () {
