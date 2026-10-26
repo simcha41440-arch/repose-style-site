@@ -121,6 +121,263 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;");
 }
 
+/* Per-product SEO (title / description / canonical / image) for /product/:id.
+   Without it the raw HTML of every product page carried the HOMEPAGE canonical,
+   so Google treated product pages as "alternate pages" of the homepage and
+   didn't index them. Keep in sync with the catalog in index.html. */
+const PRODUCT_SEO = {
+ "prachim": {
+  "title": "דגם אביב | רפאוז סטייל",
+  "desc": "סט מצעי יוקרה מבית רפאוז סטייל — דגם אביב. כותנה איכותית, משלוח לכל הארץ.",
+  "img": "/images/products/prachim.jpg"
+ },
+ "simfonia": {
+  "title": "דגם סימפוניה | רפאוז סטייל",
+  "desc": "סט מצעי יוקרה מבית רפאוז סטייל — דגם סימפוניה. כותנה איכותית, משלוח לכל הארץ.",
+  "img": "/images/products/simfonia.jpg"
+ },
+ "rakefet": {
+  "title": "דגם רקפת | רפאוז סטייל",
+  "desc": "סט מצעי יוקרה מבית רפאוז סטייל — דגם רקפת. כותנה איכותית, משלוח לכל הארץ.",
+  "img": "/images/products/rakefet.jpg"
+ },
+ "yahalom": {
+  "title": "דגם יהלום | רפאוז סטייל",
+  "desc": "סט מצעי יוקרה מבית רפאוז סטייל — דגם יהלום. כותנה איכותית, משלוח לכל הארץ.",
+  "img": "/images/products/yahalom.jpg"
+ },
+ "london": {
+  "title": "דגם לונדון | רפאוז סטייל",
+  "desc": "סט מצעי יוקרה מבית רפאוז סטייל — דגם לונדון. כותנה איכותית, משלוח לכל הארץ.",
+  "img": "/images/products/london.jpg"
+ },
+ "royal": {
+  "title": "דגם רויאל | רפאוז סטייל",
+  "desc": "סט מצעי יוקרה מבית רפאוז סטייל — דגם רויאל. כותנה איכותית, משלוח לכל הארץ.",
+  "img": "/images/products/royal.jpg"
+ },
+ "star": {
+  "title": "דגם סטאר | רפאוז סטייל",
+  "desc": "סט מצעי יוקרה מבית רפאוז סטייל — דגם סטאר. כותנה איכותית, משלוח לכל הארץ.",
+  "img": "/images/products/star.jpg"
+ },
+ "okeanos": {
+  "title": "דגם אוקיינוס | רפאוז סטייל",
+  "desc": "סט מצעי יוקרה מבית רפאוז סטייל — דגם אוקיינוס. כותנה איכותית, משלוח לכל הארץ.",
+  "img": "/images/products/okeanos.jpg"
+ },
+ "classic": {
+  "title": "דגם קלאסיק | רפאוז סטייל",
+  "desc": "סט מצעי יוקרה מבית רפאוז סטייל — דגם קלאסיק. כותנה איכותית, משלוח לכל הארץ.",
+  "img": "/images/products/classic.jpg"
+ },
+ "aviv": {
+  "title": "דגם סימפוניה פרימיום | רפאוז סטייל",
+  "desc": "סט מצעי יוקרה מבית רפאוז סטייל — דגם סימפוניה פרימיום. כותנה איכותית, משלוח לכל הארץ.",
+  "img": "/images/products/aviv.jpg"
+ },
+ "simfonia-premium": {
+  "title": "דגם פוקסיה | רפאוז סטייל",
+  "desc": "סט מצעי יוקרה מבית רפאוז סטייל — דגם פוקסיה. כותנה איכותית, משלוח לכל הארץ.",
+  "img": "/images/products/simfonia-premium.jpg"
+ },
+ "elegantia": {
+  "title": "דגם מלודיה | רפאוז סטייל",
+  "desc": "סט מצעי יוקרה מבית רפאוז סטייל — דגם מלודיה. כותנה איכותית, משלוח לכל הארץ.",
+  "img": "/images/products/elegantia.jpg"
+ },
+ "towel-hand-premium": {
+  "title": "מגבת פילדלפיה | רפאוז סטייל",
+  "desc": "מגבת פילדלפיה מבית רפאוז סטייל — 100% כותנה, בשלוש מידות: ידיים, פנים וגוף. משלוח לכל הארץ.",
+  "img": "/images/products/towel-hand.jpg"
+ },
+ "towel-bath-classic": {
+  "title": "מגבת שוהם | רפאוז סטייל",
+  "desc": "מגבת שוהם מבית רפאוז סטייל — 100% כותנה, בשלוש מידות: ידיים, פנים וגוף. משלוח לכל הארץ.",
+  "img": "/images/products/towel-face.jpg"
+ },
+ "towel-body-boutique": {
+  "title": "מגבת מילאנו | רפאוז סטייל",
+  "desc": "מגבת מילאנו מבית רפאוז סטייל — 100% כותנה, בשלוש מידות: ידיים, פנים וגוף. משלוח לכל הארץ.",
+  "img": "/images/products/towel-body.jpg"
+ },
+ "towel-natali": {
+  "title": "מגבת נטלי | רפאוז סטייל",
+  "desc": "מגבת נטלי מבית רפאוז סטייל — 100% כותנה, בשלוש מידות: ידיים, פנים וגוף. משלוח לכל הארץ.",
+  "img": "/images/products/towel-natali.jpg"
+ },
+ "towel-avishag": {
+  "title": "מגבת אבישג | רפאוז סטייל",
+  "desc": "מגבת אבישג מבית רפאוז סטייל — 100% כותנה, בשלוש מידות: ידיים, פנים וגוף. משלוח לכל הארץ.",
+  "img": "/images/products/towel-avishag.jpg"
+ },
+ "towel-venezia": {
+  "title": "מגבת ונציה | רפאוז סטייל",
+  "desc": "מגבת ונציה מבית רפאוז סטייל — 100% כותנה, בשלוש מידות: ידיים, פנים וגוף. משלוח לכל הארץ.",
+  "img": "/images/products/towel-venezia.jpg"
+ },
+ "towel-oriya": {
+  "title": "מגבת אוריה | רפאוז סטייל",
+  "desc": "מגבת אוריה מבית רפאוז סטייל — 100% כותנה, בשלוש מידות: ידיים, פנים וגוף. משלוח לכל הארץ.",
+  "img": "/images/products/towel-oriya.jpg"
+ },
+ "towel-liya": {
+  "title": "מגבת ליה | רפאוז סטייל",
+  "desc": "מגבת ליה מבית רפאוז סטייל — 100% כותנה, בשלוש מידות: ידיים, פנים וגוף. משלוח לכל הארץ.",
+  "img": "/images/products/towel-liya.jpg"
+ },
+ "towel-iziva": {
+  "title": "מגבת איביזה | רפאוז סטייל",
+  "desc": "מגבת איביזה מבית רפאוז סטייל — 100% כותנה, בשלוש מידות: ידיים, פנים וגוף. משלוח לכל הארץ.",
+  "img": "/images/products/towel-iziva.jpg"
+ },
+ "towel-tenerife": {
+  "title": "מגבת טנריף | רפאוז סטייל",
+  "desc": "מגבת טנריף מבית רפאוז סטייל — 100% כותנה, בשלוש מידות: ידיים, פנים וגוף. משלוח לכל הארץ.",
+  "img": "/images/products/towel-tenerife.jpg"
+ },
+ "towel-liam": {
+  "title": "מגבת ליאם | רפאוז סטייל",
+  "desc": "מגבת ליאם מבית רפאוז סטייל — 100% כותנה, בשלוש מידות: ידיים, פנים וגוף. משלוח לכל הארץ.",
+  "img": "/images/products/towel-liam.jpg"
+ },
+ "perfume-white": {
+  "title": "מכשיר בישום דגם בייסיק | רפאוז סטייל",
+  "desc": "מכשיר בישום דגם בייסיק מבית רפאוז סטייל — ניחוח של מלון בוטיק בבית. משלוח לכל הארץ.",
+  "img": "/images/site/perfume-device-white.jpg"
+ },
+ "perfume-gold": {
+  "title": "מכשיר בישום גולד דגם A300 | רפאוז סטייל",
+  "desc": "מכשיר בישום גולד דגם A300 מבית רפאוז סטייל — ניחוח של מלון בוטיק בבית. משלוח לכל הארץ.",
+  "img": "/images/site/perfume-device-v2.jpg"
+ },
+ "perfume-graphite": {
+  "title": "מכשיר בישום גרפיט חכם דגם A400 | רפאוז סטייל",
+  "desc": "מכשיר בישום גרפיט חכם דגם A400 מבית רפאוז סטייל — ניחוח של מלון בוטיק בבית. משלוח לכל הארץ.",
+  "img": "/images/site/perfume-device-graphite.jpg"
+ },
+ "scent-testers-6": {
+  "title": "מארז 6 טסטרים | רפאוז סטייל",
+  "desc": "מארז 6 טסטרים של ניחוחות רפאוז סטייל — להתנסות בניחוחות לפני שבוחרים בקבוק מלא.",
+  "img": "/images/products/scent-testers.png"
+ },
+ "scent-holyland": {
+  "title": "ניחוח הולילנד | רפאוז סטייל",
+  "desc": "ניחוח הולילנד מבית רפאוז סטייל — בקבוק חצי ליטר למכשירי הבישום. משלוח לכל הארץ.",
+  "img": "/images/products/scent-bottle-v2.jpg"
+ },
+ "scent-miami": {
+  "title": "ניחוח מיאמי | רפאוז סטייל",
+  "desc": "ניחוח מיאמי מבית רפאוז סטייל — בקבוק חצי ליטר למכשירי הבישום. משלוח לכל הארץ.",
+  "img": "/images/products/scent-bottle-v2.jpg"
+ },
+ "scent-spring": {
+  "title": "ניחוח ספרינג | רפאוז סטייל",
+  "desc": "ניחוח ספרינג מבית רפאוז סטייל — בקבוק חצי ליטר למכשירי הבישום. משלוח לכל הארץ.",
+  "img": "/images/products/scent-bottle-v2.jpg"
+ },
+ "scent-newyork": {
+  "title": "ניחוח ניו יורק | רפאוז סטייל",
+  "desc": "ניחוח ניו יורק מבית רפאוז סטייל — בקבוק חצי ליטר למכשירי הבישום. משלוח לכל הארץ.",
+  "img": "/images/products/scent-bottle-v2.jpg"
+ },
+ "scent-paris": {
+  "title": "ניחוח פריז | רפאוז סטייל",
+  "desc": "ניחוח פריז מבית רפאוז סטייל — בקבוק חצי ליטר למכשירי הבישום. משלוח לכל הארץ.",
+  "img": "/images/products/scent-bottle-v2.jpg"
+ },
+ "scent-lacoste": {
+  "title": "ניחוח לקוסט | רפאוז סטייל",
+  "desc": "ניחוח לקוסט מבית רפאוז סטייל — בקבוק חצי ליטר למכשירי הבישום. משלוח לכל הארץ.",
+  "img": "/images/products/scent-bottle-v2.jpg"
+ },
+ "scent-tea-time": {
+  "title": "ניחוח תה טיים | רפאוז סטייל",
+  "desc": "ניחוח תה טיים מבית רפאוז סטייל — בקבוק חצי ליטר למכשירי הבישום. משלוח לכל הארץ.",
+  "img": "/images/products/scent-bottle-v2.jpg"
+ },
+ "scent-royal-beach": {
+  "title": "ניחוח רויאל ביץ | רפאוז סטייל",
+  "desc": "ניחוח רויאל ביץ מבית רפאוז סטייל — בקבוק חצי ליטר למכשירי הבישום. משלוח לכל הארץ.",
+  "img": "/images/products/scent-bottle-v2.jpg"
+ },
+ "scent-olympia": {
+  "title": "ניחוח אולימפיה | רפאוז סטייל",
+  "desc": "ניחוח אולימפיה מבית רפאוז סטייל — בקבוק חצי ליטר למכשירי הבישום. משלוח לכל הארץ.",
+  "img": "/images/products/scent-bottle-v2.jpg"
+ },
+ "scent-delta": {
+  "title": "ניחוח דלתא | רפאוז סטייל",
+  "desc": "ניחוח דלתא מבית רפאוז סטייל — בקבוק חצי ליטר למכשירי הבישום. משלוח לכל הארץ.",
+  "img": "/images/products/scent-bottle-v2.jpg"
+ },
+ "scent-boutique-hotel": {
+  "title": "ניחוח מלון בוטיק | רפאוז סטייל",
+  "desc": "ניחוח מלון בוטיק מבית רפאוז סטייל — בקבוק חצי ליטר למכשירי הבישום. משלוח לכל הארץ.",
+  "img": "/images/products/scent-bottle-v2.jpg"
+ },
+ "scent-nautica-home": {
+  "title": "ניחוח נאוטיקה הום | רפאוז סטייל",
+  "desc": "ניחוח נאוטיקה הום מבית רפאוז סטייל — בקבוק חצי ליטר למכשירי הבישום. משלוח לכל הארץ.",
+  "img": "/images/products/scent-bottle-v2.jpg"
+ },
+ "scent-jasmine": {
+  "title": "ניחוח יסמין | רפאוז סטייל",
+  "desc": "ניחוח יסמין מבית רפאוז סטייל — בקבוק חצי ליטר למכשירי הבישום. משלוח לכל הארץ.",
+  "img": "/images/products/scent-bottle-v2.jpg"
+ },
+ "scent-black-jasmine": {
+  "title": "ניחוח בלאק יסמין | רפאוז סטייל",
+  "desc": "ניחוח בלאק יסמין מבית רפאוז סטייל — בקבוק חצי ליטר למכשירי הבישום. משלוח לכל הארץ.",
+  "img": "/images/products/scent-bottle-v2.jpg"
+ },
+ "scent-luxury-spa": {
+  "title": "ניחוח ספא יוקרתי | רפאוז סטייל",
+  "desc": "ניחוח ספא יוקרתי מבית רפאוז סטייל — בקבוק חצי ליטר למכשירי הבישום. משלוח לכל הארץ.",
+  "img": "/images/products/scent-bottle-v2.jpg"
+ },
+ "scent-karamim": {
+  "title": "ניחוח כרמים | רפאוז סטייל",
+  "desc": "ניחוח כרמים מבית רפאוז סטייל — בקבוק חצי ליטר למכשירי הבישום. משלוח לכל הארץ.",
+  "img": "/images/products/scent-bottle-v2.jpg"
+ },
+ "scent-bereshit": {
+  "title": "ניחוח בראשית | רפאוז סטייל",
+  "desc": "ניחוח בראשית מבית רפאוז סטייל — בקבוק חצי ליטר למכשירי הבישום. משלוח לכל הארץ.",
+  "img": "/images/products/scent-bottle-v2.jpg"
+ },
+ "scent-patal": {
+  "title": "ניחוח פתאל | רפאוז סטייל",
+  "desc": "ניחוח פתאל מבית רפאוז סטייל — בקבוק חצי ליטר למכשירי הבישום. משלוח לכל הארץ.",
+  "img": "/images/products/scent-bottle-v2.jpg"
+ },
+ "scent-blue-chanel": {
+  "title": "ניחוח בלו שאנל | רפאוז סטייל",
+  "desc": "ניחוח בלו שאנל מבית רפאוז סטייל — בקבוק חצי ליטר למכשירי הבישום. משלוח לכל הארץ.",
+  "img": "/images/products/scent-bottle-v2.jpg"
+ },
+ "scent-london": {
+  "title": "ניחוח לונדון | רפאוז סטייל",
+  "desc": "ניחוח לונדון מבית רפאוז סטייל — בקבוק חצי ליטר למכשירי הבישום. משלוח לכל הארץ.",
+  "img": "/images/products/scent-bottle-v2.jpg"
+ },
+ "scent-pink-lotus": {
+  "title": "ניחוח פינק לוטוס | רפאוז סטייל",
+  "desc": "ניחוח פינק לוטוס מבית רפאוז סטייל — בקבוק חצי ליטר למכשירי הבישום. משלוח לכל הארץ.",
+  "img": "/images/products/scent-bottle-v2.jpg"
+ },
+ "scent-abercrombie": {
+  "title": "ניחוח אמרקומבי | רפאוז סטייל",
+  "desc": "ניחוח אמרקומבי מבית רפאוז סטייל — בקבוק חצי ליטר למכשירי הבישום. משלוח לכל הארץ.",
+  "img": "/images/products/scent-bottle-v2.jpg"
+ },
+ "scent-my-secret": {
+  "title": "ניחוח My secret | רפאוז סטייל",
+  "desc": "ניחוח My secret מבית רפאוז סטייל — בקבוק חצי ליטר למכשירי הבישום. משלוח לכל הארץ.",
+  "img": "/images/products/scent-bottle-v2.jpg"
+ }
+};
+
 export default async function middleware(request) {
   await delay(PAGE_LOAD_DELAY_MS);
 
@@ -129,7 +386,9 @@ export default async function middleware(request) {
   if (path.length > 1 && path.endsWith("/")) path = path.slice(0, -1);
   if (path === "") path = "/";
 
-  const meta = ROUTE_SEO[path];
+  let meta = ROUTE_SEO[path];
+  const productMatch = path.match(/^\/product\/([a-z0-9-]+)$/);
+  if (!meta && productMatch && PRODUCT_SEO[productMatch[1]]) meta = PRODUCT_SEO[productMatch[1]];
   if (!meta) return; // Not a static SEO route - pass through untouched (still delayed above).
 
   /* -----------------------------------------------------------------
@@ -198,6 +457,14 @@ export default async function middleware(request) {
     .replace(
       /(<meta name="twitter:description" content=")[^"]*(")/,
       `$1${desc}$2`
+    )
+    .replace(
+      /(<meta property="og:image" content=")[^"]*(")/,
+      (m0, a1, a2) => meta.img ? `${a1}${SITE_ORIGIN}${meta.img}${a2}` : m0
+    )
+    .replace(
+      /(<meta name="twitter:image" content=")[^"]*(")/,
+      (m0, a1, a2) => meta.img ? `${a1}${SITE_ORIGIN}${meta.img}${a2}` : m0
     );
 
   return new Response(html, {
