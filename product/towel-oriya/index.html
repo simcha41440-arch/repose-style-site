@@ -1474,7 +1474,7 @@ if("serviceWorker" in navigator){
     .light-glow{animation:none;opacity:.55;}
   }
   .hero-brand{
-    position:absolute;z-index:3;right:6vw;left:auto;top:58%;transform:translateY(-50%);
+    position:absolute;z-index:3;right:6vw;left:auto;top:58%;transform:translateY(calc(-50% - var(--hb-shift, 0px)));
     width:min(70vw, 900px);text-align:right;pointer-events:none;
   }
   .hero-brand-logo{
@@ -9503,5 +9503,25 @@ applyContentOverrides();
 </script>
 <script src="/chatbot.js" defer></script>
 <script src="/gift-popup.js" defer></script>
+<script>
+/* Hero text scrolls up together with the page (only the text - the photo
+   and everything else stay exactly as they are). --hb-shift = how far the
+   page has scrolled past the top of the hero. */
+(function(){
+  var brand = document.querySelector("#view-home .hero-brand");
+  var wrap = document.querySelector("#view-home .hero-pin-wrap");
+  if(!brand || !wrap) return;
+  var ticking = false;
+  function update(){
+    ticking = false;
+    var top = wrap.getBoundingClientRect().top;
+    var shift = Math.max(0, Math.min(-top, window.innerHeight * 1.5));
+    brand.style.setProperty("--hb-shift", shift + "px");
+  }
+  window.addEventListener("scroll", function(){ if(!ticking){ ticking = true; requestAnimationFrame(update); } }, {passive:true});
+  window.addEventListener("resize", update);
+  update();
+})();
+</script>
 </body>
 </html>
