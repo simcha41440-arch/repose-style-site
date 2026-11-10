@@ -2640,6 +2640,8 @@ if("serviceWorker" in navigator){
   .checkout-form, .contact-form{background:var(--ivory);border:1px solid var(--line);padding:36px;box-shadow:var(--shadow);}
   .form-row{display:flex;gap:16px;}
   @media (max-width:520px){.form-row{flex-direction:column;gap:0;}}
+  .form-row > .form-group{flex:1 1 0;min-width:0;}
+  @media (max-width:520px){.form-row.ck-addr-row{flex-direction:row;gap:10px;}}
   .form-group{flex:1;margin-bottom:20px;}
   .form-group label{display:block;font-size:12.5px;color:var(--taupe);margin-bottom:8px;letter-spacing:0.03em;}
   .form-group input, .form-group textarea{
@@ -4307,12 +4309,12 @@ if("serviceWorker" in navigator){
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label for="ck-lastname">שם משפחה *</label>
-            <input id="ck-lastname" type="text" required autocomplete="family-name" maxlength="60">
-          </div>
-          <div class="form-group">
             <label for="ck-firstname">שם פרטי *</label>
             <input id="ck-firstname" type="text" required autocomplete="given-name" maxlength="60">
+          </div>
+          <div class="form-group">
+            <label for="ck-lastname">שם משפחה *</label>
+            <input id="ck-lastname" type="text" required autocomplete="family-name" maxlength="60">
           </div>
         </div>
         <div class="form-row">
@@ -4323,27 +4325,37 @@ if("serviceWorker" in navigator){
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label for="ck-phone2">טלפון נוסף</label>
-            <input id="ck-phone2" type="tel" autocomplete="tel" maxlength="20">
+            <label for="ck-phone">טלפון נייד *</label>
+            <input id="ck-phone" type="tel" required inputmode="tel" autocomplete="tel" maxlength="20" placeholder="050-0000000" pattern="[\s\-\(\)]*(\+972|0)[\s\-\(\)]*([0-9][\s\-\(\)]*){8,9}" title="נא להזין מספר טלפון תקין, לדוגמה 050-1234567" dir="ltr" style="text-align:right;">
           </div>
           <div class="form-group">
-            <label for="ck-phone">טלפון ראשי *</label>
-            <input id="ck-phone" type="tel" required autocomplete="tel" maxlength="20">
+            <label for="ck-phone2">טלפון נוסף</label>
+            <input id="ck-phone2" type="tel" inputmode="tel" autocomplete="off" maxlength="20" dir="ltr" style="text-align:right;">
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label for="ck-address">רחוב + מספר בית *</label>
-            <input id="ck-address" type="text" required autocomplete="street-address" maxlength="150">
-          </div>
-          <div class="form-group">
-            <label for="ck-city">עיר *</label>
+            <label for="ck-city">עיר / יישוב *</label>
             <input id="ck-city" type="text" required autocomplete="address-level2" maxlength="80">
           </div>
+          <div class="form-group">
+            <label for="ck-address">רחוב *</label>
+            <input id="ck-address" type="text" required autocomplete="address-line1" maxlength="120">
+          </div>
         </div>
-        <div class="form-group">
-          <label for="ck-zip">מיקוד</label>
-          <input id="ck-zip" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="10">
+        <div class="form-row ck-addr-row">
+          <div class="form-group">
+            <label for="ck-house">מספר בית *</label>
+            <input id="ck-house" type="text" required inputmode="numeric" autocomplete="off" maxlength="10">
+          </div>
+          <div class="form-group">
+            <label for="ck-apt">דירה</label>
+            <input id="ck-apt" type="text" inputmode="numeric" autocomplete="address-line2" maxlength="10">
+          </div>
+          <div class="form-group">
+            <label for="ck-zip">מיקוד</label>
+            <input id="ck-zip" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="7" pattern="[0-9]{5}([0-9]{2})?" title="מיקוד בן 7 ספרות" dir="ltr" style="text-align:right;">
+          </div>
         </div>
         <div class="form-group">
           <label for="ck-notes">הערות</label>
@@ -7923,7 +7935,7 @@ async function saveOrder(paymentConfirmationCode){
   const email = document.getElementById("ck-email").value.trim();
   const phone = document.getElementById("ck-phone").value.trim();
   const phone2 = document.getElementById("ck-phone2").value.trim();
-  const address = document.getElementById("ck-address").value.trim();
+  const address = ckFullAddress();
   const city = document.getElementById("ck-city").value.trim();
   const zip = document.getElementById("ck-zip").value.trim();
   const notesText = document.getElementById("ck-notes").value.trim();
@@ -8176,7 +8188,7 @@ function rsClearDraft(formKey){
   let timer = null;
   function save(){
     const first = val("ck-firstname"), last = val("ck-lastname");
-    const addr = [val("ck-address"), val("ck-city"), val("ck-zip")].filter(Boolean).join(", ");
+    const addr = [ckFullAddress(), val("ck-city"), val("ck-zip")].filter(Boolean).join(", ");
     const lines = [];
     if(addr) lines.push("כתובת: " + addr);
     if(val("ck-phone2")) lines.push("טלפון נוסף: " + val("ck-phone2"));
@@ -8298,7 +8310,7 @@ async function openPaymentModal(){
     email: _val("ck-email"),
     phone: _val("ck-phone"),
     phone2: _val("ck-phone2") || null,
-    address: _val("ck-address"),
+    address: ckFullAddress(),
     city: _val("ck-city"),
     zip: _val("ck-zip") || null,
     shipping_method: shippingMethod,
@@ -8468,6 +8480,13 @@ function setPmFormError(message){
   else { el.textContent = ""; el.classList.remove("show"); }
 }
 
+/* Street, house number and apartment are separate checkout fields; they are
+   joined into the single "address" string the orders API and admin expect. */
+function ckFullAddress(){
+  const v = id => { const el = document.getElementById(id); return el ? el.value.trim() : ""; };
+  const apt = v("ck-apt");
+  return [v("ck-address"), v("ck-house")].filter(Boolean).join(" ") + (apt ? ", דירה " + apt : "");
+}
 document.getElementById("checkout-form").addEventListener("submit", (e)=>{
   e.preventDefault();
   if(!e.target.checkValidity()){
