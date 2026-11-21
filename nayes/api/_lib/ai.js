@@ -136,14 +136,14 @@ const IMAGE_SYSTEM = `אתה בודק תמונות (של מבזקים ושל מ�
 אם יש ספק כלשהו, פסול. עדיף לפסול תמונה כשרה מאשר לאשר תמונה בעייתית.
 reason: הסבר קצר בעברית.`;
 
-/** בודק תמונה לפי כתובת URL ציבורית. */
-export async function checkImage(url) {
+/** בודק תמונה (קובץ בקידוד base64). */
+export async function checkImage({ base64, mediaType }) {
   const result = await askJson({
     system: IMAGE_SYSTEM,
     maxTokens: 2000,
     schema: IMAGE_SCHEMA,
     content: [
-      { type: "image", source: { type: "url", url } },
+      { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
       { type: "text", text: "בדוק את התמונה לפי המדיניות." },
     ],
   });

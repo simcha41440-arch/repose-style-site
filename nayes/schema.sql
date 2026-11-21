@@ -77,3 +77,9 @@ create or replace function ad_click(ad_id uuid)
 returns text language sql security definer as $$
   update ads set clicks = clicks + 1 where id = ad_id returning link;
 $$;
+
+-- ---------- אחסון תמונות ----------
+-- תיקייה פרטית: התמונות מוגשות לגולשים רק דרך האתר עצמו (/media/...).
+insert into storage.buckets (id, name, public)
+values ('media', 'media', false)
+on conflict (id) do nothing;

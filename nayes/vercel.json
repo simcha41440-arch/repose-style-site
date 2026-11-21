@@ -1,21 +1,80 @@
 {
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/article/:slug", "destination": "/index.html" },
-    { "source": "/admin", "destination": "/admin.html" }
+    {
+      "source": "/article/:slug",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin.html"
+    },
+    {
+      "source": "/about",
+      "destination": "/about.html"
+    },
+    {
+      "source": "/media/:name",
+      "destination": "/api/media?name=:name"
+    }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "X-Frame-Options", "value": "SAMEORIGIN" }
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; img-src 'self' data: blob:; font-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        }
       ]
     },
     {
       "source": "/admin(.*)",
-      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    },
+    {
+      "source": "/fonts/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/manifest.webmanifest",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/manifest+json"
+        }
+      ]
     }
   ]
 }

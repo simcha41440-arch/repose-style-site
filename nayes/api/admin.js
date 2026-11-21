@@ -1,6 +1,7 @@
 import { db, makeSlug } from "./_lib/db.js";
 import { checkPassword, issueToken, verifyToken, tokenFromRequest } from "./_lib/auth.js";
-import { writeArticle, checkImage } from "./_lib/ai.js";
+import { writeArticle } from "./_lib/ai.js";
+import { fetchImage, decodeDataUrl, checkAndStore } from "./_lib/media.js";
 import { CATEGORIES } from "./_lib/config.js";
 
 // API של לוח הבקרה. כל הבקשות: POST עם { action, ... }.
@@ -11,7 +12,8 @@ import { CATEGORIES } from "./_lib/config.js";
 // publish   { id }                           → פרסום
 // reject    { id }                           → דחייה
 // compose   { text, sourceName, sourceUrl }  → AI כותב ידיעה מהודעה שהדבקת (נשמרת כממתינה)
-// setImage  { id, url }                      → בדיקת AI לתמונה, ושמירה רק אם עברה
+// setImage  { id, url | file }               → בדיקת AI לתמונה (קישור או קובץ), ושמירה אצלנו רק אם עברה
+// uploadImage { url | file }                 → בדיקה ושמירה בלבד (למודעות), מחזיר { url }
 // adsList   {}                               → כל המודעות + סטטיסטיקות
 // adSave    { ad }                           → יצירה/עדכון מודעה (התמונה נבדקת ב-AI)
 // adToggle  { id, active }                   → הפעלה/השהיה
@@ -145,21 +147,24 @@ export default async function handler(req, res) {
 
       case "setImage": {
         const url = String(body.url || "").trim();
-        if (!url) {
+        if (!url && !body.file) {
           const { error } = await db().from("articles").update({ image_url: null }).eq("id", body.id);
           if (error) throw error;
           return res.status(200).json({ ok: true, removed: true });
         }
-        if (!/^https:\/\//.test(url)) {
-          return res.status(400).json({ error: "נדרשת כתובת https" });
+        if (url.startsWith("/media/")) return res.status(200).json({ approved: true, url, reason: "התמונה כבר שמורה" });
+        const stored = await checkAndStore(body.file ? decodeDataUrl(body.file) : await fetchImage(url));
+        if (!stored.approved) {
+          return res.status(200).json({ approved: false, reason: stored.reason });
         }
-        const check = await checkImage(url);
-        if (!check.approved) {
-          return res.status(200).json({ approved: false, reason: check.reason });
-        }
-        const { error } = await db().from("articles").update({ image_url: url }).eq("id", body.id);
+        const { error } = await db().from("articles").update({ image_url: stored.url }).eq("id", body.id);
         if (error) throw error;
-        return res.status(200).json({ approved: true, reason: check.reason });
+        return res.status(200).json({ approved: true, url: stored.url, reason: stored.reason });
+      }
+
+      case "uploadImage": {
+        const stored = await checkAndStore(body.file ? decodeDataUrl(body.file) : await fetchImage(String(body.url || "").trim()));
+        return res.status(200).json(stored);
       }
 
       case "adsList": {
@@ -188,18 +193,14 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: "הקישור חייב להתחיל ב-https://, tel: או mailto:" });
         }
 
-        const image = clean(ad.image_url);
-        let existingImage = null;
-        if (ad.id) {
-          const { data: prev } = await db().from("ads").select("image_url").eq("id", ad.id).maybeSingle();
-          existingImage = prev?.image_url || null;
-        }
-        if (image && image !== existingImage) {
-          if (!/^https:\/\//.test(image)) return res.status(400).json({ error: "כתובת התמונה חייבת להתחיל ב-https://" });
-          const check = await checkImage(image);
-          if (!check.approved) {
-            return res.status(200).json({ imageRejected: true, reason: check.reason });
+        // תמונה של מודעה: רק קובץ שכבר נבדק ונשמר אצלנו (/media/...). קישור חיצוני נבדק ונשמר עכשיו.
+        let image = clean(ad.image_url);
+        if (image && !image.startsWith("/media/")) {
+          const stored = await checkAndStore(await fetchImage(image));
+          if (!stored.approved) {
+            return res.status(200).json({ imageRejected: true, reason: stored.reason });
           }
+          image = stored.url;
         }
         row.image_url = image;
 

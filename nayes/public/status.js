@@ -268,10 +268,10 @@
       <div class="quick">${QUICK.map((e) => `<button class="${myRx[a.slug] === e ? "mine" : ""}" data-e="${e}">${e}</button>`).join("")}</div>
       ${paragraphs.length || a.source_name ? `<div class="details">
         ${paragraphs.map((p) => `<p>${esc(p)}</p>`).join("")}
-        ${a.source_name ? `<div class="src">מקור: ${a.source_url ? `<a href="${esc(a.source_url)}" target="_blank" rel="noopener nofollow">${esc(a.source_name)}</a>` : esc(a.source_name)}</div>` : ""}
+        ${a.source_name ? `<div class="src">מקור: ${esc(a.source_name)}</div>` : ""}
       </div>` : ""}
       <div class="acts">
-        <a href="https://wa.me/?text=${encodeURIComponent(a.title + "\n" + location.origin + articleUrl(a))}" target="_blank" rel="noopener">שליחה לחבר</a>
+        <button id="send">שליחה לחבר</button>
         <button id="copy">העתקת קישור</button>
         <button id="p-close">סגירה</button>
       </div>`;
@@ -286,6 +286,13 @@
       try { await navigator.clipboard.writeText(location.origin + articleUrl(a)); e.target.textContent = "הועתק ✓"; } catch {}
     };
     $("p-close").onclick = closePanel;
+    $("send").onclick = async () => {
+      const url = location.origin + articleUrl(a);
+      try {
+        if (navigator.share) await navigator.share({ title: a.title, text: a.title, url });
+        else window.open(`https://wa.me/?text=${encodeURIComponent(a.title + "\n" + url)}`, "_blank", "noopener");
+      } catch {}
+    };
   }
 
   function reactWith(a, emoji) {

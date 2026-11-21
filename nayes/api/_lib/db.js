@@ -24,7 +24,7 @@ export function makeSlug() {
 
 // השדות שמותר לחשוף לגולשים.
 export const PUBLIC_FIELDS =
-  "slug,title,summary,impact,body,category,city,is_breaking,source_name,source_url,image_url,views,reactions,published_at";
+  "slug,title,summary,impact,body,category,city,is_breaking,source_name,image_url,views,reactions,published_at";
 
 // השדות של מודעה שמוצגים לגולשים (בלי סטטיסטיקות).
 export const AD_PUBLIC_FIELDS = "id,advertiser,title,text,cta,link,image_url,placement,color";

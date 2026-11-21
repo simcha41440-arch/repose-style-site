@@ -10,9 +10,12 @@
   <meta property="og:type" content="website">
   <meta name="theme-color" content="#ffffff">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="נייעס סטטוס">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="stylesheet" href="/fonts/fonts.css">
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -22,6 +25,7 @@
         <h1>נייעס <em>סטטוס</em></h1>
         <div class="sub"><span class="live">חי</span><span id="hdate"></span></div>
       </div>
+      <button class="install" id="install" hidden>📲 התקנה</button>
     </header>
 
     <h2 class="sec-h">סטטוס</h2>
@@ -41,7 +45,7 @@
       <a class="btn" id="adv-link" href="#advertise">דברו איתנו על פרסום</a>
     </section>
 
-    <footer>© <span id="year"></span> נייעס סטטוס · רק מה ששווה לדעת</footer>
+    <footer>© <span id="year"></span> נייעס סטטוס · רק מה ששווה לדעת · <a href="/about" style="text-decoration:underline">אודות ומדיניות תוכן</a></footer>
   </div>
 
   <div class="viewer" id="viewer" aria-modal="true" role="dialog" aria-label="צפייה בסטטוס">
@@ -62,5 +66,6 @@
 
   <script src="/common.js"></script>
   <script src="/status.js"></script>
+  <script src="/pwa.js"></script>
 </body>
 </html>

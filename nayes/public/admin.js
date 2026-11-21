@@ -6,6 +6,24 @@
 
   const $ = (id) => document.getElementById(id);
 
+  // מקטין תמונה מהמחשב ל-1280 פיקסלים לכל היותר וממיר ל-JPEG, כדי שתעלה מהר.
+  function readImageFile(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, 1280 / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * scale);
+        c.height = Math.round(img.height * scale);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(img.src);
+        resolve(c.toDataURL("image/jpeg", 0.85));
+      };
+      img.onerror = () => reject(new Error("לא הצלחתי לקרוא את הקובץ"));
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
   async function call(action, payload = {}) {
     const r = await fetch("/api/admin", {
       method: "POST",
@@ -88,9 +106,10 @@
         <div><label>&nbsp;</label><label style="display:flex;gap:8px;align-items:center;color:var(--ink);font-size:16px">
           <input type="checkbox" data-f="is_breaking" ${a.is_breaking ? "checked" : ""}> מבזק</label></div>
       </div>
-      <label>תמונה (לא חובה, תיבדק אוטומטית לפני שתישמר)</label>
-      <div class="img-row"><input type="text" class="img-url" placeholder="https://..." value="${esc(a.image_url)}" dir="ltr">
-        <button class="btn ghost img-btn" type="button">בדיקה ושמירה</button></div>
+      <label>תמונה (לא חובה, תיבדק אוטומטית ותישמר באתר עצמו)</label>
+      <div class="img-row"><input type="text" class="img-url" placeholder="קישור לתמונה, או העלאה מהמחשב ←" value="${esc(a.image_url)}" dir="ltr">
+        <button class="btn ghost img-btn" type="button">בדיקה ושמירה</button>
+        <label class="btn ghost" style="margin:0;cursor:pointer">📁 מהמחשב<input type="file" accept="image/*" class="img-file" hidden></label></div>
       ${a.image_url ? `<img class="thumb" src="${esc(a.image_url)}" alt="">` : ""}
       <p class="msg img-msg"></p>
       <div class="actions">
@@ -130,17 +149,23 @@
       }
     }));
 
-    el.querySelector(".img-btn").addEventListener("click", async (e) => {
-      const url = el.querySelector(".img-url").value.trim();
-      e.target.disabled = true;
-      msg(".img-msg", url ? "בודק את התמונה..." : "מסיר...", true);
+    async function saveImage(payload, btn) {
+      if (btn) btn.disabled = true;
+      msg(".img-msg", payload.url === "" && !payload.file ? "מסיר..." : "בודק את התמונה...", true);
       try {
-        const r = await call("setImage", { id: a.id, url });
+        const r = await call("setImage", { id: a.id, ...payload });
         if (r.removed) msg(".img-msg", "התמונה הוסרה", true);
-        else if (r.approved) msg(".img-msg", "התמונה אושרה ונשמרה ✓", true);
+        else if (r.approved) { msg(".img-msg", "התמונה אושרה ונשמרה ✓", true); el.querySelector(".img-url").value = r.url; }
         else { msg(".img-msg", "התמונה נפסלה: " + r.reason); el.querySelector(".img-url").value = ""; }
       } catch (err) { msg(".img-msg", err.message); }
-      e.target.disabled = false;
+      if (btn) btn.disabled = false;
+    }
+    el.querySelector(".img-btn").addEventListener("click", (e) => saveImage({ url: el.querySelector(".img-url").value.trim() }, e.target));
+    el.querySelector(".img-file").addEventListener("change", async (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      try { await saveImage({ file: await readImageFile(f) }); } catch (err) { msg(".img-msg", err.message); }
+      e.target.value = "";
     });
 
     return el;
@@ -243,7 +268,10 @@
           <div><label>טקסט הכפתור</label><input type="text" id="ad-cta" value="${v("cta")}" placeholder="לפרטים"></div>
           <div><label>קישור (https://, tel: או mailto:)</label><input type="text" id="ad-link" value="${v("link")}" dir="ltr" placeholder="tel:0500000000"></div>
         </div>
-        <label>תמונה (לא חובה, תיבדק אוטומטית)</label><input type="text" id="ad-image" value="${v("image_url")}" dir="ltr" placeholder="https://...">
+        <label>תמונה (לא חובה, תיבדק אוטומטית ותישמר באתר עצמו)</label>
+        <div class="img-row"><input type="text" id="ad-image" value="${v("image_url")}" dir="ltr" placeholder="קישור לתמונה, או העלאה מהמחשב ←">
+          <label class="btn ghost" style="margin:0;cursor:pointer">📁 מהמחשב<input type="file" accept="image/*" id="ad-file" hidden></label></div>
+        <p class="msg" style="font-size:13px;color:var(--muted)">⚠️ לפני שמירה, היכנסו בעצמכם לקישור של המפרסם ובדקו שהוא מוביל לאתר ראוי. קישור לאתר לא ראוי עלול לגרום לחסימת האתר כולו בסינונים.</p>
         <div class="row2" style="grid-template-columns:1fr 1fr">
           <div><label>מתאריך (לא חובה)</label><input type="date" id="ad-start" value="${d("starts_at")}"></div>
           <div><label>עד תאריך (לא חובה)</label><input type="date" id="ad-end" value="${d("ends_at")}"></div>
@@ -253,6 +281,18 @@
       </div>`;
     f.scrollIntoView({ behavior: "smooth" });
     $("ad-cancel").onclick = () => (f.innerHTML = "");
+    $("ad-file").onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const m = $("ad-msg");
+      m.className = "msg good"; m.textContent = "בודק את התמונה...";
+      try {
+        const r = await call("uploadImage", { file: await readImageFile(file) });
+        if (r.approved) { $("ad-image").value = r.url; m.textContent = "התמונה אושרה ✓"; }
+        else { m.className = "msg bad"; m.textContent = "התמונה נפסלה: " + r.reason; }
+      } catch (err) { m.className = "msg bad"; m.textContent = err.message; }
+      e.target.value = "";
+    };
     $("ad-save").onclick = async (e) => {
       const m = $("ad-msg");
       e.target.disabled = true;
