@@ -31,7 +31,7 @@
       btn.hidden = true;
       return;
     }
-    toast("<b>הוספה למסך הבית</b>לחצו על כפתור השיתוף <span aria-hidden='true'>⬆️</span> בתחתית המסך, ואז על \"הוספה למסך הבית\".");
+    toast(`<b>הוספה למסך הבית</b>לחצו על כפתור השיתוף ${icon("share", 18)} בתחתית המסך, ואז על "הוספה למסך הבית".`);
   });
 
   function toast(html) {
@@ -39,7 +39,7 @@
     if (old) old.remove();
     const t = document.createElement("div");
     t.className = "toast";
-    t.innerHTML = `<button aria-label="סגירה">✕</button>${html}`;
+    t.innerHTML = `<button aria-label="סגירה">${icon("close", 18)}</button>${html}`;
     t.querySelector("button").onclick = () => t.remove();
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 9000);

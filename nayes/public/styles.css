@@ -40,7 +40,7 @@ button { font: inherit; color: inherit; }
 
 /* עיגול עם טבעת מחולקת לקטעים, קטע לכל עדכון */
 .av { position: relative; flex: none; width: var(--s, 52px); height: var(--s, 52px); }
-.av svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.av > svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
 .av .face {
   position: absolute; inset: 4px; border-radius: 50%; display: grid; place-items: center;
   background: var(--soft); font-size: calc(var(--s, 52px) * .4); overflow: hidden;
@@ -210,3 +210,14 @@ footer { text-align: center; font-size: 12.5px; color: var(--muted); padding: 10
 }
 .toast b { display: block; margin-bottom: 4px; }
 .toast button { float: left; background: none; border: 0; color: inherit; font-size: 18px; cursor: pointer; }
+
+/* =============== אייקונים בקו דק =============== */
+.i { display: inline-block; vertical-align: middle; flex: none; }
+.face.ic { color: #fff; }
+.card .av .face.ic { border-color: var(--c, #243640); }
+.reply .em { display: grid; place-items: center; opacity: .85; }
+.hot-pill { display: inline-flex; align-items: center; gap: 4px; background: #fff; color: #c0392b; font-size: 14px; font-weight: 700; padding: 3px 11px 3px 9px; border-radius: 99px; }
+.panel .acts button { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.install { display: inline-flex; align-items: center; gap: 6px; }
+.advertise h2 { display: flex; align-items: center; gap: 8px; }
+.toast .i { vertical-align: -3px; }

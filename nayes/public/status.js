@@ -4,10 +4,7 @@
   const $ = (id) => document.getElementById(id);
 
   // צבע רקע אחיד לכל ערוץ, כמו בסטטוס טקסט
-  const COLORS = {
-    hot: "#c0392b", general: "#243640", politics: "#3f4f8f", community: "#2f7566", torah: "#7d5b2e",
-    economy: "#c0612b", local: "#6f4396", health: "#23807b", world: "#4a5d75", tech: "#5257b8", weather: "#2f7fb0",
-  };
+  const COLORS = CHANNEL_COLORS;
   const QUICK = ["😍", "😂", "😮", "😢", "🙏", "👏", "🎉", "💯"];
   const HEART = "❤️";
 
@@ -29,6 +26,11 @@
   }
 
   $("hdate").textContent = hebrewDate();
+  $("v-x").innerHTML = icon("close", 26);
+  $("arr-prev").innerHTML = icon("chevRight", 26);
+  $("arr-next").innerHTML = icon("chevLeft", 26);
+  $("install-ic").innerHTML = icon("install", 18, 2);
+  $("mega-ic").innerHTML = icon("megaphone", 22);
   $("year").textContent = new Date().getFullYear();
   if (ADVERTISE_LINK) $("adv-link").href = ADVERTISE_LINK;
 
@@ -75,10 +77,10 @@
     const recent = recentOnly(articles);
     const out = [{ key: "all", name: "נייעס סטטוס", face: "נ", logo: true, items: recent }];
     const hot = recent.filter((a) => a.is_breaking);
-    if (hot.length) out.push({ key: "hot", name: "דחוף", face: "🔴", items: hot });
+    if (hot.length) out.push({ key: "hot", name: "דחוף", icon: "hot", items: hot });
     for (const [key, c] of Object.entries(CATEGORIES)) {
       const items = recent.filter((a) => a.category === key);
-      if (items.length) out.push({ key, name: c.name, face: c.emoji, items });
+      if (items.length) out.push({ key, name: c.name, icon: key, items });
     }
     return out;
   }
@@ -105,7 +107,9 @@
   function avatar(ch, size) {
     const total = ch.items.length;
     return `<div class="av" style="--s:${size}px">${ring(total, total - unseen(ch.items), size)}
-      <span class="face ${ch.logo ? "logo" : ""}">${esc(ch.face)}</span></div>`;
+      ${ch.logo
+        ? `<span class="face logo">${esc(ch.face)}</span>`
+        : `<span class="face ic" style="background:${COLORS[ch.icon] || COLORS.general}">${icon(ch.icon, Math.round(size * 0.46), 1.7)}</span>`}</div>`;
   }
 
   function timeLabel(iso) {
@@ -246,20 +250,21 @@
     $("s-head").innerHTML = head(
       `<div class="av plain" style="--s:38px"><span class="face logo">נ</span></div>`,
       "נייעס סטטוס",
-      `${esc(timeLabel(a.published_at))} · ${esc(cat.emoji)} ${esc(cat.name)}`,
+      `${esc(timeLabel(a.published_at))} · ${esc(cat.name)}`,
     );
 
-    const title = `${a.is_breaking ? "🔴 " : ""}${esc(a.title)}`;
+    const title = esc(a.title);
+    const hotTag = a.is_breaking ? `<span class="hot-pill">${icon("hot", 15, 2)} דחוף</span>` : "";
     $("s-media").innerHTML = a.image_url
       ? `<div class="s-img"><img src="${esc(a.image_url)}" alt=""></div>
          <div class="s-caption"><b>${title}</b>${a.summary ? `<span>${esc(a.summary)}</span>` : ""}</div>`
-      : `<div class="s-text fade"><h2>${title}</h2>${a.summary ? `<p>${esc(a.summary)}</p>` : ""}
-         ${a.impact ? `<p class="tip">💡 ${esc(a.impact)}</p>` : ""}</div>`;
+      : `<div class="s-text fade">${hotTag}<h2>${title}</h2>${a.summary ? `<p>${esc(a.summary)}</p>` : ""}
+         ${a.impact ? `<p class="tip">מה זה אומר עליך? ${esc(a.impact)}</p>` : ""}</div>`;
 
     $("s-foot").innerHTML = `
       <button class="chev" id="chev" aria-label="עוד">${ICON_CHEV}</button>
       <div class="reply-row">
-        <button class="reply" id="reply"><span class="em">🙂</span>השב</button>
+        <button class="reply" id="reply"><span class="em">${icon("smile", 24, 1.6)}</span>השב</button>
         <button class="heart ${myRx[a.slug] === HEART ? "on" : ""}" id="heart" aria-label="אהבתי">${ICON_HEART}</button>
       </div>`;
 
@@ -271,9 +276,9 @@
         ${a.source_name ? `<div class="src">מקור: ${esc(a.source_name)}</div>` : ""}
       </div>` : ""}
       <div class="acts">
-        <button id="send">שליחה לחבר</button>
-        <button id="copy">העתקת קישור</button>
-        <button id="p-close">סגירה</button>
+        <button id="send">${icon("share", 20)}<span>שליחה לחבר</span></button>
+        <button id="copy">${icon("link", 20)}<span>העתקת קישור</span></button>
+        <button id="p-close">${icon("close", 20)}<span>סגירה</span></button>
       </div>`;
 
     wire();
@@ -283,7 +288,7 @@
     $("heart").onclick = (e) => { e.stopPropagation(); reactWith(a, HEART); };
     $("panel").querySelectorAll("[data-e]").forEach((b) => (b.onclick = () => reactWith(a, b.dataset.e)));
     $("copy").onclick = async (e) => {
-      try { await navigator.clipboard.writeText(location.origin + articleUrl(a)); e.target.textContent = "הועתק ✓"; } catch {}
+      try { await navigator.clipboard.writeText(location.origin + articleUrl(a)); e.currentTarget.querySelector("span").textContent = "הועתק"; } catch {}
     };
     $("p-close").onclick = closePanel;
     $("send").onclick = async () => {

@@ -207,7 +207,7 @@ const DEMO_ARTICLES = [
 const DEMO_ADS = [
   {
     id: "demo-top", placement: "top", advertiser: "עסק לדוגמה",
-    title: "כאן תופיע המודעה הראשית שלכם 📌",
+    title: "כאן תופיע המודעה הראשית שלכם",
     text: "המקום הכי נצפה באתר: נעוץ למעלה, מול כל קורא.", cta: "לפרטים", color: "#0a7d5a",
   },
   {
@@ -222,3 +222,38 @@ const DEMO_ADS = [
     text: "מודעה בצד המסך, מול כל מי שגולל.", cta: "לפרסום", color: "#d4570f",
   },
 ];
+
+// ---------- אייקונים בקו דק, בסגנון סטטוס ----------
+
+const CHANNEL_COLORS = {
+  hot: "#c0392b", general: "#243640", politics: "#3f4f8f", community: "#2f7566", torah: "#7d5b2e",
+  economy: "#c0612b", local: "#6f4396", health: "#23807b", world: "#4a5d75", tech: "#5257b8", weather: "#2f7fb0",
+};
+
+const ICON_PATHS = {
+  // ערוצים
+  general: '<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M7.5 8.5h9M7.5 12h9M7.5 15.5h5.5"/>',
+  hot: '<path d="M13 2.5 4.5 13.5h6.5l-1 8 8.5-11h-6.5z"/>',
+  politics: '<path d="M3 20.5h18M5.5 20.5v-9M9.8 20.5v-9M14.2 20.5v-9M18.5 20.5v-9M2.5 9.5 12 4l9.5 5.5z"/>',
+  community: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.4 2.7-6 6-6s6 2.6 6 6"/><circle cx="17" cy="9" r="2.6"/><path d="M16.5 14.1c2.6.4 4.5 2.7 4.5 5.9"/>',
+  torah: '<path d="M12 6.5C9.8 5 6.8 4.5 3 4.5v13.5c3.8 0 6.8.5 9 2 2.2-1.5 5.2-2 9-2V4.5c-3.8 0-6.8.5-9 2z"/><path d="M12 6.5V20"/>',
+  economy: '<rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M16 13.5h2.5"/><path d="M5.5 7 15 3.8l1.6 3.2"/>',
+  local: '<path d="M12 21s-7-6.1-7-11.8a7 7 0 0 1 14 0C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.2" r="2.6"/>',
+  health: '<path d="M20.6 8.8c0 4.9-8.6 11.2-8.6 11.2S3.4 13.7 3.4 8.8A4.5 4.5 0 0 1 12 6.6a4.5 4.5 0 0 1 8.6 2.2z"/><path d="M6.5 12.2h2.8l1.4-2.7 2.6 5.3 1.4-2.6h2.8"/>',
+  world: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.4 2.6 3.7 5.6 3.7 9s-1.3 6.4-3.7 9c-2.4-2.6-3.7-5.6-3.7-9S9.6 5.6 12 3z"/>',
+  tech: '<path d="M9.2 18h5.6M10.2 21h3.6M12 3a6 6 0 0 0-3.6 10.8c.7.5 1 1.3 1 2.2h5.2c0-.9.3-1.7 1-2.2A6 6 0 0 0 12 3z"/>',
+  weather: '<circle cx="8" cy="8.5" r="3"/><path d="M8 2.5V4M3.5 4.2l1 1M2 8.5h1.5"/><path d="M8.5 20h8.5a3.8 3.8 0 0 0 0-7.6 5 5 0 0 0-9.4 1.6 3 3 0 0 0 .9 6z"/>',
+  // ממשק
+  smile: '<circle cx="12" cy="12" r="9"/><path d="M8.2 14.2a4.6 4.6 0 0 0 7.6 0"/><circle cx="9" cy="10" r=".9" fill="currentColor"/><circle cx="15" cy="10" r=".9" fill="currentColor"/>',
+  share: '<path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M5 12.5v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/>',
+  link: '<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/>',
+  close: '<path d="M6 6l12 12M18 6 6 18"/>',
+  install: '<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5"/><path d="M5 19.5h14"/>',
+  chevLeft: '<path d="M15 5l-7 7 7 7"/>',
+  chevRight: '<path d="M9 5l7 7-7 7"/>',
+  megaphone: '<path d="M4 10v4a1 1 0 0 0 1 1h2l8 4.5v-15L7 9H5a1 1 0 0 0-1 1z"/><path d="M18.5 9.5a3.5 3.5 0 0 1 0 5"/><path d="M8 15l1.2 4.5"/>',
+};
+
+function icon(name, size = 24, stroke = 1.8) {
+  return `<svg class="i" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON_PATHS[name] || ""}</svg>`;
+}
