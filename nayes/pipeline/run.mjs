@@ -166,8 +166,8 @@ async function main() {
 
   if (newTitles.length) {
     const head = AUTO_PUBLISH
-      ? `נייעס: ${newTitles.length} מבזקים חדשים`
-      : `נייעס: ${newTitles.length} מבזקים ממתינים לאישורך`;
+      ? `נייעס סטטוס: ${newTitles.length} מבזקים חדשים`
+      : `נייעס סטטוס: ${newTitles.length} מבזקים ממתינים לאישורך`;
     const link = SITE_URL ? `\n\n${SITE_URL}/admin` : "";
     await notifyTelegram(`${head}\n\n${newTitles.join("\n")}${link}`);
   }

@@ -1,6 +1,6 @@
 // הגדרות משותפות לאתר, ל-API ולצינור האוטומטי.
 
-export const SITE_NAME = "נייעס";
+export const SITE_NAME = "נייעס סטטוס";
 
 // הקטגוריות ("ערוצים"). המפתח נשמר במסד הנתונים.
 export const CATEGORIES = {
@@ -22,6 +22,6 @@ export const CITIES = [
   "ערד", "פתח תקווה", "חיפה",
 ];
 
-export const REACTIONS = ["👍", "😮", "🙏", "😂"];
+export const REACTIONS = ["❤️", "😍", "😂", "😮", "😢", "🙏", "👏", "🎉", "💯"];
 
 export const MODEL = "claude-opus-5-5";
