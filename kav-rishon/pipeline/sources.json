@@ -1,0 +1,16 @@
+[
+  {
+    "name": "דוגמה: הודעות דוברות של משרד ממשלתי",
+    "url": "https://example.com/rss.xml",
+    "category": "",
+    "city": "",
+    "enabled": false
+  },
+  {
+    "name": "דוגמה: עדכוני עירייה",
+    "url": "https://example.org/feed",
+    "category": "local",
+    "city": "בני ברק",
+    "enabled": false
+  }
+]
