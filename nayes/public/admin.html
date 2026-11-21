@@ -4,21 +4,30 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <title>חדר החדשות | קו ראשון</title>
+  <title>חדר החדשות | נייעס</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css">
   <style>
-    body { background: var(--bg); }
+    body { background: var(--soft); --shadow: 0 1px 3px rgba(0,0,0,.08); --card: var(--bg); --accent: #d81b47; --navy: #1d2733; }
+    .btn { padding: 8px 18px; font-size: 15px; box-shadow: none; }
+    .btn.ghost { background: var(--bg); color: var(--ink); border: 1px solid var(--line); }
+    .btn.green { background: #13803d; } .btn.gray { background: var(--muted); }
+    .item textarea.short { min-height: 80px; }
+    .score { font-weight: 800; color: #b7791f; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+    .stats div { background: var(--bg); border-radius: 12px; padding: 12px; text-align: center; box-shadow: var(--shadow); }
+    .stats b { display: block; font-size: 24px; } .stats span { font-size: 13px; color: var(--muted); }
+    .empty { background: var(--bg); border-radius: 12px; }
     .bar { background: var(--navy); color: #fff; }
     .bar .wrap { display: flex; align-items: center; justify-content: space-between; min-height: 56px; gap: 12px; }
     .bar .logo-text { font-size: 26px; color: #fff; }
     .tabs { display: flex; gap: 6px; padding: 16px 16px 0; max-width: 900px; margin: 0 auto; overflow-x: auto; }
-    .tab { font: inherit; font-weight: 800; border: 1px solid var(--line); background: var(--card); color: var(--ink); padding: 8px 16px; border-radius: 99px; cursor: pointer; white-space: nowrap; }
+    .tab { font: inherit; font-weight: 800; border: 1px solid var(--line); background: var(--bg); color: var(--ink); padding: 8px 16px; border-radius: 99px; cursor: pointer; white-space: nowrap; }
     .tab.on { background: var(--ink); color: var(--card); border-color: var(--ink); }
     .tab .n { background: var(--accent); color: #fff; border-radius: 99px; padding: 0 7px; font-size: 13px; margin-inline-start: 4px; }
     .panel { max-width: 900px; margin: 0 auto; padding: 16px; }
-    .item { background: var(--card); border-radius: 8px; box-shadow: var(--shadow); padding: 16px; margin-bottom: 16px; border-top: 3px solid var(--ink); }
+    .item { background: var(--bg); border-radius: 8px; box-shadow: var(--shadow); padding: 16px; margin-bottom: 16px; border-top: 3px solid var(--ink); }
     .item.breaking { border-top-color: var(--accent); }
     .item label { display: block; font-size: 13px; font-weight: 800; color: var(--muted); margin: 10px 0 4px; }
     .item input[type=text], .item textarea, .item select, .compose textarea, .compose input, .login input {
@@ -40,10 +49,10 @@
     .thumb { max-width: 220px; border-radius: 6px; margin-top: 8px; display: block; }
     .msg { font-size: 14px; margin-top: 6px; }
     .msg.bad { color: var(--accent); } .msg.good { color: #13803d; }
-    .login { max-width: 360px; margin: 80px auto; background: var(--card); padding: 28px; border-radius: 10px; box-shadow: var(--shadow); text-align: center; }
+    .login { max-width: 360px; margin: 80px auto; background: var(--bg); padding: 28px; border-radius: 10px; box-shadow: var(--shadow); text-align: center; }
     .login h1 { font-family: var(--serif); margin: 0 0 16px; }
     .login .btn { width: 100%; margin-top: 12px; }
-    .compose { background: var(--card); border-radius: 8px; padding: 16px; box-shadow: var(--shadow); }
+    .compose { background: var(--bg); border-radius: 8px; padding: 16px; box-shadow: var(--shadow); }
     .compose textarea { min-height: 220px; }
     .compose .row2 { grid-template-columns: 1fr 1fr; margin-top: 10px; }
     .hidden { display: none !important; }
@@ -51,8 +60,8 @@
 </head>
 <body>
   <div class="bar"><div class="wrap">
-    <a href="/" class="logo logo-sm"><span class="logo-mark" aria-hidden="true"><i></i></span><span class="logo-text">חדר החדשות</span></a>
-    <button class="btn ghost hidden" id="logout" style="color:#fff;border-color:rgba(255,255,255,.3)">יציאה</button>
+    <a href="/" style="display:flex;align-items:center;gap:10px"><span class="ring logo-ring" style="--size:36px"><span>נ</span></span><b style="font-size:20px">נייעס · חדר החדשות</b></a>
+    <button class="btn ghost hidden" id="logout" style="color:#fff;background:transparent;border-color:rgba(255,255,255,.3)">יציאה</button>
   </div></div>
 
   <form class="login hidden" id="login">
@@ -64,9 +73,10 @@
 
   <div id="app" class="hidden">
     <div class="tabs">
-      <button class="tab on" data-tab="pending">ממתינות לאישור <span class="n" id="count">0</span></button>
+      <button class="tab on" data-tab="pending">ממתינים <span class="n" id="count">0</span></button>
       <button class="tab" data-tab="published">פורסמו</button>
-      <button class="tab" data-tab="compose">ידיעה מהודעה</button>
+      <button class="tab" data-tab="compose">✍️ מבזק מהודעה</button>
+      <button class="tab" data-tab="ads">📣 פרסומות</button>
     </div>
     <div class="panel" id="panel"></div>
   </div>

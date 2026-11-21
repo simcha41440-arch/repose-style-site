@@ -12,9 +12,13 @@ import { CATEGORIES } from "./_lib/config.js";
 // reject    { id }                           → דחייה
 // compose   { text, sourceName, sourceUrl }  → AI כותב ידיעה מהודעה שהדבקת (נשמרת כממתינה)
 // setImage  { id, url }                      → בדיקת AI לתמונה, ושמירה רק אם עברה
+// adsList   {}                               → כל המודעות + סטטיסטיקות
+// adSave    { ad }                           → יצירה/עדכון מודעה (התמונה נבדקת ב-AI)
+// adToggle  { id, active }                   → הפעלה/השהיה
+// adDelete  { id }                           → מחיקה
 
 const EDITABLE = new Set([
-  "title", "subtitle", "summary", "impact", "body", "category", "city", "is_breaking",
+  "title", "summary", "impact", "body", "category", "city", "is_breaking",
 ]);
 
 // הגבלה פשוטה על ניסיונות כניסה (לכל מופע של הפונקציה).
@@ -80,8 +84,8 @@ export default async function handler(req, res) {
           if (k === "category" && !CATEGORIES[v]) continue;
           fields[k] = k === "is_breaking" ? Boolean(v) : String(v ?? "").trim() || null;
         }
-        if (fields.title === null || fields.body === null) {
-          return res.status(400).json({ error: "כותרת וגוף הידיעה הם שדות חובה" });
+        if (fields.title === null || fields.summary === null) {
+          return res.status(400).json({ error: "כותרת וטקסט המבזק הם שדות חובה" });
         }
         const { error } = await db().from("articles").update(fields).eq("id", body.id);
         if (error) throw error;
@@ -121,10 +125,10 @@ export default async function handler(req, res) {
           .insert({
             slug: makeSlug(),
             title: art.title,
-            subtitle: art.subtitle || null,
             summary: art.summary || null,
             impact: art.impact || null,
-            body: art.body,
+            body: art.body || null,
+            score: art.score,
             category: art.category,
             city: art.city || null,
             is_breaking: art.is_breaking,
@@ -158,6 +162,67 @@ export default async function handler(req, res) {
         return res.status(200).json({ approved: true, reason: check.reason });
       }
 
+      case "adsList": {
+        const { data, error } = await db().from("ads").select("*").order("created_at", { ascending: false });
+        if (error) throw error;
+        return res.status(200).json({ ads: data });
+      }
+
+      case "adSave": {
+        const ad = body.ad || {};
+        const row = {
+          advertiser: clean(ad.advertiser),
+          title: clean(ad.title),
+          text: clean(ad.text),
+          cta: clean(ad.cta),
+          link: clean(ad.link),
+          placement: ["top", "feed", "side"].includes(ad.placement) ? ad.placement : "feed",
+          color: /^#[0-9a-f]{6}$/i.test(ad.color || "") ? ad.color : null,
+          starts_at: ad.starts_at || null,
+          ends_at: ad.ends_at || null,
+        };
+        if (!row.advertiser || !row.title) {
+          return res.status(400).json({ error: "שם המפרסם וכותרת הם שדות חובה" });
+        }
+        if (row.link && !/^(https:\/\/|tel:|mailto:)/i.test(row.link)) {
+          return res.status(400).json({ error: "הקישור חייב להתחיל ב-https://, tel: או mailto:" });
+        }
+
+        const image = clean(ad.image_url);
+        let existingImage = null;
+        if (ad.id) {
+          const { data: prev } = await db().from("ads").select("image_url").eq("id", ad.id).maybeSingle();
+          existingImage = prev?.image_url || null;
+        }
+        if (image && image !== existingImage) {
+          if (!/^https:\/\//.test(image)) return res.status(400).json({ error: "כתובת התמונה חייבת להתחיל ב-https://" });
+          const check = await checkImage(image);
+          if (!check.approved) {
+            return res.status(200).json({ imageRejected: true, reason: check.reason });
+          }
+        }
+        row.image_url = image;
+
+        const q = ad.id
+          ? db().from("ads").update(row).eq("id", ad.id).select("*").single()
+          : db().from("ads").insert(row).select("*").single();
+        const { data, error } = await q;
+        if (error) throw error;
+        return res.status(200).json({ ad: data });
+      }
+
+      case "adToggle": {
+        const { error } = await db().from("ads").update({ active: Boolean(body.active) }).eq("id", body.id);
+        if (error) throw error;
+        return res.status(200).json({ ok: true });
+      }
+
+      case "adDelete": {
+        const { error } = await db().from("ads").delete().eq("id", body.id);
+        if (error) throw error;
+        return res.status(200).json({ ok: true });
+      }
+
       default:
         return res.status(400).json({ error: "פעולה לא מוכרת" });
     }
@@ -165,6 +230,11 @@ export default async function handler(req, res) {
     console.error(err);
     res.status(500).json({ error: "שגיאת שרת: " + (err.message || "") });
   }
+}
+
+function clean(v) {
+  const s = String(v ?? "").trim();
+  return s ? s.slice(0, 500) : null;
 }
 
 function safeParse(s) {

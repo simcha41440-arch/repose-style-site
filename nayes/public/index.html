@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>נייעס | רק מה ששווה לדעת</title>
+  <meta name="description" content="נייעס: המבזקים הכי חשובים, בסטטוסים קצרים וקלילים. רק מה ששווה לדעת.">
+  <meta property="og:title" content="נייעס">
+  <meta property="og:description" content="רק מה ששווה לדעת.">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#ff5a36">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="ring logo-ring" style="--size:44px"><span>נ</span></div>
+      <div>
+        <div class="brand">ני<em>יעס</em></div>
+        <div class="sub"><span class="live">חי</span><span id="hdate"></span></div>
+      </div>
+    </header>
+
+    <div class="strip" id="strip"><div class="skeleton" style="width:100%;height:84px"></div></div>
+    <div class="pinned" id="pinned"></div>
+
+    <div class="play-all"><button class="btn" id="play">▶ לצפייה בכל המבזקים</button></div>
+
+    <div id="list"></div>
+
+    <section class="advertise" id="advertise">
+      <h2>העסק שלך בסטטוס של כולם</h2>
+      <p>אלפי קוראים עוברים כאן על המבזקים כל יום. תנו להם לראות גם אתכם:</p>
+      <ul>
+        <li>📌 <b>מודעה נעוצה</b>: בראש המסך, הדבר הראשון שכולם רואים</li>
+        <li>✨ <b>סטטוס ממומן</b>: מסך מלא בין המבזקים, עם כפתור לפעולה</li>
+        <li>🖥️ <b>מודעת צד</b>: ליד המבזקים, למי שגולש מהמחשב</li>
+      </ul>
+      <a class="btn" id="adv-link" href="#advertise">דברו איתנו על פרסום</a>
+    </section>
+
+    <footer>© <span id="year"></span> נייעס · רק מה ששווה לדעת</footer>
+  </div>
+
+  <div class="viewer" id="viewer" aria-modal="true" role="dialog" aria-label="צפייה במבזקים">
+    <div class="stage" id="stage">
+      <div class="bars" id="bars"></div>
+      <div class="s-head" id="s-head"></div>
+      <div id="s-extra"></div>
+      <div class="s-body" id="s-body"></div>
+      <div class="tap prev" id="tap-prev" aria-hidden="true"></div>
+      <div class="tap next" id="tap-next" aria-hidden="true"></div>
+      <div class="paused-ind" aria-hidden="true">⏸</div>
+      <div class="s-foot" id="s-foot"></div>
+      <div class="sheet" id="sheet"></div>
+    </div>
+    <aside class="v-side" id="v-side"></aside>
+  </div>
+
+  <script src="/common.js"></script>
+  <script src="/status.js"></script>
+</body>
+</html>

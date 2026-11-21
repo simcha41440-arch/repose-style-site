@@ -1,9 +1,9 @@
 {
-  "name": "kav-rishon",
+  "name": "nayes",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "קו ראשון - אתר חדשות עם צינור עריכה אוטומטי מבוסס AI ואישור עורך",
+  "description": "נייעס - ערוץ מבזקים בסגנון צאט, עם עורך AI, אישור עורך ומערכת פרסומות",
   "scripts": {
     "pipeline": "node pipeline/run.mjs"
   },

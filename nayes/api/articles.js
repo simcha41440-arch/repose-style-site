@@ -1,5 +1,5 @@
 import { db, PUBLIC_FIELDS } from "./_lib/db.js";
-import { CATEGORIES } from "./_lib/config.js";
+import { CATEGORIES, REACTIONS } from "./_lib/config.js";
 
 // API ציבורי לקריאת ידיעות שפורסמו.
 // GET /api/articles                    → הידיעות האחרונות
@@ -7,8 +7,28 @@ import { CATEGORIES } from "./_lib/config.js";
 // GET /api/articles?city=בני%20ברק      → לפי עיר
 // GET /api/articles?slug=...           → ידיעה אחת (ומעלה את מונה הצפיות)
 // GET /api/articles?popular=1          → הכי נקראים ב-48 השעות האחרונות
+// GET /api/articles?after=<iso>        → רק מבזקים שפורסמו אחרי זמן מסוים (לרענון החי)
+// POST /api/articles { slug, emoji }   → תגובת אימוג'י
 
 export default async function handler(req, res) {
+  if (req.method === "POST") {
+    const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
+    if (!REACTIONS.includes(body.emoji) || !body.slug) {
+      res.status(400).json({ error: "bad request" });
+      return;
+    }
+    try {
+      const { data, error } = await db().rpc("add_reaction", {
+        article_slug: String(body.slug), emoji: body.emoji,
+      });
+      if (error) throw error;
+      res.status(200).json({ reactions: data });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "server error" });
+    }
+    return;
+  }
   if (req.method !== "GET") {
     res.status(405).json({ error: "method not allowed" });
     return;
@@ -40,6 +60,8 @@ export default async function handler(req, res) {
 
     if (category && CATEGORIES[category]) q = q.eq("category", category);
     if (city) q = q.eq("city", String(city));
+    if (req.query.after) q = q.gt("published_at", String(req.query.after));
+    if (req.query.before) q = q.lt("published_at", String(req.query.before));
 
     if (popular) {
       const since = new Date(Date.now() - 48 * 3600 * 1000).toISOString();

@@ -1,4 +1,4 @@
-// הצינור האוטומטי של קו ראשון.
+// הצינור האוטומטי של נייעס.
 // רץ כל כמה דקות (GitHub Actions), ובכל ריצה:
 //   1. קורא את המקורות שב-sources.json (פידים של RSS)
 //   2. מדלג על ידיעות שכבר טופלו
@@ -17,6 +17,8 @@ import { writeArticle } from "../api/_lib/ai.js";
 const MAX_PER_RUN = Number(process.env.MAX_PER_RUN || 15);
 const MAX_AGE_HOURS = Number(process.env.MAX_AGE_HOURS || 12);
 const AUTO_PUBLISH = process.env.AUTO_PUBLISH === "true";
+// רף איכות: מבזק עם ציון חשיבות נמוך מזה לא נכנס בכלל (ברירת מחדל 6 מתוך 10).
+const MIN_SCORE = Number(process.env.MIN_SCORE || 6);
 const SITE_URL = (process.env.SITE_URL || "").replace(/\/$/, "");
 
 const parser = new Parser({ timeout: 15000 });
@@ -121,12 +123,15 @@ async function main() {
       source_hash: item.hash,
     };
 
+    if (art.relevant && art.score < MIN_SCORE) {
+      art = { relevant: false, reject_reason: `ציון חשיבות נמוך (${art.score}/10): ${art.title}` };
+    }
+
     if (!art.relevant) {
       // שומרים גם ידיעות שנפסלו, כדי לא לשלם על עיבוד שלהן שוב.
       await db().from("articles").insert({
         ...base,
         title: "(נפסל)",
-        body: "-",
         status: "rejected",
         ai_notes: art.reject_reason || null,
       });
@@ -138,10 +143,10 @@ async function main() {
     const { error } = await db().from("articles").insert({
       ...base,
       title: art.title,
-      subtitle: art.subtitle || null,
       summary: art.summary || null,
       impact: art.impact || null,
-      body: art.body,
+      body: art.body || null,
+      score: art.score,
       category: item.source.category || art.category,
       city: art.city || item.source.city || null,
       is_breaking: art.is_breaking,
@@ -154,15 +159,15 @@ async function main() {
       continue;
     }
     accepted++;
-    newTitles.push(`${art.is_breaking ? "🔴 " : "• "}${art.title}`);
+    newTitles.push(`${art.is_breaking ? "🔴 " : "• "}${art.title} (${art.score}/10)`);
   }
 
   console.log(`✓ ${accepted} ידיעות נכתבו, ${rejected} נפסלו.`);
 
   if (newTitles.length) {
     const head = AUTO_PUBLISH
-      ? `קו ראשון: ${newTitles.length} ידיעות חדשות`
-      : `קו ראשון: ${newTitles.length} ידיעות ממתינות לאישורך`;
+      ? `נייעס: ${newTitles.length} מבזקים חדשים`
+      : `נייעס: ${newTitles.length} מבזקים ממתינים לאישורך`;
     const link = SITE_URL ? `\n\n${SITE_URL}/admin` : "";
     await notifyTelegram(`${head}\n\n${newTitles.join("\n")}${link}`);
   }
