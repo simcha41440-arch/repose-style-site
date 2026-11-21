@@ -25,12 +25,17 @@
     try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
   }
 
-  $("hdate").textContent = hebrewDate();
   $("v-x").innerHTML = icon("close", 26);
   $("arr-prev").innerHTML = icon("chevRight", 26);
   $("arr-next").innerHTML = icon("chevLeft", 26);
-  $("install-ic").innerHTML = icon("install", 18, 2);
-  $("mega-ic").innerHTML = icon("megaphone", 22);
+  $("search-btn").innerHTML = icon("search", 24);
+  $("search-back").innerHTML = icon("back", 24);
+  $("adv-face").innerHTML = icon("megaphone", 24, 1.7);
+  $("fab").innerHTML = icon("play", 26);
+  $("nav-updates").innerHTML = icon("updates", 24, 1.8);
+  $("nav-search-ic").innerHTML = icon("search", 24);
+  $("nav-settings").innerHTML = icon("gear", 24);
+  $("fab").onclick = () => openChannel("all");
   $("menu-btn").innerHTML = icon("dots", 24);
   $("menu-btn").onclick = (e) => { e.stopPropagation(); $("menu").classList.toggle("open"); };
   document.addEventListener("click", () => $("menu").classList.remove("open"));
@@ -48,7 +53,6 @@
   };
   let knownSlugs = null;
   $("year").textContent = new Date().getFullYear();
-  if (ADVERTISE_LINK) $("adv-link").href = ADVERTISE_LINK;
 
   init();
 
@@ -74,6 +78,7 @@
       }
       if (articles.find((x) => x.slug === slug)) openChannel("all", slug);
     }
+    if (new URLSearchParams(location.search).get("search")) openSearch();
     setInterval(refresh, 60000);
   }
 
@@ -146,9 +151,9 @@
     return s + "</svg>";
   }
 
-  function avatar(ch, size) {
+  function avatar(ch, size, plain) {
     const total = ch.items.length;
-    return `<div class="av" style="--s:${size}px">${ring(total, total - unseen(ch.items), size)}
+    return `<div class="av ${plain ? "plain" : ""}" style="--s:${size}px">${plain ? "" : ring(total, total - unseen(ch.items), size)}
       ${ch.logo
         ? `<span class="face logo">${esc(ch.face)}</span>`
         : `<span class="face ic" style="background:${COLORS[ch.icon] || COLORS.general}">${icon(ch.icon, Math.round(size * 0.46), 1.7)}</span>`}</div>`;
@@ -187,15 +192,20 @@
         <span class="spon">ממומן</span><span class="nm">${esc(ad.advertiser)}</span></button>`;
 
     const cards = ordered.map(cardHtml);
+    // כרטיס ראשון "הוספה", כמו "הסטטוס שלי": מוביל לפרסום באתר
+    cards.unshift(`<a class="card add" href="${ADVERTISE_LINK}" aria-label="פרסמו את העסק שלכם">
+        <span class="prev-txt">העסק שלך כאן</span>
+        <div class="av plain" style="--s:40px"><span class="face logo">נ</span><i class="plus">${icon("plus", 14, 3)}</i></div>
+        <span class="nm">הוספת מודעה</span></a>`);
     // כרטיס ממומן במקום השני בשורה, הכי בולט
     tops.forEach((ad, i) => cards.splice(Math.min(1 + i * 3, cards.length), 0, adCard(ad, ads.indexOf(ad))));
-    $("cards").innerHTML = articles.length || tops.length ? cards.join("") : `<div class="empty">עוד אין עדכונים.</div>`;
+    $("cards").innerHTML = cards.join("");
 
     const chanRow = (ch) => {
       const latest = ch.items[0];
       const n = ch.muted ? 0 : unseen(ch.items);
       return `<button class="chan" data-ch="${ch.key}">
-        ${avatar(ch, 52)}
+        ${avatar(ch, 52, true)}
         <span class="mid"><b>${esc(ch.name)}</b><span class="last">${esc(latest ? latest.title : "")}</span></span>
         <span class="end"><span class="t ${n ? "new" : ""}">${esc(latest ? clock(latest.published_at) : "")}</span>${n ? `<span class="badge">${n}</span>` : ""}${ch.muted ? `<span style="color:var(--muted)">${icon("bellOff", 18)}</span>` : ""}</span>
       </button>`;
@@ -215,6 +225,41 @@
 
     document.querySelectorAll("[data-ch]").forEach((b) => (b.onclick = () => openChannel(b.dataset.ch)));
     document.querySelectorAll("[data-ad]").forEach((b) => (b.onclick = () => openSeq([{ type: "ad", ad: ads[Number(b.dataset.ad)] }], 0)));
+  }
+
+  // ---------- חיפוש ----------
+  function openSearch() {
+    $("search").classList.add("open");
+    $("search-input").value = "";
+    renderResults("");
+    setTimeout(() => $("search-input").focus(), 50);
+  }
+  function closeSearch() { $("search").classList.remove("open"); }
+  $("search-btn").onclick = openSearch;
+  $("nav-search").onclick = openSearch;
+  $("search-back").onclick = closeSearch;
+  $("search-input").oninput = (e) => renderResults(e.target.value.trim());
+
+  function renderResults(q) {
+    const list = q
+      ? articles.filter((a) => `${a.title} ${a.summary || ""} ${(CATEGORIES[a.category] || {}).name || ""} ${a.city || ""}`.includes(q))
+      : articles.slice(0, 12);
+    $("search-results").innerHTML = `<div class="sec-h" style="font-size:14px;color:var(--muted)">${q ? `${list.length} תוצאות` : "עדכונים אחרונים"}</div>` +
+      (list.length ? list.map((a) => {
+        const key = a.is_breaking ? "hot" : a.category;
+        return `<button class="chan" data-slug="${esc(a.slug)}">
+          <div class="av plain" style="--s:46px"><span class="face ic" style="background:${COLORS[key] || COLORS.general}">${icon(key, 21, 1.7)}</span></div>
+          <span class="mid"><b>${esc(a.title)}</b><span class="last">${esc(a.summary || "")}</span></span>
+          <span class="end"><span class="t">${esc(clock(a.published_at))}</span></span></button>`;
+      }).join("") : `<div class="empty">לא נמצאו עדכונים</div>`);
+    $("search-results").querySelectorAll("[data-slug]").forEach((b) => (b.onclick = () => { closeSearch(); openArticle(b.dataset.slug); }));
+  }
+
+  function openArticle(slug) {
+    const inRecent = recentOnly(articles).some((a) => a.slug === slug);
+    if (inRecent) return openChannel("all", slug);
+    const a = articles.find((x) => x.slug === slug);
+    if (a) openSeq([{ type: "news", a }], 0);
   }
 
   // ---------- הצופה ----------

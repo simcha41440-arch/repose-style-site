@@ -8,30 +8,28 @@
   <meta property="og:title" content="נייעס סטטוס">
   <meta property="og:description" content="רק מה ששווה לדעת.">
   <meta property="og:type" content="website">
-  <meta name="theme-color" content="#ffffff">
+  <meta name="theme-color" content="#0b141a">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="נייעס סטטוס">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="stylesheet" href="/fonts/fonts.css">
   <link rel="stylesheet" href="/styles.css">
   <script src="/prefs.js"></script>
 </head>
-<body>
+<body class="has-nav">
   <div class="app">
     <header class="appbar">
-      <div style="flex:1">
-        <h1>נייעס <em>סטטוס</em></h1>
-        <div class="sub"><span class="live">חי</span><span id="hdate"></span></div>
-      </div>
-      <button class="install" id="install" hidden><span id="install-ic"></span>התקנה</button>
+      <h1 style="flex:1">נייעס <em>סטטוס</em></h1>
+      <button class="menu-btn" id="search-btn" aria-label="חיפוש"></button>
       <div class="menu-wrap">
         <button class="menu-btn" id="menu-btn" aria-label="אפשרויות נוספות" aria-haspopup="true"></button>
         <div class="menu" id="menu" role="menu">
           <a href="/settings" role="menuitem">הגדרות</a>
           <button id="menu-seen" role="menuitem">סימון הכל כנצפה</button>
+          <button id="install" role="menuitem" hidden>התקנה למסך הבית</button>
           <a href="/about?topic=ads#contact" role="menuitem">פרסום בנייעס סטטוס</a>
           <a href="/about" role="menuitem">אודות ומדיניות תוכן</a>
         </div>
@@ -44,18 +42,30 @@
     <h2 class="sec-h" style="margin-top:10px">ערוצים</h2>
     <div id="chans"></div>
 
-    <section class="advertise" id="advertise">
-      <h2><span id="mega-ic"></span>העסק שלך בסטטוס של כולם</h2>
-      <p>אלפי קוראים עוברים כאן על המבזקים כל יום. תנו להם לראות גם אתכם:</p>
-      <ul>
-        <li><b>כרטיס ממומן</b> בשורת הסטטוסים, הדבר הראשון שרואים</li>
-        <li><b>סטטוס ממומן</b> במסך מלא בין המבזקים, עם כפתור לפעולה</li>
-        <li><b>מודעת צד</b> ליד הסטטוס, למי שגולש מהמחשב</li>
-      </ul>
-      <a class="btn" id="adv-link" href="#advertise">דברו איתנו על פרסום</a>
-    </section>
+    <h2 class="sec-h" style="margin-top:8px">עוד בנייעס סטטוס</h2>
+    <a class="chan" href="/about?topic=ads#contact">
+      <div class="av plain" style="--s:52px"><span class="face ic" id="adv-face" style="background:#c0612b"></span></div>
+      <span class="mid"><b>העסק שלך בסטטוס של כולם</b><span class="last">סטטוס ממומן, כרטיס ממומן ומודעת צד</span></span>
+      <span class="follow">פרטים</span>
+    </a>
 
-    <footer>© <span id="year"></span> נייעס סטטוס · רק מה ששווה לדעת · <a href="/about" style="text-decoration:underline">אודות ומדיניות תוכן</a></footer>
+    <footer>© <span id="year"></span> נייעס סטטוס · <a href="/about" style="text-decoration:underline">אודות ומדיניות תוכן</a></footer>
+  </div>
+
+  <button class="fab" id="fab" aria-label="צפייה בכל המבזקים"></button>
+
+  <nav class="bottom-nav" aria-label="ניווט">
+    <a href="/" class="on" aria-current="page"><span class="pill" id="nav-updates"></span>עדכונים</a>
+    <button id="nav-search"><span class="pill" id="nav-search-ic"></span>חיפוש</button>
+    <a href="/settings"><span class="pill" id="nav-settings"></span>הגדרות</a>
+  </nav>
+
+  <div class="search" id="search" role="dialog" aria-label="חיפוש">
+    <div class="search-bar">
+      <button class="menu-btn" id="search-back" aria-label="חזרה"></button>
+      <input id="search-input" type="search" placeholder="חיפוש..." autocomplete="off">
+    </div>
+    <div id="search-results"></div>
   </div>
 
   <div class="viewer" id="viewer" aria-modal="true" role="dialog" aria-label="צפייה בסטטוס">

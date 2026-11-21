@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>הגדרות | נייעס סטטוס</title>
   <meta name="robots" content="noindex">
-  <meta name="theme-color" content="#ffffff">
+  <meta name="theme-color" content="#0b141a">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="stylesheet" href="/fonts/fonts.css">
   <link rel="stylesheet" href="/styles.css">
   <script src="/prefs.js"></script>
 </head>
-<body>
+<body class="has-nav">
   <div class="app">
     <header class="set-top">
       <a href="/" id="back" aria-label="חזרה"></a>
@@ -21,7 +21,7 @@
 
     <div class="profile">
       <div class="av plain" style="--s:64px"><span class="face logo" style="font-size:28px">נ</span></div>
-      <div><b>נייעס סטטוס</b><span>רק מה ששווה לדעת</span></div>
+      <div><b>נייעס סטטוס</b><span id="hdate">רק מה ששווה לדעת</span></div>
     </div>
 
     <main id="rows"></main>
@@ -30,6 +30,11 @@
   </div>
 
   <button id="install" hidden style="display:none" aria-hidden="true"></button>
+  <nav class="bottom-nav" aria-label="ניווט">
+    <a href="/"><span class="pill" id="nav-updates"></span>עדכונים</a>
+    <a href="/?search=1"><span class="pill" id="nav-search-ic"></span>חיפוש</a>
+    <a href="/settings" class="on" aria-current="page"><span class="pill" id="nav-settings"></span>הגדרות</a>
+  </nav>
   <script src="/common.js"></script>
   <script src="/settings.js"></script>
   <script src="/pwa.js"></script>

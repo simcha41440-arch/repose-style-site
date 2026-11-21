@@ -3,8 +3,12 @@
 (function () {
   const $ = (id) => document.getElementById(id);
   $("back").innerHTML = icon("back", 24);
+  $("nav-updates").innerHTML = icon("updates", 24, 1.8);
+  $("nav-search-ic").innerHTML = icon("search", 24);
+  $("nav-settings").innerHTML = icon("gear", 24);
+  $("hdate").textContent = `רק מה ששווה לדעת · ${hebrewDate()}`;
 
-  const THEMES = { system: "ברירת המחדל של המערכת", light: "בהיר", dark: "כהה" };
+  const THEMES = { dark: "כהה, כמו בסטטוס (ברירת מחדל)", light: "בהיר", system: "לפי הגדרות המכשיר" };
   const FONTS = { s: "קטן", m: "בינוני", l: "גדול" };
   const SPEEDS = { slow: "איטית", normal: "רגילה", fast: "מהירה" };
   const MUTABLE = { hot: "דחוף", ...Object.fromEntries(Object.entries(CATEGORIES).map(([k, c]) => [k, c.name])) };
