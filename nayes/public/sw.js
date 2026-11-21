@@ -1,9 +1,9 @@
 // Service worker: שומר את קבצי האתר במטמון כדי שייפתח מהר, גם כשהחיבור חלש.
 // מבזקים ומודעות תמיד נטענים מהרשת (ורק אם אין רשת, מהעותק האחרון).
 
-const VERSION = "nayes-v2";
+const VERSION = "nayes-v3";
 const SHELL = [
-  "/", "/index.html", "/styles.css", "/common.js", "/status.js", "/pwa.js",
+  "/", "/index.html", "/styles.css", "/common.js", "/prefs.js", "/status.js", "/pwa.js",
   "/fonts/fonts.css", "/favicon.svg", "/manifest.webmanifest",
 ];
 
@@ -53,5 +53,18 @@ self.addEventListener("fetch", (e) => {
       if (res.ok) caches.open(VERSION).then((c) => c.put(req, copy));
       return res;
     })),
+  );
+});
+
+// לחיצה על התראה של מבזק דחוף: פותחים את המבזק
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || "/";
+  e.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      const open = list.find((c) => new URL(c.url).origin === location.origin);
+      if (open) { open.focus(); return open.navigate(url); }
+      return self.clients.openWindow(url);
+    }),
   );
 });

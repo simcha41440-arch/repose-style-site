@@ -221,3 +221,80 @@ footer { text-align: center; font-size: 12.5px; color: var(--muted); padding: 10
 .install { display: inline-flex; align-items: center; gap: 6px; }
 .advertise h2 { display: flex; align-items: center; gap: 8px; }
 .toast .i { vertical-align: -3px; }
+
+/* =============== ערכת נושא וגודל טקסט מההגדרות =============== */
+:root[data-theme="dark"] {
+  --ink: #e9edef; --ink-2: #c3ccd2; --muted: #8696a0; --line: #222d34;
+  --bg: #111b21; --soft: #1f2c34; --seen: #43525c;
+}
+html.fs-s body { font-size: 15px; }
+html.fs-s .s-text h2 { font-size: clamp(23px, 6.4vw, 30px); }
+html.fs-s .s-text p { font-size: clamp(16px, 4.2vw, 19px); }
+html.fs-l body { font-size: 18px; }
+html.fs-l .chan b { font-size: 18px; }
+html.fs-l .chan .last { font-size: 15.5px; }
+html.fs-l .s-text h2 { font-size: clamp(31px, 8.6vw, 42px); }
+html.fs-l .s-text p { font-size: clamp(20px, 5.6vw, 25px); }
+html.fs-l .details p { font-size: 18px; }
+
+/* =============== תפריט שלוש נקודות =============== */
+.menu-wrap { position: relative; }
+.menu-btn { background: none; border: 0; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; color: var(--ink); }
+.menu-btn:hover { background: var(--soft); }
+.menu {
+  position: absolute; top: 44px; left: 0; min-width: 210px; background: var(--bg); border-radius: 12px; padding: 6px 0; z-index: 30;
+  box-shadow: 0 6px 24px rgba(0,0,0,.18), 0 0 0 1px var(--line); display: none;
+}
+.menu.open { display: block; animation: fadeIn .15s ease; }
+.menu a, .menu button { display: block; width: 100%; text-align: right; padding: 12px 18px; background: none; border: 0; font-size: 15.5px; cursor: pointer; color: var(--ink); }
+.menu a:hover, .menu button:hover { background: var(--soft); }
+
+/* ערוצים מושתקים, מקופלים בתחתית הרשימה */
+.muted-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 14px 16px; background: none; border: 0; color: var(--muted); font-size: 14.5px; font-weight: 600; cursor: pointer; }
+.muted-toggle .i { transition: transform .2s; }
+.muted-toggle.open .i { transform: rotate(180deg); }
+.muted-list { display: none; opacity: .75; }
+.muted-list.open { display: block; }
+
+/* =============== עמוד הגדרות =============== */
+.set-top { position: sticky; top: 0; z-index: 5; background: var(--bg); display: flex; align-items: center; gap: 8px; padding: 10px 8px; }
+.set-top h1 { margin: 0; font-size: 21px; font-weight: 600; }
+.set-top a { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: var(--ink); }
+.set-top a:hover { background: var(--soft); }
+.profile { display: flex; align-items: center; gap: 16px; padding: 14px 16px 18px; border-bottom: 1px solid var(--line); }
+.profile b { display: block; font-size: 19px; font-weight: 600; }
+.profile span { color: var(--muted); font-size: 14.5px; }
+.set-sec { padding: 18px 16px 4px 16px; color: var(--muted); font-size: 14px; font-weight: 600; }
+.set-row {
+  display: flex; align-items: center; gap: 22px; width: 100%; padding: 14px 20px; background: none; border: 0; text-align: right;
+  color: var(--ink); cursor: pointer; font-size: 16.5px;
+}
+.set-row:hover { background: var(--soft); }
+.set-row > .i { color: var(--muted); }
+.set-row .txt { flex: 1; min-width: 0; }
+.set-row .txt b { display: block; font-weight: 400; }
+.set-row .txt small { display: block; color: var(--muted); font-size: 14px; margin-top: 1px; }
+.set-row.danger, .set-row.danger > .i { color: #d93847; }
+.set-foot { text-align: center; color: var(--muted); font-size: 13px; padding: 26px 16px 40px; }
+
+/* מתג הפעלה */
+.switch { position: relative; width: 38px; height: 22px; flex: none; }
+.switch input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.switch i { position: absolute; inset: 3px 0; border-radius: 99px; background: var(--seen); transition: background .2s; }
+.switch i::after { content: ""; position: absolute; top: 50%; right: -2px; width: 20px; height: 20px; margin-top: -10px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35); transition: right .2s; }
+.switch input:checked + i { background: color-mix(in srgb, var(--brand) 55%, transparent); }
+.switch input:checked + i::after { right: 20px; background: var(--brand); }
+
+/* חלון בחירה */
+.dlg-back { position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,.45); display: grid; place-items: center; padding: 16px; animation: fadeIn .15s ease; }
+.dlg { width: min(100%, 360px); background: var(--bg); border-radius: 24px; padding: 22px 0 10px; box-shadow: 0 20px 50px rgba(0,0,0,.3); }
+.dlg h3 { margin: 0 24px 12px; font-size: 19px; font-weight: 600; }
+.dlg p { margin: 0 24px 10px; color: var(--ink-2); }
+.dlg label { display: flex; align-items: center; gap: 18px; padding: 12px 24px; cursor: pointer; font-size: 16px; }
+.dlg label:hover { background: var(--soft); }
+.dlg input[type=radio], .dlg input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--brand); margin: 0; }
+.dlg .btns { display: flex; justify-content: flex-end; gap: 4px; padding: 10px 14px 4px; }
+.dlg .btns button { background: none; border: 0; color: var(--brand); font-weight: 600; font-size: 15.5px; padding: 10px 14px; border-radius: 99px; cursor: pointer; }
+.dlg .btns button:hover { background: var(--soft); }
+.dlg .btns button.red { color: #d93847; }
+.snack { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #323739; color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 15px; z-index: 400; animation: fadeIn .2s ease; }

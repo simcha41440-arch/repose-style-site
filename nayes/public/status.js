@@ -31,6 +31,22 @@
   $("arr-next").innerHTML = icon("chevLeft", 26);
   $("install-ic").innerHTML = icon("install", 18, 2);
   $("mega-ic").innerHTML = icon("megaphone", 22);
+  $("menu-btn").innerHTML = icon("dots", 24);
+  $("menu-btn").onclick = (e) => { e.stopPropagation(); $("menu").classList.toggle("open"); };
+  document.addEventListener("click", () => $("menu").classList.remove("open"));
+  $("menu-seen").onclick = () => {
+    recentOnly(articles).forEach((a) => seen.add(a.slug));
+    save("nayes_seen", [...seen].slice(-400));
+    renderHome();
+  };
+
+  const SPEED = { slow: 1.5, normal: 1, fast: 0.65 };
+  const speedFactor = () => SPEED[getPrefs().speed] || 1;
+  const isMuted = (a) => {
+    const m = getPrefs().muted;
+    return m.includes(a.category) || (a.is_breaking && m.includes("hot"));
+  };
+  let knownSlugs = null;
   $("year").textContent = new Date().getFullYear();
   if (ADVERTISE_LINK) $("adv-link").href = ADVERTISE_LINK;
 
@@ -47,6 +63,7 @@
       document.body.prepend(b);
     }
     renderHome();
+    knownSlugs = new Set(articles.map((a) => a.slug));
 
     const m = location.pathname.match(/^\/article\/([^/]+)/);
     if (m) {
@@ -60,10 +77,34 @@
     setInterval(refresh, 60000);
   }
 
+  // רענון כל דקה, גם כשהלשונית ברקע, כדי שהסימון על האייקון יתעדכן
   async function refresh() {
-    if (viewer.open || document.hidden) return;
     const res = await api({ limit: 40 });
-    if (res.articles && res.articles.length) { articles = res.articles; renderHome(); }
+    if (!res.articles || !res.articles.length) return;
+    const fresh = res.articles.filter((a) => knownSlugs && !knownSlugs.has(a.slug));
+    articles = res.articles;
+    knownSlugs = new Set(articles.map((a) => a.slug));
+    alertHot(fresh.filter((a) => a.is_breaking && !seen.has(a.slug) && !isMuted(a)));
+    if (viewer.open) updateBadge();
+    else renderHome();
+  }
+
+  // התראה קופצת על מבזק דחוף (אם הקורא הפעיל זאת בהגדרות)
+  async function alertHot(list) {
+    if (!list.length || !getPrefs().hotAlerts || !("Notification" in window) || Notification.permission !== "granted") return;
+    const reg = navigator.serviceWorker ? await navigator.serviceWorker.getRegistration().catch(() => null) : null;
+    for (const a of list.slice(0, 3)) {
+      const opts = { body: a.summary || "", icon: "/icons/icon-192.png", badge: "/icons/icon-192.png", tag: a.slug, data: { url: articleUrl(a) }, lang: "he", dir: "rtl" };
+      try {
+        if (reg) await reg.showNotification(`דחוף: ${a.title}`, opts);
+        else new Notification(`דחוף: ${a.title}`, opts).onclick = () => { window.focus(); location.href = articleUrl(a); };
+      } catch {}
+    }
+  }
+
+  function updateBadge() {
+    const unread = recentOnly(articles).filter((a) => !seen.has(a.slug) && !isMuted(a)).length;
+    setUnreadBadge(unread);
   }
 
   // ---------- ערוצים ----------
@@ -75,12 +116,13 @@
 
   function channels() {
     const recent = recentOnly(articles);
+    const muted = getPrefs().muted;
     const out = [{ key: "all", name: "נייעס סטטוס", face: "נ", logo: true, items: recent }];
     const hot = recent.filter((a) => a.is_breaking);
-    if (hot.length) out.push({ key: "hot", name: "דחוף", icon: "hot", items: hot });
+    if (hot.length) out.push({ key: "hot", name: "דחוף", icon: "hot", items: hot, muted: muted.includes("hot") });
     for (const [key, c] of Object.entries(CATEGORIES)) {
       const items = recent.filter((a) => a.category === key);
-      if (items.length) out.push({ key, name: c.name, icon: key, items });
+      if (items.length) out.push({ key, name: c.name, icon: key, items, muted: muted.includes(key) });
     }
     return out;
   }
@@ -125,7 +167,9 @@
 
   // ---------- מסך העדכונים ----------
   function renderHome() {
-    const chs = channels();
+    const all = channels();
+    const chs = all.filter((c) => !c.muted);
+    const mutedChs = all.filter((c) => c.muted);
     // קודם ערוצים עם עדכונים חדשים, אחר כך מה שנצפה
     const ordered = [...chs.filter((c) => unseen(c.items)), ...chs.filter((c) => !unseen(c.items))];
     const tops = ads.filter((a) => a.placement === "top");
@@ -147,15 +191,27 @@
     tops.forEach((ad, i) => cards.splice(Math.min(1 + i * 3, cards.length), 0, adCard(ad, ads.indexOf(ad))));
     $("cards").innerHTML = articles.length || tops.length ? cards.join("") : `<div class="empty">עוד אין עדכונים.</div>`;
 
-    $("chans").innerHTML = chs.map((ch) => {
+    const chanRow = (ch) => {
       const latest = ch.items[0];
-      const n = unseen(ch.items);
+      const n = ch.muted ? 0 : unseen(ch.items);
       return `<button class="chan" data-ch="${ch.key}">
         ${avatar(ch, 52)}
         <span class="mid"><b>${esc(ch.name)}</b><span class="last">${esc(latest ? latest.title : "")}</span></span>
-        <span class="end"><span class="t ${n ? "new" : ""}">${esc(latest ? clock(latest.published_at) : "")}</span>${n ? `<span class="badge">${n}</span>` : ""}</span>
+        <span class="end"><span class="t ${n ? "new" : ""}">${esc(latest ? clock(latest.published_at) : "")}</span>${n ? `<span class="badge">${n}</span>` : ""}${ch.muted ? `<span style="color:var(--muted)">${icon("bellOff", 18)}</span>` : ""}</span>
       </button>`;
-    }).join("");
+    };
+    $("chans").innerHTML = chs.map(chanRow).join("") + (mutedChs.length
+      ? `<button class="muted-toggle" id="muted-toggle">ערוצים מושתקים (${mutedChs.length}) ${icon("chevLeft", 18)}</button>
+         <div class="muted-list" id="muted-list">${mutedChs.map(chanRow).join("")}</div>`
+      : "");
+    if (mutedChs.length) {
+      $("muted-toggle").querySelector(".i").style.transform = "rotate(-90deg)";
+      $("muted-toggle").onclick = () => {
+        const open = $("muted-list").classList.toggle("open");
+        $("muted-toggle").querySelector(".i").style.transform = open ? "rotate(90deg)" : "rotate(-90deg)";
+      };
+    }
+    updateBadge();
 
     document.querySelectorAll("[data-ch]").forEach((b) => (b.onclick = () => openChannel(b.dataset.ch)));
     document.querySelectorAll("[data-ad]").forEach((b) => (b.onclick = () => openSeq([{ type: "ad", ad: ads[Number(b.dataset.ad)] }], 0)));
@@ -241,9 +297,10 @@
   function renderNews(a) {
     const cat = CATEGORIES[a.category] || CATEGORIES.general;
     const len = (a.title || "").length + (a.summary || "").length + (a.impact || "").length;
-    viewer.dur = Math.max(6000, Math.min(14000, 4000 + len * 40));
+    viewer.dur = Math.max(6000, Math.min(14000, 4000 + len * 40)) * speedFactor();
     seen.add(a.slug);
     save("nayes_seen", [...seen].slice(-400));
+    updateBadge();
     history.replaceState(null, "", articleUrl(a));
 
     $("stage").style.setProperty("--solid", a.is_breaking ? COLORS.hot : COLORS[a.category] || COLORS.general);
@@ -322,7 +379,7 @@
 
   // ---------- סטטוס ממומן ----------
   function renderAd(ad) {
-    viewer.dur = 7000;
+    viewer.dur = 7000 * speedFactor();
     const color = ad.color || "#243640";
     $("stage").style.setProperty("--solid", color);
     $("s-head").innerHTML = head(

@@ -17,6 +17,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="stylesheet" href="/fonts/fonts.css">
   <link rel="stylesheet" href="/styles.css">
+  <script src="/prefs.js"></script>
 </head>
 <body>
   <div class="app">
@@ -26,6 +27,15 @@
         <div class="sub"><span class="live">חי</span><span id="hdate"></span></div>
       </div>
       <button class="install" id="install" hidden><span id="install-ic"></span>התקנה</button>
+      <div class="menu-wrap">
+        <button class="menu-btn" id="menu-btn" aria-label="אפשרויות נוספות" aria-haspopup="true"></button>
+        <div class="menu" id="menu" role="menu">
+          <a href="/settings" role="menuitem">הגדרות</a>
+          <button id="menu-seen" role="menuitem">סימון הכל כנצפה</button>
+          <a href="/about?topic=ads#contact" role="menuitem">פרסום בנייעס סטטוס</a>
+          <a href="/about" role="menuitem">אודות ומדיניות תוכן</a>
+        </div>
+      </div>
     </header>
 
     <h2 class="sec-h">סטטוס</h2>
