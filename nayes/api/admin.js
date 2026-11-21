@@ -18,6 +18,8 @@ import { CATEGORIES } from "./_lib/config.js";
 // adSave    { ad }                           → יצירה/עדכון מודעה (התמונה נבדקת ב-AI)
 // adToggle  { id, active }                   → הפעלה/השהיה
 // adDelete  { id }                           → מחיקה
+// messagesList {}                            → פניות מטופס יצירת הקשר
+// messageDone  { id, done }                  → סימון פנייה כמטופלת
 
 const EDITABLE = new Set([
   "title", "summary", "impact", "body", "category", "city", "is_breaking",
@@ -220,6 +222,18 @@ export default async function handler(req, res) {
 
       case "adDelete": {
         const { error } = await db().from("ads").delete().eq("id", body.id);
+        if (error) throw error;
+        return res.status(200).json({ ok: true });
+      }
+
+      case "messagesList": {
+        const { data, error } = await db().from("messages").select("*").order("created_at", { ascending: false }).limit(200);
+        if (error) throw error;
+        return res.status(200).json({ messages: data });
+      }
+
+      case "messageDone": {
+        const { error } = await db().from("messages").update({ done: Boolean(body.done) }).eq("id", body.id);
         if (error) throw error;
         return res.status(200).json({ ok: true });
       }

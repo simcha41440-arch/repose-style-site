@@ -83,3 +83,16 @@ $$;
 insert into storage.buckets (id, name, public)
 values ('media', 'media', false)
 on conflict (id) do nothing;
+
+-- ---------- פניות מטופס יצירת הקשר ----------
+create table if not exists messages (
+  id          uuid primary key default gen_random_uuid(),
+  topic       text not null default 'general',   -- general / ads / correction
+  name        text not null,
+  phone       text,
+  email       text,
+  body        text not null,
+  done        boolean not null default false,
+  created_at  timestamptz not null default now()
+);
+alter table messages enable row level security;

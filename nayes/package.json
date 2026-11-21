@@ -7,10 +7,13 @@
   "scripts": {
     "pipeline": "node pipeline/run.mjs"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.12.0",
     "@supabase/supabase-js": "^2.119.2",
-    "rss-parser": "^3.13.0"
+    "rss-parser": "^3.13.0",
+    "nodemailer": "^10.6.1"
   }
 }

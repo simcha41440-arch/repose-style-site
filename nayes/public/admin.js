@@ -74,6 +74,7 @@
     const panel = $("panel");
     if (tab === "compose") return renderCompose(panel);
     if (tab === "ads") return renderAds(panel);
+    if (tab === "messages") return renderMessages(panel);
     panel.innerHTML = `<div class="skeleton" style="height:200px"></div>`;
     try {
       const { articles } = await call("list", { status: tab });
@@ -309,6 +310,28 @@
         renderAds($("panel"));
       } catch (err) { m.className = "msg bad"; m.textContent = err.message; e.target.disabled = false; }
     };
+  }
+
+  // ---------- פניות ----------
+  const TOPICS = { general: "פנייה כללית", ads: "📣 פרסום", correction: "תיקון / טעות" };
+  async function renderMessages(panel) {
+    panel.innerHTML = `<div class="skeleton" style="height:200px"></div>`;
+    let list = [];
+    try { list = (await call("messagesList")).messages; } catch (err) { panel.innerHTML = `<div class="empty">${esc(err.message)}</div>`; return; }
+    panel.innerHTML = list.length ? "" : `<div class="empty">אין פניות עדיין.</div>`;
+    list.forEach((m) => {
+      const el = document.createElement("div");
+      el.className = "item";
+      el.style.opacity = m.done ? ".55" : "1";
+      el.innerHTML = `
+        <div class="src">${esc(TOPICS[m.topic] || m.topic)} · ${esc(timeAgo(m.created_at))}${m.done ? " · ✓ טופל" : ""}</div>
+        <h3 style="margin:6px 0 2px">${esc(m.name)}</h3>
+        <div class="src" dir="ltr" style="text-align:right">${m.phone ? `<a href="tel:${esc(m.phone)}">${esc(m.phone)}</a>` : ""} ${m.email ? `<a href="mailto:${esc(m.email)}">${esc(m.email)}</a>` : ""}</div>
+        <p style="white-space:pre-wrap;margin:10px 0 0">${esc(m.body)}</p>
+        <div class="actions"><button class="btn ${m.done ? "ghost" : "green"}" data-a="done">${m.done ? "סמן כלא טופל" : "סמן כטופל"}</button></div>`;
+      el.querySelector('[data-a="done"]').onclick = async () => { await call("messageDone", { id: m.id, done: !m.done }); renderMessages(panel); };
+      panel.appendChild(el);
+    });
   }
 
   show(Boolean(token));

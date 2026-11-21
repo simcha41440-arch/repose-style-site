@@ -17,6 +17,13 @@
     .doc ul { padding: 0 20px 0 0; margin: 0; }
     .doc .box { background: var(--soft); border-radius: 16px; padding: 16px 18px; margin-top: 10px; }
     .back { color: var(--brand); font-weight: 600; }
+    .contact { display: grid; gap: 10px; margin-top: 12px; }
+    .contact input, .contact select, .contact textarea { width: 100%; font: inherit; color: var(--ink); background: var(--soft); border: 1px solid var(--line); border-radius: 12px; padding: 11px 13px; }
+    .contact input[dir=ltr]::placeholder { text-align: right; }
+    .contact textarea { min-height: 120px; resize: vertical; }
+    .contact .btn { justify-self: start; }
+    .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+    .form-msg { margin: 0; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -59,9 +66,22 @@
         <li>אנחנו לא מפרסמים מודעות שמובילות לאתרים שאינם ראויים.</li>
       </ul>
 
-      <h2>צור קשר</h2>
-      <p>לפניות, תיקונים, דיווח על טעות או פרסום באתר:</p>
-      <p><a class="btn" id="contact" href="/#advertise">יצירת קשר</a></p>
+      <h2 id="contact">צור קשר</h2>
+      <p>לפניות, תיקונים, דיווח על טעות או פרסום באתר, השאירו פרטים ונחזור אליכם:</p>
+      <form class="contact" id="contact-form">
+        <select name="topic">
+          <option value="general">פנייה כללית</option>
+          <option value="ads">פרסום באתר</option>
+          <option value="correction">תיקון או דיווח על טעות</option>
+        </select>
+        <input name="name" placeholder="שם *" required maxlength="80">
+        <input name="phone" placeholder="טלפון" inputmode="tel" maxlength="30" dir="ltr">
+        <input name="email" placeholder="מייל" type="email" maxlength="120" dir="ltr">
+        <input name="website" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">
+        <textarea name="body" placeholder="תוכן הפנייה *" required maxlength="3000"></textarea>
+        <button class="btn" type="submit">שליחה</button>
+        <p class="form-msg" id="form-msg"></p>
+      </form>
     </main>
 
     <footer>© <span id="year"></span> נייעס סטטוס · רק מה ששווה לדעת</footer>

@@ -17,10 +17,8 @@ const REACTIONS = ["❤️", "😍", "😂", "😮", "😢", "🙏", "👏", "�
 
 const CITIES = ["ירושלים", "בני ברק", "בית שמש", "מודיעין עילית", "ביתר עילית", "אלעד", "אשדוד"];
 
-// לאן פונים מפרסמים. מלאו כאן טלפון או מייל, למשל "tel:0500000000" או "mailto:ads@example.com".
-const ADVERTISE_LINK = "";
-// יצירת קשר כללית (עמוד "אודות"). אם ריק, משתמשים בקישור של הפרסום.
-const CONTACT_LINK = "";
+// לאן פונים מפרסמים: טופס יצירת הקשר באתר (הפניות מגיעות למייל, בלי לחשוף את הכתובת).
+const ADVERTISE_LINK = "/about?topic=ads#contact";
 
 // ---------- עזרים ----------
 
@@ -130,7 +128,7 @@ async function react(slug, emoji) {
 }
 
 function adHref(ad) {
-  return DEMO_MODE ? "#advertise" : `/api/ads?click=${encodeURIComponent(ad.id)}`;
+  return DEMO_MODE ? ADVERTISE_LINK : `/api/ads?click=${encodeURIComponent(ad.id)}`;
 }
 
 function demoQuery(params) {
