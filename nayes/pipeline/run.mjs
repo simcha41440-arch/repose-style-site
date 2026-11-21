@@ -93,6 +93,12 @@ async function notifyTelegram(text) {
 }
 
 async function main() {
+  // עד שמגדירים את המפתחות ב-GitHub, הסריקה פשוט מדלגת (בלי שגיאות ובלי מיילים על כישלון).
+  const missing = ["ANTHROPIC_API_KEY", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"].filter((k) => !process.env[k]);
+  if (missing.length) {
+    console.log(`הסריקה מדלגת: חסרים ${missing.join(", ")} בהגדרות (Settings > Secrets and variables > Actions).`);
+    return;
+  }
   const sources = await loadSources();
   if (!sources.length) {
     console.log("אין מקורות פעילים ב-sources.json. הוסף מקור וסמן enabled: true.");
